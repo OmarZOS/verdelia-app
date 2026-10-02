@@ -1,16 +1,178 @@
 import 'dart:convert';
 
+import '../NamingContribution.dart';
+
 class ProvidedServiceCategory {
+  /// FK to `provided_service_category.id_provided_service_category`.
   final int id;
+
+  /// Flat English label from `provided_service_category_name`.
+  /// Kept for backward compatibility — prefer [nameFor] or [naming].
   final String name;
 
-  const ProvidedServiceCategory({required this.id, required this.name});
+  /// Icon URL from the category row (nullable in your JSON).
+  final String? iconUrl;
 
-  factory ProvidedServiceCategory.fromJson(Map<String, dynamic> json) {
+  /// Trilingual naming block (fr / ar / en + status + icon).
+  /// Null when the backend returned only the flat shape.
+  final NamingContribution? naming;
+
+  const ProvidedServiceCategory({
+    required this.id,
+    required this.name,
+    this.iconUrl,
+    this.naming,
+  });
+
+  factory ProvidedServiceCategory.empty() => const ProvidedServiceCategory(
+        id: 0,
+        name: '',
+      );
+
+  ProvidedServiceCategory copyWith({
+    int? id,
+    String? name,
+    String? iconUrl,
+    NamingContribution? naming,
+  }) {
     return ProvidedServiceCategory(
-      id: (json['provided_service_category_id'] as num).toInt(),
-      name: json['provided_service_category_name'] as String,
+      id: id ?? this.id,
+      name: name ?? this.name,
+      iconUrl: iconUrl ?? this.iconUrl,
+      naming: naming ?? this.naming,
     );
+  }
+
+  /// Parse a single category row. Supports both shapes:
+  ///
+  /// New shape (as returned by the service-category endpoint):
+  /// ```json
+  /// {
+  ///   "provided_service_category_id": 1,
+  ///   "provided_service_category_name": "Baked Goods",
+  ///   "provided_service_category_icon": null,
+  ///   "naming_contribution": {
+  ///     "naming_contribution_fr": "…",
+  ///     "naming_contribution_ar": "…",
+  ///     "naming_contribution_en": "…",
+  ///     "naming_contribution_status": "APP_TRANSLATED",
+  ///     "naming_contribution_icon_url": null
+  ///   }
+  /// }
+  /// ```
+  ///
+  /// Legacy shape:
+  /// ```json
+  /// {
+  ///   "provided_service_category_id": 1,
+  ///   "provided_service_category_name": "Baked Goods"
+  /// }
+  /// ```
+  factory ProvidedServiceCategory.fromJson(Map<String, dynamic> json) {
+    try {
+      final rawId = json['provided_service_category_id'] ??
+          json['id_provided_service_category'];
+      final id = _parseInt(rawId);
+
+      final flatName = _getString(
+        json['provided_service_category_name'] ??
+            json['provided_service_category_desc'],
+      );
+
+      final icon = _getString(
+        json['provided_service_category_icon'] ??
+            json['provided_service_category_icon_url'],
+      );
+
+      NamingContribution? naming;
+      final namingJson = json['naming_contribution'];
+      if (namingJson != null && namingJson is Map<String, dynamic>) {
+        naming = NamingContribution.fromJson(namingJson);
+      }
+
+      return ProvidedServiceCategory(
+        id: id,
+        name: flatName,
+        iconUrl: icon.isNotEmpty ? icon : null,
+        naming: naming,
+      );
+    } catch (_) {
+      return ProvidedServiceCategory.empty();
+    }
+  }
+
+  /// Parse a full list returned by the service-category endpoint.
+  static List<ProvidedServiceCategory> listFromJson(dynamic json) {
+    if (json is! List) return const [];
+    return json
+        .whereType<Map<String, dynamic>>()
+        .map(ProvidedServiceCategory.fromJson)
+        .toList(growable: false);
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'provided_service_category_id': id,
+      'provided_service_category_name': name,
+      if (iconUrl != null) 'provided_service_category_icon': iconUrl,
+      if (naming != null) 'naming_contribution': naming!.toJson(),
+    };
+  }
+
+  // ==================== Naming accessors ====================
+
+  /// Return the category name in [lang]. Prefers the trilingual
+  /// naming contribution; falls back to [name].
+  ///
+  /// [lang] accepts the usual BCP-47 short codes: `'en'`, `'fr'`, `'ar'`.
+  String nameFor(String lang) {
+    final resolved = naming?.nameFor(lang) ?? '';
+    if (resolved.isNotEmpty) return resolved;
+    return name;
+  }
+
+  /// Icon URL preferring the naming block, falling back to the flat
+  /// top-level icon.
+  String? get resolvedIconUrl {
+    final fromNaming = naming?.iconUrl;
+    if (fromNaming != null && fromNaming.isNotEmpty) return fromNaming;
+    return iconUrl;
+  }
+
+  /// English-preferring display name. Kept for backward compatibility.
+  String get displayName {
+    if (naming?.en.isNotEmpty == true) return naming!.en;
+    return name;
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ProvidedServiceCategory &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id;
+
+  @override
+  String toString() => 'ProvidedServiceCategory(id: $id, name: $name, '
+      'naming: ${naming != null})';
+
+  // ==================== Helpers ====================
+
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? 0;
+    if (value is num) return value.toInt();
+    return 0;
+  }
+
+  static String _getString(dynamic value) {
+    if (value == null) return '';
+    if (value is String) return value.trim();
+    return value.toString().trim();
   }
 }
 

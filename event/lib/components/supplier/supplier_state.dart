@@ -7,6 +7,7 @@ import 'supplier_filter.dart';
 
 class SupplierState {
   final List<Supplier> suppliers = [];
+  List<SupplierCategory> categories = [];
   final Map<int, Organisation> organisations = {};
   Position? currentLocation;
   SupplierFilter filter = const SupplierFilter();
@@ -57,6 +58,7 @@ class SupplierState {
 
   void reset() {
     suppliers.clear();
+    categories.clear();
     organisations.clear();
     currentLocation = null;
     filter = const SupplierFilter();

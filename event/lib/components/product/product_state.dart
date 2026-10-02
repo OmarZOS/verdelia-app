@@ -6,7 +6,7 @@ class ProductState {
   final List<Product> products = [];
   final Map<int, int> cartQuantities = {};
   final List<Product> cartItems = [];
-  List<String> categories = [];
+  List<ProductCategory> categories = [];
 
   bool isLoading = false;
   bool isCartLoading = false;
@@ -31,6 +31,7 @@ class ProductState {
 
   void reset() {
     products.clear();
+    categories.clear();
     cartQuantities.clear();
     cartItems.clear();
     isLoading = false;

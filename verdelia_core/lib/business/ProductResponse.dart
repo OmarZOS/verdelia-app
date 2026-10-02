@@ -1,4 +1,4 @@
-import 'package:verdelia_core/business/iProduct.dart';
+import 'iProduct.dart';
 
 class IProductResponse {
   final String source;

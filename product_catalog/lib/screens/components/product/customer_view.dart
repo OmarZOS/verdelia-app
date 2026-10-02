@@ -479,6 +479,14 @@ class _CustomerProductViewState extends State<CustomerProductView> {
 
   Widget _buildSimilarProducts(BuildContext context) {
     final theme = Theme.of(context);
+    final localeLang = Localizations.localeOf(context).languageCode;
+    final categoryName = _productNotifier.categoryName(
+      widget.product.product_category_id,
+      languageCode: localeLang,
+    );
+    final resolvedCategoryName = categoryName.isNotEmpty
+        ? categoryName
+        : widget.product.product_category_name ?? '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -486,11 +494,8 @@ class _CustomerProductViewState extends State<CustomerProductView> {
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Text(
-            AppLocalizations.of(context)!.similarProductsFromCategory(
-              AppLocalizations.of(context)!.productCategoryTextList.split(
-                    ',',
-                  )[(widget.product.product_category_id ?? 1) - 1],
-            ),
+            AppLocalizations.of(context)!
+                .similarProductsFromCategory(resolvedCategoryName),
             textAlign: widget.isRTL ? TextAlign.right : TextAlign.left,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,

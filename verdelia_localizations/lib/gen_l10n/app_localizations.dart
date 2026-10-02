@@ -901,29 +901,11 @@ abstract class AppLocalizations {
   /// **'Amount: {amount}'**
   String orderAmountText(String amount);
 
-  /// No description provided for @productCategoryTextList.
-  ///
-  /// In en, this message translates to:
-  /// **'Baked Goods,Spreads,Cereals,Pasta,Snacks,Beverages,Desserts,Frozen Foods,Baking Ingredients,Packaged Goods'**
-  String get productCategoryTextList;
-
   /// No description provided for @allText.
   ///
   /// In en, this message translates to:
   /// **'All'**
   String get allText;
-
-  /// No description provided for @providerCategoryTextList.
-  ///
-  /// In en, this message translates to:
-  /// **'Restaurant,Bakery,Factory,Supermarket,Grocery Store,Distributor'**
-  String get providerCategoryTextList;
-
-  /// No description provided for @ingredientTextList.
-  ///
-  /// In en, this message translates to:
-  /// **'Wheat,Barley ,Rye,Oats ,Corn ,Rice ,Soy,Milk ,Egg,Peanuts,Tree Nuts,Fish ,Shellfish,Lentils,Chickpeas,Buckwheat,Almond ,Coconut,Sunflower Seeds,Pumpkin Seeds,Sesame Seeds ,Potato ,Sweet Potato ,Gelatin,Lupin,Mustard,Fennel ,Cumin,Ginger ,Garlic ,Onion,Leek ,Shallot,Scallion ,Chive,Parsley,Cilantro ,Basil,Oregano,Thyme,Rosemary ,Sage ,Mint ,Lemongrass ,Lavender ,Paprika,Chili Pepper ,Black Pepper ,White Pepper ,Green Pepper ,Red Pepper ,Cinnamon ,Allspice ,Butter ,Margarine,Vegetable Oil,Baking Powder,Baking Soda,Cornstarch ,All-Purpose Flour,Pastry Flour ,Self-Rising Flour'**
-  String get ingredientTextList;
 
   /// No description provided for @cartText.
   ///
@@ -12984,6 +12966,462 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to update delivery.'**
   String get delivery_update_failed;
+
+  /// No description provided for @food.
+  ///
+  /// In en, this message translates to:
+  /// **'Food'**
+  String get food;
+
+  /// No description provided for @health.
+  ///
+  /// In en, this message translates to:
+  /// **'Health'**
+  String get health;
+
+  /// No description provided for @retail.
+  ///
+  /// In en, this message translates to:
+  /// **'Retail'**
+  String get retail;
+
+  /// No description provided for @trade.
+  ///
+  /// In en, this message translates to:
+  /// **'Trade'**
+  String get trade;
+
+  /// No description provided for @beauty.
+  ///
+  /// In en, this message translates to:
+  /// **'Beauty'**
+  String get beauty;
+
+  /// No description provided for @home.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get home;
+
+  /// No description provided for @professional.
+  ///
+  /// In en, this message translates to:
+  /// **'Professional'**
+  String get professional;
+
+  /// No description provided for @education.
+  ///
+  /// In en, this message translates to:
+  /// **'Education'**
+  String get education;
+
+  /// No description provided for @technology.
+  ///
+  /// In en, this message translates to:
+  /// **'Technology'**
+  String get technology;
+
+  /// No description provided for @logistics.
+  ///
+  /// In en, this message translates to:
+  /// **'Logistics'**
+  String get logistics;
+
+  /// No description provided for @automotive.
+  ///
+  /// In en, this message translates to:
+  /// **'Automotive'**
+  String get automotive;
+
+  /// No description provided for @agriculture.
+  ///
+  /// In en, this message translates to:
+  /// **'Agriculture'**
+  String get agriculture;
+
+  /// No description provided for @hospitality.
+  ///
+  /// In en, this message translates to:
+  /// **'Hospitality'**
+  String get hospitality;
+
+  /// No description provided for @finance.
+  ///
+  /// In en, this message translates to:
+  /// **'Finance'**
+  String get finance;
+
+  /// No description provided for @alimentary.
+  ///
+  /// In en, this message translates to:
+  /// **'Alimentary'**
+  String get alimentary;
+
+  /// No description provided for @beverages.
+  ///
+  /// In en, this message translates to:
+  /// **'Beverages'**
+  String get beverages;
+
+  /// No description provided for @prepared.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepared'**
+  String get prepared;
+
+  /// No description provided for @dining.
+  ///
+  /// In en, this message translates to:
+  /// **'Dining'**
+  String get dining;
+
+  /// No description provided for @production.
+  ///
+  /// In en, this message translates to:
+  /// **'Production'**
+  String get production;
+
+  /// No description provided for @specialty.
+  ///
+  /// In en, this message translates to:
+  /// **'Specialty'**
+  String get specialty;
+
+  /// No description provided for @pharma.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharma'**
+  String get pharma;
+
+  /// No description provided for @wellness.
+  ///
+  /// In en, this message translates to:
+  /// **'Wellness'**
+  String get wellness;
+
+  /// No description provided for @medical_devices.
+  ///
+  /// In en, this message translates to:
+  /// **'Medical Devices'**
+  String get medical_devices;
+
+  /// No description provided for @personal_care.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal Care'**
+  String get personal_care;
+
+  /// No description provided for @facilities.
+  ///
+  /// In en, this message translates to:
+  /// **'Facilities'**
+  String get facilities;
+
+  /// No description provided for @diagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics'**
+  String get diagnostics;
+
+  /// No description provided for @primary_care.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary Care'**
+  String get primary_care;
+
+  /// No description provided for @specialized_care.
+  ///
+  /// In en, this message translates to:
+  /// **'Specialized Care'**
+  String get specialized_care;
+
+  /// No description provided for @dental.
+  ///
+  /// In en, this message translates to:
+  /// **'Dental'**
+  String get dental;
+
+  /// No description provided for @therapy.
+  ///
+  /// In en, this message translates to:
+  /// **'Therapy'**
+  String get therapy;
+
+  /// No description provided for @clinical_procedures.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical Procedures'**
+  String get clinical_procedures;
+
+  /// No description provided for @household.
+  ///
+  /// In en, this message translates to:
+  /// **'Household'**
+  String get household;
+
+  /// No description provided for @electronics.
+  ///
+  /// In en, this message translates to:
+  /// **'Electronics'**
+  String get electronics;
+
+  /// No description provided for @apparel.
+  ///
+  /// In en, this message translates to:
+  /// **'Apparel'**
+  String get apparel;
+
+  /// No description provided for @pet_supplies.
+  ///
+  /// In en, this message translates to:
+  /// **'Pet Supplies'**
+  String get pet_supplies;
+
+  /// No description provided for @food_retail.
+  ///
+  /// In en, this message translates to:
+  /// **'Food Retail'**
+  String get food_retail;
+
+  /// No description provided for @fashion.
+  ///
+  /// In en, this message translates to:
+  /// **'Fashion'**
+  String get fashion;
+
+  /// No description provided for @home_living.
+  ///
+  /// In en, this message translates to:
+  /// **'Home & Living'**
+  String get home_living;
+
+  /// No description provided for @lifestyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifestyle'**
+  String get lifestyle;
+
+  /// No description provided for @health_retail.
+  ///
+  /// In en, this message translates to:
+  /// **'Health Retail'**
+  String get health_retail;
+
+  /// No description provided for @distribution.
+  ///
+  /// In en, this message translates to:
+  /// **'Distribution'**
+  String get distribution;
+
+  /// No description provided for @international.
+  ///
+  /// In en, this message translates to:
+  /// **'International'**
+  String get international;
+
+  /// No description provided for @intermediary.
+  ///
+  /// In en, this message translates to:
+  /// **'Intermediary'**
+  String get intermediary;
+
+  /// No description provided for @home_services.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Services'**
+  String get home_services;
+
+  /// No description provided for @health_services.
+  ///
+  /// In en, this message translates to:
+  /// **'Health Services'**
+  String get health_services;
+
+  /// No description provided for @construction.
+  ///
+  /// In en, this message translates to:
+  /// **'Construction'**
+  String get construction;
+
+  /// No description provided for @hair.
+  ///
+  /// In en, this message translates to:
+  /// **'Hair'**
+  String get hair;
+
+  /// No description provided for @aesthetics.
+  ///
+  /// In en, this message translates to:
+  /// **'Aesthetics'**
+  String get aesthetics;
+
+  /// No description provided for @nails.
+  ///
+  /// In en, this message translates to:
+  /// **'Nails'**
+  String get nails;
+
+  /// No description provided for @skincare.
+  ///
+  /// In en, this message translates to:
+  /// **'Skincare'**
+  String get skincare;
+
+  /// No description provided for @repair.
+  ///
+  /// In en, this message translates to:
+  /// **'Repair'**
+  String get repair;
+
+  /// No description provided for @maintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance'**
+  String get maintenance;
+
+  /// No description provided for @moving.
+  ///
+  /// In en, this message translates to:
+  /// **'Moving'**
+  String get moving;
+
+  /// No description provided for @legal.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal'**
+  String get legal;
+
+  /// No description provided for @accounting.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounting'**
+  String get accounting;
+
+  /// No description provided for @consulting.
+  ///
+  /// In en, this message translates to:
+  /// **'Consulting'**
+  String get consulting;
+
+  /// No description provided for @institutions.
+  ///
+  /// In en, this message translates to:
+  /// **'Institutions'**
+  String get institutions;
+
+  /// No description provided for @tutoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Tutoring'**
+  String get tutoring;
+
+  /// No description provided for @training.
+  ///
+  /// In en, this message translates to:
+  /// **'Training'**
+  String get training;
+
+  /// No description provided for @it_support.
+  ///
+  /// In en, this message translates to:
+  /// **'IT Support'**
+  String get it_support;
+
+  /// No description provided for @development.
+  ///
+  /// In en, this message translates to:
+  /// **'Development'**
+  String get development;
+
+  /// No description provided for @digital_marketing.
+  ///
+  /// In en, this message translates to:
+  /// **'Digital Marketing'**
+  String get digital_marketing;
+
+  /// No description provided for @warehousing.
+  ///
+  /// In en, this message translates to:
+  /// **'Warehousing'**
+  String get warehousing;
+
+  /// No description provided for @transport.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get transport;
+
+  /// No description provided for @storage.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get storage;
+
+  /// No description provided for @customs.
+  ///
+  /// In en, this message translates to:
+  /// **'Customs'**
+  String get customs;
+
+  /// No description provided for @parts.
+  ///
+  /// In en, this message translates to:
+  /// **'Parts'**
+  String get parts;
+
+  /// No description provided for @fluids.
+  ///
+  /// In en, this message translates to:
+  /// **'Fluids'**
+  String get fluids;
+
+  /// No description provided for @sales.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales'**
+  String get sales;
+
+  /// No description provided for @seeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Seeds'**
+  String get seeds;
+
+  /// No description provided for @fertilizers.
+  ///
+  /// In en, this message translates to:
+  /// **'Fertilizers'**
+  String get fertilizers;
+
+  /// No description provided for @equipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment'**
+  String get equipment;
+
+  /// No description provided for @supply.
+  ///
+  /// In en, this message translates to:
+  /// **'Supply'**
+  String get supply;
+
+  /// No description provided for @accommodation.
+  ///
+  /// In en, this message translates to:
+  /// **'Accommodation'**
+  String get accommodation;
+
+  /// No description provided for @events.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get events;
+
+  /// No description provided for @banking.
+  ///
+  /// In en, this message translates to:
+  /// **'Banking'**
+  String get banking;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

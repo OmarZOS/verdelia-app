@@ -1,13 +1,12 @@
 // lib/ui/product_card.dart
 
-import 'dart:developer';
-
-import 'package:app_constants/app_constants.dart';
 import 'package:app_constants/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:verdelia_core/business/Product.dart';
+import 'package:event/product_change_notifier.dart';
+import 'package:provider/provider.dart';
 
 class ProductCard extends StatelessWidget {
   final Product product;
@@ -38,6 +37,12 @@ class ProductCard extends StatelessWidget {
     final localizedName = (localeLang == 'ar' || localeLang == 'fr')
         ? product.nameFor(localeLang)
         : product.product_name;
+    final categoryName = context.select<ProductNotifier, String>(
+      (notifier) => notifier.categoryName(
+        categoryId,
+        languageCode: localeLang,
+      ),
+    );
 
     return Card(
       elevation: 2,
@@ -122,9 +127,9 @@ class ProductCard extends StatelessWidget {
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     label: Text(
-                      AppLocalizations.of(context)!
-                          .productCategoryTextList
-                          .split(",")[(product.product_category_id ?? 1) - 1],
+                      categoryName.isNotEmpty
+                          ? categoryName
+                          : product.product_category_name ?? '',
                     ),
                     backgroundColor:
                         Theme.of(context).colorScheme.primary.withOpacity(0.1),

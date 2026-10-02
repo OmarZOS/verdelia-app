@@ -1,8 +1,7 @@
 // lib/business/Supplier.dart
 
-import 'package:verdelia_core/app/VerdeliaImage.dart';
-import 'package:verdelia_core/business/NamingContribution.dart';
-import 'package:verdelia_core/business/iProduct.dart' show NamingContribution;
+import '../app/VerdeliaImage.dart';
+import 'NamingContribution.dart';
 
 class Supplier {
   final int idProviderDetails;
@@ -568,34 +567,162 @@ class Supplier {
 }
 
 class SupplierCategory {
+  /// FK to `product_provider_type.id_product_provider_type`.
   final int productProviderTypeId;
+
+  /// Flat English label from `product_provider_type_name`.
+  /// Kept for backward compatibility — prefer [nameFor] or [naming].
   final String productCategoryDesc;
+
+  /// Icon URL from `product_provider_type_icon_url`.
+  final String? iconUrl;
+
+  /// Trilingual naming block (fr / ar / en + status + icon).
+  /// Null when the backend returned only the flat shape.
+  final NamingContribution? naming;
 
   SupplierCategory({
     required this.productProviderTypeId,
     required this.productCategoryDesc,
+    this.iconUrl,
+    this.naming,
   });
 
+  factory SupplierCategory.empty() => SupplierCategory(
+        productProviderTypeId: 0,
+        productCategoryDesc: '',
+        iconUrl: null,
+        naming: null,
+      );
+
+  SupplierCategory copyWith({
+    int? productProviderTypeId,
+    String? productCategoryDesc,
+    String? iconUrl,
+    NamingContribution? naming,
+  }) {
+    return SupplierCategory(
+      productProviderTypeId:
+          productProviderTypeId ?? this.productProviderTypeId,
+      productCategoryDesc: productCategoryDesc ?? this.productCategoryDesc,
+      iconUrl: iconUrl ?? this.iconUrl,
+      naming: naming ?? this.naming,
+    );
+  }
+
+  /// Parse a single provider-type row. Supports both shapes:
+  ///
+  /// New shape (as returned by the provider-type endpoint):
+  /// ```json
+  /// {
+  ///   "id_product_provider_type": 6,
+  ///   "product_provider_type_name": "Distributor",
+  ///   "product_provider_type_icon_url": "https://…/distributor.png",
+  ///   "naming_contribution": {
+  ///     "naming_contribution_fr": "Distributeur",
+  ///     "naming_contribution_ar": "موزّع",
+  ///     "naming_contribution_en": "Distributor",
+  ///     "naming_contribution_status": "APP_TRANSLATED",
+  ///     "naming_contribution_icon_url": "https://…/distributor.png"
+  ///   }
+  /// }
+  /// ```
+  ///
+  /// Legacy shape:
+  /// ```json
+  /// {
+  ///   "id_product_provider_type": 6,
+  ///   "product_provider_type_desc": "Distributor"
+  /// }
+  /// ```
   factory SupplierCategory.fromJson(Map<String, dynamic> json) {
     try {
-      return SupplierCategory(
-        productProviderTypeId:
-            Supplier._parseInt(json['id_product_provider_type']),
-        productCategoryDesc:
-            Supplier._getString(json['product_provider_type_desc']),
+      final id = Supplier._parseInt(
+        json['id_product_provider_type'] ?? json['product_provider_type_id'],
       );
-    } catch (e) {
-      return SupplierCategory(
-        productProviderTypeId: 0,
-        productCategoryDesc: "Unknown",
+
+      // Name fallback chain: new name field → old desc field → "".
+      final flatName = Supplier._getString(
+        json['product_provider_type_name'] ??
+            json['product_provider_type_desc'],
       );
+
+      final icon = Supplier._getString(
+        json['product_provider_type_icon_url'],
+      );
+
+      NamingContribution? naming;
+      final namingJson = json['naming_contribution'];
+      if (namingJson != null && namingJson is Map<String, dynamic>) {
+        naming = NamingContribution.fromJson(namingJson);
+      }
+
+      return SupplierCategory(
+        productProviderTypeId: id,
+        productCategoryDesc: flatName,
+        iconUrl: icon.isNotEmpty ? icon : null,
+        naming: naming,
+      );
+    } catch (_) {
+      return SupplierCategory.empty();
     }
+  }
+
+  /// Parse a full list returned by the provider-type endpoint.
+  static List<SupplierCategory> listFromJson(dynamic json) {
+    if (json is! List) return const [];
+    return json
+        .whereType<Map<String, dynamic>>()
+        .map(SupplierCategory.fromJson)
+        .toList(growable: false);
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id_product_provider_type': productProviderTypeId,
-      'product_provider_type_desc': productCategoryDesc,
+      'product_provider_type_name': productCategoryDesc,
+      if (iconUrl != null) 'product_provider_type_icon_url': iconUrl,
+      if (naming != null) 'naming_contribution': naming!.toJson(),
     };
   }
+
+  // ==================== Naming accessors ====================
+
+  /// Return the category name in [lang]. Prefers the trilingual
+  /// naming contribution; falls back to [productCategoryDesc].
+  ///
+  /// [lang] accepts the usual BCP-47 short codes: `'en'`, `'fr'`, `'ar'`.
+  String nameFor(String lang) {
+    final resolved = naming?.nameFor(lang) ?? '';
+    if (resolved.isNotEmpty) return resolved;
+    return productCategoryDesc;
+  }
+
+  /// Icon URL preferring the naming block, falling back to the flat
+  /// top-level icon.
+  String? get resolvedIconUrl {
+    final fromNaming = naming?.iconUrl;
+    if (fromNaming != null && fromNaming.isNotEmpty) return fromNaming;
+    return iconUrl;
+  }
+
+  /// English-preferring display name. Kept for backward compatibility.
+  String get displayName {
+    if (naming?.en.isNotEmpty == true) return naming!.en;
+    return productCategoryDesc;
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SupplierCategory &&
+          runtimeType == other.runtimeType &&
+          productProviderTypeId == other.productProviderTypeId;
+
+  @override
+  int get hashCode => productProviderTypeId;
+
+  @override
+  String toString() => 'SupplierCategory(id: $productProviderTypeId, '
+      'name: $productCategoryDesc, naming: ${naming != null})';
 }

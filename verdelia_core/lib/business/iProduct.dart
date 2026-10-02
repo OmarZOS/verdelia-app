@@ -1,6 +1,6 @@
 // lib/business/iProduct.dart
 
-import 'package:verdelia_core/business/NamingContribution.dart';
+import 'NamingContribution.dart';
 
 /// One row from the `naming_contribution` table.
 ///

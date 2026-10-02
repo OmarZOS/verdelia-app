@@ -5,7 +5,9 @@ import 'package:flutter_svg/svg.dart';
 import 'package:verdelia_core/app/ManagementRule.dart';
 import 'package:verdelia_core/business/Supplier.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:event/supplier_change_notifier.dart';
 import 'package:provider_personnel/personnel_management_screen.dart';
+import 'package:provider/provider.dart';
 
 class SupplierCard extends StatelessWidget {
   final ManagementRule? managementRule;
@@ -213,8 +215,7 @@ class SupplierCard extends StatelessWidget {
   Widget _buildSupplierInfo(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final localizations = AppLocalizations.of(context)!;
-    final categories = localizations.providerCategoryTextList.split(",");
+    final languageCode = Localizations.localeOf(context).languageCode;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,13 +280,17 @@ class SupplierCard extends StatelessWidget {
                 color: colorScheme.surfaceVariant,
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Text(
-                _providerTypeId < categories.length
-                    ? categories[_providerTypeId]
-                    : 'General',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
+              child: Selector<SupplierChangeNotifier, String>(
+                selector: (_, notifier) => notifier.categoryName(
+                  _providerTypeId,
+                  languageCode: languageCode,
+                ),
+                builder: (context, categoryName, _) => Text(
+                  categoryName.isNotEmpty ? categoryName : 'General',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ),

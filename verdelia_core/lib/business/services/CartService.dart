@@ -2,10 +2,9 @@ import 'dart:typed_data';
 
 // import 'package:verdelia_core/business/finance/Order.dart';
 
-import 'package:verdelia_core/app/TraceableService.dart';
-import 'package:verdelia_core/business/finance/Order.dart';
-
+import '../../app/TraceableService.dart';
 import '../finance/Cart.dart';
+import '../finance/Order.dart';
 
 // CartService.dart
 abstract class CartService extends TraceableService {

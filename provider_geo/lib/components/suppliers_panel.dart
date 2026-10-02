@@ -44,6 +44,10 @@ class _PanelContentState extends State<PanelContent> {
   void initState() {
     super.initState();
     _localFilterNotifier!.value = widget.selectedLocation != null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted)
+        context.read<SupplierChangeNotifier>().fetchSupplierCategories();
+    });
   }
 
   @override
@@ -204,21 +208,28 @@ class _PanelContentState extends State<PanelContent> {
         itemCount: widget.suppliers.length,
         itemBuilder: (context, index) {
           final supplier = widget.suppliers[index];
-          return _buildSupplierItem(supplier, theme, loc, isDarkMode);
+          final languageCode = Localizations.localeOf(context).languageCode;
+          return Selector<SupplierChangeNotifier, String>(
+            selector: (_, notifier) => notifier.categoryName(
+              supplier.productProviderTypeId,
+              languageCode: languageCode,
+            ),
+            builder: (context, categoryName, _) => _buildSupplierItem(
+              supplier,
+              theme,
+              loc,
+              isDarkMode,
+              categoryName,
+            ),
+          );
         },
       ),
     );
   }
 
   Widget _buildSupplierItem(Supplier supplier, ThemeData theme,
-      AppLocalizations loc, bool isDarkMode) {
-    // Guard against out-of-range category ids so a stale or missing
-    // type doesn't crash the list. The old code indexed directly and
-    // assumed the id was within bounds.
-    final categories = loc.providerCategoryTextList.split(",");
-    final categoryIndex =
-        (supplier.productProviderTypeId - 1).clamp(0, categories.length - 1);
-    final category = categories.isNotEmpty ? categories[categoryIndex] : '';
+      AppLocalizations loc, bool isDarkMode, String categoryName) {
+    final category = categoryName.isNotEmpty ? categoryName : 'General';
 
     return Card(
       color: isDarkMode

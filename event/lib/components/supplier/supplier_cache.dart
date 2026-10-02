@@ -25,6 +25,7 @@ class SupplierCache {
   final Map<int, _CacheEntry<Supplier>> _detailedCache = {};
   final LinkedHashMap<int, _CacheEntry<Supplier>> _lruCache = LinkedHashMap();
   final Map<String, _CacheEntry<List<int>>> _listCache = {};
+  _CacheEntry<List<SupplierCategory>>? _categoriesCache;
 
   bool _enabled = true;
   int _hits = 0;
@@ -36,6 +37,7 @@ class SupplierCache {
   int get detailedCacheSize => _detailedCache.length;
   int get lruCacheSize => _lruCache.length;
   int get listCacheSize => _listCache.length;
+  int get categoriesCacheSize => _categoriesCache?.isValid == true ? 1 : 0;
 
   void enable(bool enable) {
     if (_enabled != enable) {
@@ -48,6 +50,7 @@ class SupplierCache {
     _detailedCache.clear();
     _lruCache.clear();
     _listCache.clear();
+    _categoriesCache = null;
     _hits = 0;
     _misses = 0;
   }
@@ -63,6 +66,25 @@ class SupplierCache {
     if (supplierId == null && listKey == null) {
       clearAll();
     }
+  }
+
+  void cacheCategories(List<SupplierCategory> categories) {
+    if (!_enabled) return;
+    _categoriesCache = _CacheEntry(
+      List.unmodifiable(categories),
+      ttlSeconds: _longCacheTTLSeconds,
+    );
+  }
+
+  List<SupplierCategory>? getCategories() {
+    if (!_enabled) return null;
+    final entry = _categoriesCache;
+    if (entry == null) return null;
+    if (!entry.isValid) {
+      _categoriesCache = null;
+      return null;
+    }
+    return entry.data;
   }
 
   Supplier? getSupplier(int id) {

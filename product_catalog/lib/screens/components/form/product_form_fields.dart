@@ -48,6 +48,14 @@ class _ProductFormFieldsState extends State<ProductFormFields> {
   bool get isUpdate => widget.isUpdate;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<ProductNotifier>().fetchCategories();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final assistantNotifier = context.watch<AssistantNotifier>();
@@ -451,10 +459,20 @@ class _ProductFormFieldsState extends State<ProductFormFields> {
   // ==================================================================
 
   Widget _buildCategoryPicker(BuildContext context) {
-    final categories = context.read<ProductNotifier>().categories;
+    final productCategories =
+        context.watch<ProductNotifier>().productCategories;
+    if (productCategories.isEmpty) return const SizedBox.shrink();
+
+    final languageCode = Localizations.localeOf(context).languageCode;
     return CategoryPicker(
-      category_id: formData.categoryId ?? 1,
-      categories: categories,
+      category_id:
+          formData.categoryId ?? productCategories.first.productCategoryId,
+      categories: productCategories
+          .map((category) => category.nameFor(languageCode))
+          .toList(),
+      categoryIds: productCategories
+          .map((category) => category.productCategoryId)
+          .toList(),
       onCategoryChanged: (id) {
         setState(() {
           formData.typeId = id;

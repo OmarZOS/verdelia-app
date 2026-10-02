@@ -2,8 +2,9 @@
 
 import 'dart:developer';
 
-import 'package:verdelia_core/app/VerdeliaImage.dart';
-import 'package:verdelia_core/business/iProduct.dart';
+import '../app/VerdeliaImage.dart';
+import 'NamingContribution.dart';
+import 'iProduct.dart';
 
 /// A single product as returned by the API.
 ///
@@ -433,23 +434,188 @@ DateTime? _parseDate(dynamic v) {
 // ==================== ProductCategory ====================
 
 class ProductCategory {
-  final int product_provider_type_id;
-  final String product_category_desc;
+  /// FK to `product_category.id_product_category`.
+  final int productCategoryId;
+
+  /// Flat English label from `product_category_name`.
+  /// Kept for backward compatibility — prefer [nameFor] or [naming].
+  final String productCategoryDesc;
+
+  /// FK to the trilingual naming contribution row, when exposed
+  /// directly on the category (nullable in the payload).
+  final int? productCategoryNamingRef;
+
+  /// Icon URL from `product_category_icon` (nullable in your JSON).
+  final String? iconUrl;
+
+  /// Trilingual naming block (fr / ar / en + status + icon).
+  /// Null when the backend returned only the flat shape.
+  final NamingContribution? naming;
 
   const ProductCategory({
-    required this.product_provider_type_id,
-    required this.product_category_desc,
+    required this.productCategoryId,
+    required this.productCategoryDesc,
+    this.productCategoryNamingRef,
+    this.iconUrl,
+    this.naming,
   });
 
-  factory ProductCategory.fromJson(Map<String, dynamic> json) {
+  factory ProductCategory.empty() => const ProductCategory(
+        productCategoryId: 0,
+        productCategoryDesc: '',
+      );
+
+  ProductCategory copyWith({
+    int? productCategoryId,
+    String? productCategoryDesc,
+    int? productCategoryNamingRef,
+    String? iconUrl,
+    NamingContribution? naming,
+  }) {
     return ProductCategory(
-      product_provider_type_id: _asIntOrNull(json['id_product_category']) ?? 0,
-      product_category_desc: _asString(json['product_category_desc']) ?? '',
+      productCategoryId: productCategoryId ?? this.productCategoryId,
+      productCategoryDesc: productCategoryDesc ?? this.productCategoryDesc,
+      productCategoryNamingRef:
+          productCategoryNamingRef ?? this.productCategoryNamingRef,
+      iconUrl: iconUrl ?? this.iconUrl,
+      naming: naming ?? this.naming,
     );
   }
 
+  /// Parse a single category row. Supports both shapes:
+  ///
+  /// New shape (as returned by the product-category endpoint):
+  /// ```json
+  /// {
+  ///   "id_product_category": 10,
+  ///   "product_category_name": "Canned & Packaged Goods",
+  ///   "product_category_naming_ref": 10,
+  ///   "product_category_icon": null,
+  ///   "naming_contribution": {
+  ///     "naming_contribution_fr": "Conserves et produits emballés",
+  ///     "naming_contribution_ar": "المعلبات والأغذية المعبأة",
+  ///     "naming_contribution_en": "Canned & Packaged Goods",
+  ///     "naming_contribution_status": "APP_TRANSLATED",
+  ///     "naming_contribution_icon_url": null
+  ///   }
+  /// }
+  /// ```
+  ///
+  /// Legacy shape:
+  /// ```json
+  /// {
+  ///   "id_product_category": 10,
+  ///   "product_category_desc": "Canned & Packaged Goods"
+  /// }
+  /// ```
+  factory ProductCategory.fromJson(Map<String, dynamic> json) {
+    try {
+      final id = _asInt(
+          json['id_product_category'] ?? json['id_product_provider_type']);
+
+      // Name fallback chain: new name field → old desc field → "".
+      final flatName = _asString(
+        json['product_category_name'] ?? json['product_category_desc'],
+      );
+
+      final namingRef = _asIntOrNull(
+        json['product_category_naming_ref'],
+      );
+
+      final icon = _asString(json['product_category_icon']);
+
+      NamingContribution? naming;
+      final namingJson = json['naming_contribution'];
+      if (namingJson != null && namingJson is Map<String, dynamic>) {
+        naming = NamingContribution.fromJson(namingJson);
+      }
+
+      return ProductCategory(
+        productCategoryId: id,
+        productCategoryDesc: flatName,
+        productCategoryNamingRef: namingRef,
+        iconUrl: icon.isNotEmpty ? icon : null,
+        naming: naming,
+      );
+    } catch (_) {
+      return ProductCategory.empty();
+    }
+  }
+
+  /// Parse a full list returned by the product-category endpoint.
+  static List<ProductCategory> listFromJson(dynamic json) {
+    if (json is! List) return const [];
+    return json
+        .whereType<Map<String, dynamic>>()
+        .map(ProductCategory.fromJson)
+        .toList(growable: false);
+  }
+
   Map<String, dynamic> toJson() => {
-        'id_product_provider_type': product_provider_type_id,
-        'product_provider_type_desc': product_category_desc,
+        'id_product_category': productCategoryId,
+        'product_category_name': productCategoryDesc,
+        if (productCategoryNamingRef != null)
+          'product_category_naming_ref': productCategoryNamingRef,
+        if (iconUrl != null) 'product_category_icon': iconUrl,
+        if (naming != null) 'naming_contribution': naming!.toJson(),
       };
+
+  // ==================== Naming accessors ====================
+
+  /// Return the category name in [lang]. Prefers the trilingual
+  /// naming contribution; falls back to [productCategoryDesc].
+  ///
+  /// [lang] accepts the usual BCP-47 short codes: `'en'`, `'fr'`, `'ar'`.
+  String nameFor(String lang) {
+    final resolved = naming?.nameFor(lang) ?? '';
+    if (resolved.isNotEmpty) return resolved;
+    return productCategoryDesc;
+  }
+
+  /// Icon URL preferring the naming block, falling back to the flat
+  /// top-level icon.
+  String? get resolvedIconUrl {
+    final fromNaming = naming?.iconUrl;
+    if (fromNaming != null && fromNaming.isNotEmpty) return fromNaming;
+    return iconUrl;
+  }
+
+  /// English-preferring display name. Kept for backward compatibility.
+  String get displayName {
+    if (naming?.en.isNotEmpty == true) return naming!.en;
+    return productCategoryDesc;
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ProductCategory &&
+          runtimeType == other.runtimeType &&
+          productCategoryId == other.productCategoryId;
+
+  @override
+  int get hashCode => productCategoryId;
+
+  @override
+  String toString() =>
+      'ProductCategory(id: $productCategoryId, name: $productCategoryDesc, '
+      'naming: ${naming != null})';
+
+  // ==================== Helpers ====================
+
+  static int _asInt(dynamic value) => _asIntOrNull(value) ?? 0;
+
+  static int? _asIntOrNull(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  static String _asString(dynamic value) {
+    if (value == null) return '';
+    if (value is String) return value.trim();
+    return value.toString().trim();
+  }
 }

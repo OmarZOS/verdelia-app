@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:verdelia_core/business/Product.dart';
-import 'package:app_constants/app_constants.dart';
+import 'package:event/product_change_notifier.dart';
+import 'package:provider/provider.dart';
 
 class SupplierProductCard extends StatelessWidget {
   final Product product;
@@ -59,12 +60,15 @@ class SupplierProductCard extends StatelessWidget {
         ? product.nameFor(localeLang)
         : product.product_name;
 
-    final categories = loc.productCategoryTextList.split(",");
-    final categoryName = categories.isNotEmpty &&
-            product.product_category_id != null
-        ? categories[
-            (product.product_category_id! - 1).clamp(0, categories.length - 1)]
-        : '';
+    final cachedCategoryName = context.select<ProductNotifier, String>(
+      (notifier) => notifier.categoryName(
+        product.product_category_id,
+        languageCode: localeLang,
+      ),
+    );
+    final categoryName = cachedCategoryName.isNotEmpty
+        ? cachedCategoryName
+        : product.product_category_name ?? '';
     final isDarkMode = theme.brightness == Brightness.dark;
 
     return GestureDetector(

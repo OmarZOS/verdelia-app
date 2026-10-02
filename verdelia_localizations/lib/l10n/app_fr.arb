@@ -145,10 +145,7 @@
   "locationInfoText": "Informations de localisation",
   "orderAmountText": "Montant : {amount}",
 
-  "productCategoryTextList": "Produits de boulangerie,Pâtes à tartiner,Céréales,Pâtes,Snacks,Boissons,Desserts,Aliments surgelés,Ingrédients de boulangerie,Produits emballés",
   "allText": "Tout",
-  "providerCategoryTextList": "Restaurant,Boulangerie,Usine,Supermarché,Épicerie,Distributeur",
-  "ingredientTextList": "Blé,Orge,Seigle,Avoine,Maïs,Riz,Soja,Lait,Œuf,Arachides,Fruits à coque,Poisson,Crustacés,Lentilles,Pois chiches,Sarrasin,Amande,Noix de coco,Graines de tournesol,Graines de courge,Graines de sésame,Pomme de terre,Patate douce,Gélatine,Lupin,Moutarde,Fenouil,Cumin,Gingembre,Ail,Oignon,Poireau,Échalote,Ciboule,Ciboulette,Persil,Coriandre,Basilic,Origan,Thym,Romarin,Sauge,Menthe,Citronnelle,Lavande,Paprika,Piment fort,Poivre noir,Poivre blanc,Poivre vert,Poivre rouge,Cannelle,Quatre-épices,Beurre,Margarine,Huile végétale,Levure chimique,Bicarbonate de soude,Fécule de maïs,Farine tout usage,Farine à pâtisserie,Farine auto-levante",
 
   "cartText": "Panier",
   "ordersText": "Commandes",
@@ -2383,5 +2380,97 @@
   "recipe_image_not_found": "Image de la recette introuvable.",
   "recipe_search_not_found": "Aucune recette trouvée.",
 
-  "delivery_update_failed": "Échec de la mise à jour de la livraison."
+  "delivery_update_failed": "Échec de la mise à jour de la livraison.",
+
+  "food": "Alimentation",
+  "health": "Santé",
+  "retail": "Commerce",
+  "trade": "Commerce de gros",
+  "beauty": "Beauté",
+  "home": "Maison",
+  "professional": "Professionnel",
+  "education": "Éducation",
+  "technology": "Technologie",
+  "logistics": "Logistique",
+  "automotive": "Automobile",
+  "agriculture": "Agriculture",
+  "hospitality": "Hôtellerie",
+  "finance": "Finance",
+
+  "alimentary": "Produits alimentaires",
+  "beverages": "Boissons",
+  "prepared": "Plats préparés",
+  "dining": "Restauration",
+  "production": "Production",
+  "specialty": "Spécialités",
+
+  "pharma": "Pharmacie",
+  "wellness": "Bien-être",
+  "medical_devices": "Dispositifs médicaux",
+  "personal_care": "Soins personnels",
+  "facilities": "Établissements",
+  "diagnostics": "Diagnostic",
+  "primary_care": "Soins primaires",
+  "specialized_care": "Soins spécialisés",
+  "dental": "Dentaire",
+  "therapy": "Thérapie",
+  "clinical_procedures": "Procédures cliniques",
+
+  "household": "Entretien ménager",
+  "electronics": "Électronique",
+  "apparel": "Vêtements",
+  "pet_supplies": "Articles pour animaux",
+  "food_retail": "Vente alimentaire",
+  "fashion": "Mode",
+  "home_living": "Maison et décoration",
+  "lifestyle": "Style de vie",
+  "health_retail": "Santé",
+
+  "distribution": "Distribution",
+  "international": "International",
+  "intermediary": "Intermédiaires",
+
+  "home_services": "Services à domicile",
+  "health_services": "Santé",
+  "construction": "Construction",
+
+  "hair": "Coiffure",
+  "aesthetics": "Esthétique",
+  "nails": "Ongles",
+  "skincare": "Soins de la peau",
+
+  "repair": "Réparation",
+  "maintenance": "Entretien",
+  "moving": "Déménagement",
+
+  "legal": "Juridique",
+  "accounting": "Comptabilité",
+  "consulting": "Conseil",
+
+  "institutions": "Établissements",
+  "tutoring": "Soutien scolaire",
+  "training": "Formation",
+
+  "it_support": "Assistance informatique",
+  "development": "Développement",
+  "digital_marketing": "Marketing digital",
+
+  "warehousing": "Entreposage",
+  "transport": "Transport",
+  "storage": "Stockage",
+  "customs": "Douane",
+
+  "parts": "Pièces",
+  "fluids": "Fluides",
+  "sales": "Vente",
+
+  "seeds": "Semences",
+  "fertilizers": "Engrais",
+  "equipment": "Équipement",
+  "supply": "Approvisionnement",
+
+  "accommodation": "Hébergement",
+  "events": "Événements",
+
+  "banking": "Banque"
 }

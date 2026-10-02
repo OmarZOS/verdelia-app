@@ -8,7 +8,6 @@ import 'package:event/components/product/product_polling.dart';
 import 'package:event/components/product/product_state.dart';
 import 'package:event/components/product/product_supplier.dart';
 import 'package:flutter/material.dart';
-import 'package:app_constants/app_constants.dart';
 import 'package:verdelia_core/business/Product.dart';
 import 'package:verdelia_core/business/services/ProductService.dart';
 import 'package:locator/locator.dart';
@@ -43,7 +42,8 @@ class ProductNotifier extends ChangeNotifier {
   bool get isLoading => _state.isLoading;
   bool get isCartLoading => _cart.isLoading;
   bool get hasMoreProducts => _state.hasMoreProducts;
-  List<String> get categories => _state.categories;
+  List<String> get categories => categoriesFor();
+  List<ProductCategory> get productCategories => _state.categories;
   bool get supportsSupplierFilter => _state.supportsSupplierFilter;
   bool get isCacheEnabled => _cache.isEnabled;
 
@@ -57,9 +57,39 @@ class ProductNotifier extends ChangeNotifier {
 
   // ============ CATEGORIES ============
 
-  set productCategories(List<String> value) {
-    _state.categories = value;
-    _safeNotify();
+  Future<List<ProductCategory>> fetchCategories({
+    bool forceRefresh = false,
+    String? callerKey,
+  }) async {
+    if (!forceRefresh) {
+      final cached = _cache.getCategories();
+      if (cached != null) {
+        _state.categories = List.of(cached);
+        _notify();
+        return _state.categories;
+      }
+    }
+
+    final fetched = await _service.getCategories(callerKey: callerKey);
+    final categories = fetched ?? <ProductCategory>[];
+    _cache.cacheCategories(categories);
+    _state.categories = List.of(categories);
+    _notify();
+    return _state.categories;
+  }
+
+  List<String> categoriesFor([String languageCode = 'en']) => _state.categories
+      .map((category) => category.nameFor(languageCode))
+      .toList();
+
+  String categoryName(int? categoryId, {String languageCode = 'en'}) {
+    if (categoryId == null) return '';
+    for (final category in _state.categories) {
+      if (category.productCategoryId == categoryId) {
+        return category.nameFor(languageCode);
+      }
+    }
+    return '';
   }
 
   // ============ INIT ============

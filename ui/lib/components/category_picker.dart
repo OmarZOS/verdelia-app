@@ -5,6 +5,7 @@ import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 class CategoryPicker extends StatefulWidget {
   final ValueChanged<int> onCategoryChanged;
   final List<String> categories;
+  final List<int>? categoryIds;
   final int category_id;
   final Function pathFunction;
   final String package;
@@ -13,6 +14,7 @@ class CategoryPicker extends StatefulWidget {
     super.key,
     required this.onCategoryChanged,
     required this.categories,
+    this.categoryIds,
     required this.pathFunction,
     required this.category_id,
     required this.package,
@@ -29,16 +31,31 @@ class _CategoryPickerState extends State<CategoryPicker> {
 
   @override
   void initState() {
-    _selectedCategoryIndex = widget.category_id - 1;
     super.initState();
+    final selectedIndex = widget.categoryIds?.indexOf(widget.category_id) ??
+        widget.category_id - 1;
+    _selectedCategoryIndex = selectedIndex < 0 ? 0 : selectedIndex;
+  }
+
+  int _categoryIdAt(int index) => widget.categoryIds?[index] ?? index + 1;
+
+  @override
+  void didUpdateWidget(covariant CategoryPicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.categoryIds != widget.categoryIds ||
+        oldWidget.categories != widget.categories) {
+      final selectedIndex = widget.categoryIds?.indexOf(widget.category_id) ??
+          widget.category_id - 1;
+      _selectedCategoryIndex = selectedIndex < 0 ? 0 : selectedIndex;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.categories.isEmpty) return const SizedBox.shrink();
+
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
-    // final categoryNames = loc.productCategoryTextList.split(",");
-
     return GestureDetector(
       onTap: () => _showEnhancedPicker(context),
       child: Container(
@@ -54,7 +71,7 @@ class _CategoryPickerState extends State<CategoryPicker> {
         child: Row(
           children: [
             SvgPicture.asset(
-              widget.pathFunction(_selectedCategoryIndex + 1),
+              widget.pathFunction(_categoryIdAt(_selectedCategoryIndex)),
               // 'assets/icons/${_selectedCategoryIndex + 1}.svg',
               color: theme.colorScheme.primary,
               width: 32,
@@ -96,8 +113,6 @@ class _CategoryPickerState extends State<CategoryPicker> {
   Future<void> _showEnhancedPicker(BuildContext context) async {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
-    // final categoryNames = loc.productCategoryTextList.split(",");
-
     await showModalBottomSheet(
       context: context,
       backgroundColor: theme.colorScheme.surface,
@@ -154,7 +169,7 @@ class _CategoryPickerState extends State<CategoryPicker> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           SvgPicture.asset(
-                            widget.pathFunction(index + 1),
+                            widget.pathFunction(_categoryIdAt(index)),
                             // 'assets/icons/${index + 1}.svg',
                             color: theme.colorScheme.primary,
                             width: 24,
@@ -190,7 +205,9 @@ class _CategoryPickerState extends State<CategoryPicker> {
                   ),
                 ),
                 onPressed: () {
-                  widget.onCategoryChanged(_selectedCategoryIndex + 1);
+                  widget.onCategoryChanged(
+                    _categoryIdAt(_selectedCategoryIndex),
+                  );
                   Navigator.pop(context);
                 },
                 child: Text(loc.confirm),

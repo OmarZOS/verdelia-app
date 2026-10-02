@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
-import 'package:verdelia_localizations/gen_l10n/app_localizations_ar.dart';
 import 'package:app_constants/app_constants.dart';
+import 'package:event/product_change_notifier.dart';
+import 'package:provider/provider.dart';
 
 // We need satefull widget for our categories
 
@@ -16,8 +16,19 @@ class _CategoriesState extends State<Categories> {
   // List<String> categories = ["Hand bag", "Jewellery", "Footwear", "Dresses"];
   // By default our first item will be selected
   int selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<ProductNotifier>().fetchCategories();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final categories = context.watch<ProductNotifier>().productCategories;
+
     return Padding(
       padding:
           const EdgeInsets.symmetric(vertical: AppConstants.kDefaultPaddin),
@@ -25,7 +36,7 @@ class _CategoriesState extends State<Categories> {
         height: 25,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
-          // itemCount: categories.length,
+          itemCount: categories.length,
           itemBuilder: (context, index) => buildCategory(index),
         ),
       ),
@@ -33,6 +44,9 @@ class _CategoriesState extends State<Categories> {
   }
 
   Widget buildCategory(int index) {
+    final categories = context.watch<ProductNotifier>().productCategories;
+    if (index >= categories.length) return const SizedBox.shrink();
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -46,9 +60,9 @@ class _CategoriesState extends State<Categories> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              AppLocalizations.of(context)!
-                  .productCategoryTextList
-                  .split(",")[index],
+              categories[index].nameFor(
+                Localizations.localeOf(context).languageCode,
+              ),
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: selectedIndex == index

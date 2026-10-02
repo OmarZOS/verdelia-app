@@ -1,8 +1,7 @@
 // SupplierService.dart
 
-import 'package:verdelia_core/app/TraceableService.dart';
-import 'package:verdelia_core/business/Organisation.dart';
-
+import '../../app/TraceableService.dart';
+import '../Organisation.dart';
 import '../Supplier.dart';
 
 abstract class SupplierService extends TraceableService {

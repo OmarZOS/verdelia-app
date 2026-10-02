@@ -94,6 +94,8 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
 
     setState(() => _isLoading = true);
 
+    await _notifier.fetchSupplierCategories();
+
     // Load organisations if empty
     if (_notifier.organisations.isEmpty) {
       await _notifier.fetchOrganisations(reset: true);
@@ -522,7 +524,8 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
 
   Widget _buildCategoryPicker(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final categories = localizations.providerCategoryTextList.split(",");
+    final categories =
+        context.watch<SupplierChangeNotifier>().supplierCategories;
 
     if (categories.isEmpty) {
       return Text(
@@ -531,11 +534,16 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
       );
     }
 
+    final languageCode = Localizations.localeOf(context).languageCode;
     return CategoryPicker(
-      categories: categories.toList(),
+      categories:
+          categories.map((category) => category.nameFor(languageCode)).toList(),
+      categoryIds:
+          categories.map((category) => category.productProviderTypeId).toList(),
       onCategoryChanged: _onCategoryChanged,
       pathFunction: (int id) => "assets/icons/${id}.svg",
-      category_id: _product_provider_type_id ?? 1,
+      category_id:
+          _product_provider_type_id ?? categories.first.productProviderTypeId,
       package: 'provider_geo',
     );
   }

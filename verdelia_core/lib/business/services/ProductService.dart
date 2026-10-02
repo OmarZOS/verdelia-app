@@ -1,7 +1,6 @@
 // lib/business/services/ProductService.dart
 
-import 'package:verdelia_core/app/TraceableService.dart';
-
+import '../../app/TraceableService.dart';
 import '../Product.dart';
 
 /// Contract for all product-related operations.

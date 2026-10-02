@@ -421,16 +421,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get productCategoryTextList => 'منتجات المخبوزات,المربى والحلاوات,الحبوب,المعكرونة,الوجبات الخفيفة,المشروبات,الحلويات,الأطعمة المجمدة,مكونات الخبز,المنتجات المعبأة';
-
-  @override
   String get allText => 'الكل';
-
-  @override
-  String get providerCategoryTextList => 'مطعم,مخبزة,مصنع,سوبر ماركت,بقالة,موزع';
-
-  @override
-  String get ingredientTextList => 'القمح,الشعير,الجاودار,الشوفان,الذرة,الأرز,الصويا,الحليب,البيض,الفول السوداني,المكسرات,السمك,المحار,العدس,الحمص,الحنطة السوداء,اللوز,جوز الهند,بذور عباد الشمس,بذور اليقطين,بذور السمسم,البطاطس,البطاطا الحلوة,الجيلاتين,الترمس,الخردل,الشمر,الكمون,الزنجبيل,الثوم,البصل,الكراث,القوقع,البصل الأخضر,الثوم المعمر,البقدونس,الكزبرة,الريحان,الأوريغانو,الزعتر,إكليل الجبل,المريمية,النعناع,عشب الليمون,الخزامى,البابريكا,الفلفل الحار,الفلفل الأسود,الفلفل الأبيض,الفلفل الأخضر,الفلفل الأحمر,القرفة,البهارات,الزبدة,السمن النباتي,الزيت النباتي,مسحوق الخبز,صودا الخبز,نشا الذرة,دقيق متعدد الأغراض,دقيق المعجنات,دقيق ذاتي الرفع';
 
   @override
   String get cartText => 'السلة';
@@ -6780,4 +6771,232 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get delivery_update_failed => 'فشل تحديث التوصيل.';
+
+  @override
+  String get food => 'الغذاء';
+
+  @override
+  String get health => 'الصحة';
+
+  @override
+  String get retail => 'التجزئة';
+
+  @override
+  String get trade => 'التجارة';
+
+  @override
+  String get beauty => 'الجمال';
+
+  @override
+  String get home => 'المنزل';
+
+  @override
+  String get professional => 'المهن';
+
+  @override
+  String get education => 'التعليم';
+
+  @override
+  String get technology => 'التقنية';
+
+  @override
+  String get logistics => 'اللوجستيات';
+
+  @override
+  String get automotive => 'السيارات';
+
+  @override
+  String get agriculture => 'الزراعة';
+
+  @override
+  String get hospitality => 'الضيافة';
+
+  @override
+  String get finance => 'المالية';
+
+  @override
+  String get alimentary => 'المنتجات الغذائية';
+
+  @override
+  String get beverages => 'المشروبات';
+
+  @override
+  String get prepared => 'الوجبات الجاهزة';
+
+  @override
+  String get dining => 'المطاعم';
+
+  @override
+  String get production => 'الإنتاج';
+
+  @override
+  String get specialty => 'المنتجات المتخصصة';
+
+  @override
+  String get pharma => 'الأدوية';
+
+  @override
+  String get wellness => 'العافية';
+
+  @override
+  String get medical_devices => 'الأجهزة الطبية';
+
+  @override
+  String get personal_care => 'العناية الشخصية';
+
+  @override
+  String get facilities => 'المرافق';
+
+  @override
+  String get diagnostics => 'التشخيص';
+
+  @override
+  String get primary_care => 'الرعاية الأولية';
+
+  @override
+  String get specialized_care => 'الرعاية المتخصصة';
+
+  @override
+  String get dental => 'طب الأسنان';
+
+  @override
+  String get therapy => 'العلاج';
+
+  @override
+  String get clinical_procedures => 'الإجراءات الطبية';
+
+  @override
+  String get household => 'مستلزمات المنزل';
+
+  @override
+  String get electronics => 'الإلكترونيات';
+
+  @override
+  String get apparel => 'الملابس';
+
+  @override
+  String get pet_supplies => 'مستلزمات الحيوانات';
+
+  @override
+  String get food_retail => 'بيع الأغذية';
+
+  @override
+  String get fashion => 'الأزياء';
+
+  @override
+  String get home_living => 'المنزل والمعيشة';
+
+  @override
+  String get lifestyle => 'نمط الحياة';
+
+  @override
+  String get health_retail => 'الصحة';
+
+  @override
+  String get distribution => 'التوزيع';
+
+  @override
+  String get international => 'الدولية';
+
+  @override
+  String get intermediary => 'الوسطاء';
+
+  @override
+  String get home_services => 'الخدمات المنزلية';
+
+  @override
+  String get health_services => 'الخدمات الصحية';
+
+  @override
+  String get construction => 'البناء';
+
+  @override
+  String get hair => 'تصفيف الشعر';
+
+  @override
+  String get aesthetics => 'التجميل';
+
+  @override
+  String get nails => 'الأظافر';
+
+  @override
+  String get skincare => 'العناية بالبشرة';
+
+  @override
+  String get repair => 'الإصلاح';
+
+  @override
+  String get maintenance => 'الصيانة';
+
+  @override
+  String get moving => 'النقل';
+
+  @override
+  String get legal => 'القانون';
+
+  @override
+  String get accounting => 'المحاسبة';
+
+  @override
+  String get consulting => 'الاستشارات';
+
+  @override
+  String get institutions => 'المؤسسات';
+
+  @override
+  String get tutoring => 'الدروس الخصوصية';
+
+  @override
+  String get training => 'التدريب';
+
+  @override
+  String get it_support => 'الدعم التقني';
+
+  @override
+  String get development => 'التطوير';
+
+  @override
+  String get digital_marketing => 'التسويق الرقمي';
+
+  @override
+  String get warehousing => 'التخزين';
+
+  @override
+  String get transport => 'النقل';
+
+  @override
+  String get storage => 'التخزين';
+
+  @override
+  String get customs => 'الجمارك';
+
+  @override
+  String get parts => 'قطع الغيار';
+
+  @override
+  String get fluids => 'السوائل';
+
+  @override
+  String get sales => 'البيع';
+
+  @override
+  String get seeds => 'البذور';
+
+  @override
+  String get fertilizers => 'الأسمدة';
+
+  @override
+  String get equipment => 'المعدات';
+
+  @override
+  String get supply => 'التوريد';
+
+  @override
+  String get accommodation => 'الإقامة';
+
+  @override
+  String get events => 'الفعاليات';
+
+  @override
+  String get banking => 'الخدمات المصرفية';
 }

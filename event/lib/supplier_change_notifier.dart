@@ -45,6 +45,7 @@ class SupplierChangeNotifier extends ChangeNotifier {
 
   // Track pending individual fetches
   final Map<int, Future<Supplier?>> _pendingFetches = {};
+  Future<List<SupplierCategory>>? _pendingCategoryFetch;
 
   SupplierChangeNotifier() {
     _initComponents();
@@ -88,6 +89,7 @@ class SupplierChangeNotifier extends ChangeNotifier {
   // ============ PUBLIC GETTERS (DELEGATED) ============
 
   List<Supplier> get suppliers => _state.suppliers;
+  List<SupplierCategory> get supplierCategories => _state.categories;
   List<Supplier> get filteredSuppliers => _state.filteredSuppliers;
   List<Organisation> get organisations => _state.organisations.values.toList();
   Position? get currentLocation => _state.currentLocation;
@@ -96,6 +98,56 @@ class SupplierChangeNotifier extends ChangeNotifier {
   bool get hasMoreSuppliers => _state.hasMoreSuppliers;
   bool get hasMoreOrganisations => _state.hasMoreOrganisations;
   bool get isCacheEnabled => _cache.isEnabled;
+
+  Future<List<SupplierCategory>> fetchSupplierCategories({
+    bool forceRefresh = false,
+  }) async {
+    if (!forceRefresh) {
+      final cached = _cache.getCategories();
+      if (cached != null) {
+        _state.categories = List.of(cached);
+        notifyListeners();
+        return _state.categories;
+      }
+
+      final pending = _pendingCategoryFetch;
+      if (pending != null) return pending;
+    }
+
+    final request = _loadSupplierCategories();
+    _pendingCategoryFetch = request;
+    try {
+      return await request;
+    } finally {
+      if (identical(_pendingCategoryFetch, request)) {
+        _pendingCategoryFetch = null;
+      }
+    }
+  }
+
+  Future<List<SupplierCategory>> _loadSupplierCategories() async {
+    try {
+      final fetched = await _service.getCategories();
+      _cache.cacheCategories(fetched);
+      _state.categories = List.of(fetched);
+      return _state.categories;
+    } catch (e) {
+      debugPrint('Failed to fetch supplier categories: $e');
+      return _state.categories;
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  String categoryName(int? categoryId, {String languageCode = 'en'}) {
+    if (categoryId == null) return '';
+    for (final category in _state.categories) {
+      if (category.productProviderTypeId == categoryId) {
+        return category.nameFor(languageCode);
+      }
+    }
+    return '';
+  }
 
   // Persistence getters
   List<int> get ownedSupplierIds =>
@@ -474,6 +526,7 @@ class SupplierChangeNotifier extends ChangeNotifier {
   void refreshAllCaches() {
     _cache.clearAll();
     _pendingFetches.clear();
+    _state.categories.clear();
     notifyListeners();
   }
 
@@ -525,6 +578,7 @@ class SupplierChangeNotifier extends ChangeNotifier {
     _state.reset();
     _cache.clearAll();
     _pendingFetches.clear();
+    _pendingCategoryFetch = null;
     notifyListeners();
   }
 

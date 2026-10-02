@@ -160,10 +160,7 @@
     "placeholders": { "amount": { "type": "String" } }
   },
 
-  "productCategoryTextList": "Baked Goods,Spreads,Cereals,Pasta,Snacks,Beverages,Desserts,Frozen Foods,Baking Ingredients,Packaged Goods",
   "allText": "All",
-  "providerCategoryTextList": "Restaurant,Bakery,Factory,Supermarket,Grocery Store,Distributor",
-  "ingredientTextList": "Wheat,Barley ,Rye,Oats ,Corn ,Rice ,Soy,Milk ,Egg,Peanuts,Tree Nuts,Fish ,Shellfish,Lentils,Chickpeas,Buckwheat,Almond ,Coconut,Sunflower Seeds,Pumpkin Seeds,Sesame Seeds ,Potato ,Sweet Potato ,Gelatin,Lupin,Mustard,Fennel ,Cumin,Ginger ,Garlic ,Onion,Leek ,Shallot,Scallion ,Chive,Parsley,Cilantro ,Basil,Oregano,Thyme,Rosemary ,Sage ,Mint ,Lemongrass ,Lavender ,Paprika,Chili Pepper ,Black Pepper ,White Pepper ,Green Pepper ,Red Pepper ,Cinnamon ,Allspice ,Butter ,Margarine,Vegetable Oil,Baking Powder,Baking Soda,Cornstarch ,All-Purpose Flour,Pastry Flour ,Self-Rising Flour",
 
   "cartText": "Cart",
   "ordersText": "Orders",
@@ -2606,5 +2603,97 @@
   "recipe_image_not_found": "Recipe image not found.",
   "recipe_search_not_found": "No recipes found.",
 
-  "delivery_update_failed": "Failed to update delivery."
+  "delivery_update_failed": "Failed to update delivery.",
+
+    "food": "Food",
+  "health": "Health",
+  "retail": "Retail",
+  "trade": "Trade",
+  "beauty": "Beauty",
+  "home": "Home",
+  "professional": "Professional",
+  "education": "Education",
+  "technology": "Technology",
+  "logistics": "Logistics",
+  "automotive": "Automotive",
+  "agriculture": "Agriculture",
+  "hospitality": "Hospitality",
+  "finance": "Finance",
+
+  "alimentary": "Alimentary",
+  "beverages": "Beverages",
+  "prepared": "Prepared",
+  "dining": "Dining",
+  "production": "Production",
+  "specialty": "Specialty",
+
+  "pharma": "Pharma",
+  "wellness": "Wellness",
+  "medical_devices": "Medical Devices",
+  "personal_care": "Personal Care",
+  "facilities": "Facilities",
+  "diagnostics": "Diagnostics",
+  "primary_care": "Primary Care",
+  "specialized_care": "Specialized Care",
+  "dental": "Dental",
+  "therapy": "Therapy",
+  "clinical_procedures": "Clinical Procedures",
+
+  "household": "Household",
+  "electronics": "Electronics",
+  "apparel": "Apparel",
+  "pet_supplies": "Pet Supplies",
+  "food_retail": "Food Retail",
+  "fashion": "Fashion",
+  "home_living": "Home & Living",
+  "lifestyle": "Lifestyle",
+  "health_retail": "Health Retail",
+
+  "distribution": "Distribution",
+  "international": "International",
+  "intermediary": "Intermediary",
+
+  "home_services": "Home Services",
+  "health_services": "Health Services",
+  "construction": "Construction",
+
+  "hair": "Hair",
+  "aesthetics": "Aesthetics",
+  "nails": "Nails",
+  "skincare": "Skincare",
+
+  "repair": "Repair",
+  "maintenance": "Maintenance",
+  "moving": "Moving",
+
+  "legal": "Legal",
+  "accounting": "Accounting",
+  "consulting": "Consulting",
+
+  "institutions": "Institutions",
+  "tutoring": "Tutoring",
+  "training": "Training",
+
+  "it_support": "IT Support",
+  "development": "Development",
+  "digital_marketing": "Digital Marketing",
+
+  "warehousing": "Warehousing",
+  "transport": "Transport",
+  "storage": "Storage",
+  "customs": "Customs",
+
+  "parts": "Parts",
+  "fluids": "Fluids",
+  "sales": "Sales",
+
+  "seeds": "Seeds",
+  "fertilizers": "Fertilizers",
+  "equipment": "Equipment",
+  "supply": "Supply",
+
+  "accommodation": "Accommodation",
+  "events": "Events",
+
+  "banking": "Banking"
 }

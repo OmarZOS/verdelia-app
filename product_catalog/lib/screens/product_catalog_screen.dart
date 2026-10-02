@@ -26,7 +26,6 @@ class ProductCatalogScreen extends StatefulWidget {
 
 class ProductCatalogScreenState extends State<ProductCatalogScreen> {
   final TextEditingController _searchController = TextEditingController();
-  late List<String> _categories = [];
   int _selectedCategoryId = 0;
   final ScrollController _scrollController = ScrollController();
   late ProductNotifier _productNotifier;
@@ -44,14 +43,9 @@ class ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
     // Initial fetch with cache support
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _productNotifier.fetchCategories();
       _productNotifier.fetchProducts(reset: true);
     });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _initializeCategories();
   }
 
   @override
@@ -61,13 +55,6 @@ class ProductCatalogScreenState extends State<ProductCatalogScreen> {
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _initializeCategories() {
-    final categs =
-        AppLocalizations.of(context)!.productCategoryTextList.split(",");
-    _categories = [AppLocalizations.of(context)!.allText, ...categs];
-    _productNotifier.productCategories = categs;
   }
 
   void _onSearchChanged() {
@@ -225,7 +212,7 @@ class ProductCatalogScreenState extends State<ProductCatalogScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              _buildCategoryRow(),
+              _buildCategoryRow(productNotifier),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -244,72 +231,82 @@ class ProductCatalogScreenState extends State<ProductCatalogScreen> {
     );
   }
 
-  Widget _buildCategoryRow() {
+  Widget _buildCategoryRow(ProductNotifier productNotifier) {
+    final languageCode = Localizations.localeOf(context).languageCode;
+    final categories = productNotifier.productCategories;
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        children: _categories.asMap().entries.map((entry) {
-          final index = entry.key;
-          final category = entry.value;
-          final isSelected = _productNotifier.currentCategory == index;
-          final iconPath = 'assets/icons/$index.svg';
+        children: [
+          _buildCategoryItem(
+            categoryId: 0,
+            label: AppLocalizations.of(context)!.allText,
+          ),
+          ...categories.map(
+            (category) => _buildCategoryItem(
+              categoryId: category.productCategoryId,
+              label: category.nameFor(languageCode),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-          return GestureDetector(
-            onTap: () => _selectCategory(index),
-            child: Container(
-              margin: const EdgeInsets.symmetric(
-                horizontal: AppConstants.kDefaultPaddin / 2,
-                vertical: AppConstants.kDefaultPaddin / 4,
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppConstants.kDefaultPaddin / 2,
-                vertical: AppConstants.kDefaultPaddin / 3,
-              ),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: SvgPicture.asset(
-                      iconPath,
-                      package: "product_catalog",
-                      color: isSelected
-                          ? Theme.of(context).colorScheme.onPrimary
-                          : Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    category,
-                    style: TextStyle(
-                      color: isSelected
-                          ? Theme.of(context).colorScheme.onPrimary
-                          : Theme.of(context).colorScheme.onSurface,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
+  Widget _buildCategoryItem({required int categoryId, required String label}) {
+    final isSelected = _selectedCategoryId == categoryId;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return GestureDetector(
+      onTap: () => _selectCategory(categoryId),
+      child: Container(
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppConstants.kDefaultPaddin / 2,
+          vertical: AppConstants.kDefaultPaddin / 4,
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppConstants.kDefaultPaddin / 2,
+          vertical: AppConstants.kDefaultPaddin / 3,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected ? colorScheme.primary : colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: SvgPicture.asset(
+                'assets/icons/$categoryId.svg',
+                package: 'product_catalog',
+                color:
+                    isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
               ),
             ),
-          );
-        }).toList(),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color:
+                    isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

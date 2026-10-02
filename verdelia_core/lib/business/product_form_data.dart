@@ -1,8 +1,8 @@
 import 'dart:io';
 
-import 'package:verdelia_core/app/VerdeliaImage.dart';
-import 'package:verdelia_core/business/iProduct.dart';
-import 'package:verdelia_core/business/Product.dart';
+import '../app/VerdeliaImage.dart';
+import 'Product.dart';
+import 'iProduct.dart';
 
 class ProductFormData {
   // Form fields

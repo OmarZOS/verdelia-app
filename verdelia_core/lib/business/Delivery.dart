@@ -1,6 +1,7 @@
 import 'dart:convert';
-import 'package:verdelia_core/business/Supplier.dart';
-import 'package:verdelia_core/business/finance/Order.dart';
+
+import 'Supplier.dart';
+import 'finance/Order.dart';
 
 // ============================================================================
 // DELIVERY ADDRESS

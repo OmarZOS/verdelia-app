@@ -1,4 +1,4 @@
-import 'package:verdelia_core/business/finance/BusinessOperation.dart';
+import '../finance/BusinessOperation.dart';
 
 // BusinessOperationService.dart
 abstract class BusinessOperationService {

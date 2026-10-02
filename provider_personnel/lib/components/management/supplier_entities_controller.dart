@@ -45,6 +45,8 @@ class SupplierEntitiesController extends ChangeNotifier {
     final supplierNotifier = context.read<SupplierChangeNotifier>();
     final personnelNotifier = context.read<PersonnelNotifier>();
 
+    supplierNotifier.fetchSupplierCategories();
+
     if (supplierNotifier.suppliers.isEmpty) {
       supplierNotifier.fetchSuppliers(reset: true);
     }

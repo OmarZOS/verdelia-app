@@ -5,6 +5,7 @@ import 'package:verdelia_core/business/Product.dart';
 class ProductCache {
   final Map<int, Product> _productCache = {};
   final Map<String, List<int>> _listCache = {};
+  List<ProductCategory>? _categoriesCache;
 
   /// Supplier caches keyed by "<supplierId>:<mode>", where mode is
   /// "public" for buyer fetches and "all" for editor fetches. Keying
@@ -27,8 +28,21 @@ class ProductCache {
   void clearAll() {
     _productCache.clear();
     _listCache.clear();
+    _categoriesCache = null;
     _supplierProductsCache.clear();
     _supplierCacheTime.clear();
+  }
+
+  // ==================== Category cache ====================
+
+  void cacheCategories(List<ProductCategory> categories) {
+    if (!_enabled) return;
+    _categoriesCache = List.unmodifiable(categories);
+  }
+
+  List<ProductCategory>? getCategories() {
+    if (!_enabled) return null;
+    return _categoriesCache;
   }
 
   // ==================== Product cache ====================

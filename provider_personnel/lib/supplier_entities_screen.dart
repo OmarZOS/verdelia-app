@@ -134,6 +134,7 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.supplierNotifier.fetchSupplierCategories();
       if (_visibleSuppliers.isEmpty && widget.userId > 0) {
         _loadData();
       }

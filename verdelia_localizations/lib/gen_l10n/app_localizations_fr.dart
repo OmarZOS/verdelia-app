@@ -421,16 +421,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get productCategoryTextList => 'Produits de boulangerie,Pâtes à tartiner,Céréales,Pâtes,Snacks,Boissons,Desserts,Aliments surgelés,Ingrédients de boulangerie,Produits emballés';
-
-  @override
   String get allText => 'Tout';
-
-  @override
-  String get providerCategoryTextList => 'Restaurant,Boulangerie,Usine,Supermarché,Épicerie,Distributeur';
-
-  @override
-  String get ingredientTextList => 'Blé,Orge,Seigle,Avoine,Maïs,Riz,Soja,Lait,Œuf,Arachides,Fruits à coque,Poisson,Crustacés,Lentilles,Pois chiches,Sarrasin,Amande,Noix de coco,Graines de tournesol,Graines de courge,Graines de sésame,Pomme de terre,Patate douce,Gélatine,Lupin,Moutarde,Fenouil,Cumin,Gingembre,Ail,Oignon,Poireau,Échalote,Ciboule,Ciboulette,Persil,Coriandre,Basilic,Origan,Thym,Romarin,Sauge,Menthe,Citronnelle,Lavande,Paprika,Piment fort,Poivre noir,Poivre blanc,Poivre vert,Poivre rouge,Cannelle,Quatre-épices,Beurre,Margarine,Huile végétale,Levure chimique,Bicarbonate de soude,Fécule de maïs,Farine tout usage,Farine à pâtisserie,Farine auto-levante';
 
   @override
   String get cartText => 'Panier';
@@ -6780,4 +6771,232 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get delivery_update_failed => 'Échec de la mise à jour de la livraison.';
+
+  @override
+  String get food => 'Alimentation';
+
+  @override
+  String get health => 'Santé';
+
+  @override
+  String get retail => 'Commerce';
+
+  @override
+  String get trade => 'Commerce de gros';
+
+  @override
+  String get beauty => 'Beauté';
+
+  @override
+  String get home => 'Maison';
+
+  @override
+  String get professional => 'Professionnel';
+
+  @override
+  String get education => 'Éducation';
+
+  @override
+  String get technology => 'Technologie';
+
+  @override
+  String get logistics => 'Logistique';
+
+  @override
+  String get automotive => 'Automobile';
+
+  @override
+  String get agriculture => 'Agriculture';
+
+  @override
+  String get hospitality => 'Hôtellerie';
+
+  @override
+  String get finance => 'Finance';
+
+  @override
+  String get alimentary => 'Produits alimentaires';
+
+  @override
+  String get beverages => 'Boissons';
+
+  @override
+  String get prepared => 'Plats préparés';
+
+  @override
+  String get dining => 'Restauration';
+
+  @override
+  String get production => 'Production';
+
+  @override
+  String get specialty => 'Spécialités';
+
+  @override
+  String get pharma => 'Pharmacie';
+
+  @override
+  String get wellness => 'Bien-être';
+
+  @override
+  String get medical_devices => 'Dispositifs médicaux';
+
+  @override
+  String get personal_care => 'Soins personnels';
+
+  @override
+  String get facilities => 'Établissements';
+
+  @override
+  String get diagnostics => 'Diagnostic';
+
+  @override
+  String get primary_care => 'Soins primaires';
+
+  @override
+  String get specialized_care => 'Soins spécialisés';
+
+  @override
+  String get dental => 'Dentaire';
+
+  @override
+  String get therapy => 'Thérapie';
+
+  @override
+  String get clinical_procedures => 'Procédures cliniques';
+
+  @override
+  String get household => 'Entretien ménager';
+
+  @override
+  String get electronics => 'Électronique';
+
+  @override
+  String get apparel => 'Vêtements';
+
+  @override
+  String get pet_supplies => 'Articles pour animaux';
+
+  @override
+  String get food_retail => 'Vente alimentaire';
+
+  @override
+  String get fashion => 'Mode';
+
+  @override
+  String get home_living => 'Maison et décoration';
+
+  @override
+  String get lifestyle => 'Style de vie';
+
+  @override
+  String get health_retail => 'Santé';
+
+  @override
+  String get distribution => 'Distribution';
+
+  @override
+  String get international => 'International';
+
+  @override
+  String get intermediary => 'Intermédiaires';
+
+  @override
+  String get home_services => 'Services à domicile';
+
+  @override
+  String get health_services => 'Santé';
+
+  @override
+  String get construction => 'Construction';
+
+  @override
+  String get hair => 'Coiffure';
+
+  @override
+  String get aesthetics => 'Esthétique';
+
+  @override
+  String get nails => 'Ongles';
+
+  @override
+  String get skincare => 'Soins de la peau';
+
+  @override
+  String get repair => 'Réparation';
+
+  @override
+  String get maintenance => 'Entretien';
+
+  @override
+  String get moving => 'Déménagement';
+
+  @override
+  String get legal => 'Juridique';
+
+  @override
+  String get accounting => 'Comptabilité';
+
+  @override
+  String get consulting => 'Conseil';
+
+  @override
+  String get institutions => 'Établissements';
+
+  @override
+  String get tutoring => 'Soutien scolaire';
+
+  @override
+  String get training => 'Formation';
+
+  @override
+  String get it_support => 'Assistance informatique';
+
+  @override
+  String get development => 'Développement';
+
+  @override
+  String get digital_marketing => 'Marketing digital';
+
+  @override
+  String get warehousing => 'Entreposage';
+
+  @override
+  String get transport => 'Transport';
+
+  @override
+  String get storage => 'Stockage';
+
+  @override
+  String get customs => 'Douane';
+
+  @override
+  String get parts => 'Pièces';
+
+  @override
+  String get fluids => 'Fluides';
+
+  @override
+  String get sales => 'Vente';
+
+  @override
+  String get seeds => 'Semences';
+
+  @override
+  String get fertilizers => 'Engrais';
+
+  @override
+  String get equipment => 'Équipement';
+
+  @override
+  String get supply => 'Approvisionnement';
+
+  @override
+  String get accommodation => 'Hébergement';
+
+  @override
+  String get events => 'Événements';
+
+  @override
+  String get banking => 'Banque';
 }

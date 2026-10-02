@@ -1,7 +1,6 @@
 // lib/business/Organisation.dart
 
-import 'package:verdelia_core/business/NamingContribution.dart';
-import 'package:verdelia_core/business/iProduct.dart' show NamingContribution;
+import 'NamingContribution.dart';
 
 class Organisation {
   final int id_provider_organisation;

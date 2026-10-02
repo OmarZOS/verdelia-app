@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:typed_data';
 
-import 'package:verdelia_core/app/VerdeliaImage.dart';
+import '../app/VerdeliaImage.dart';
 
 class Recipe {
   final int? id_recipe;
