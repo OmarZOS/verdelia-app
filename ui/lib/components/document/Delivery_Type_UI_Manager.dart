@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/app/Person.dart';
-import 'package:gluttex_core/app/Address.dart';
-import 'package:gluttex_core/business/Delivery.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/app/Person.dart';
+import 'package:verdelia_core/app/Address.dart';
+import 'package:verdelia_core/business/Delivery.dart';
 import 'package:ui/components/location/address_form.dart';
 
 class DeliveryUIManager {

@@ -14,8 +14,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/business/Delivery.dart';
-import 'package:gluttex_core/business/services/DeliveryService.dart';
+import 'package:verdelia_core/business/Delivery.dart';
+import 'package:verdelia_core/business/services/DeliveryService.dart';
 import 'package:locator/locator.dart';
 import 'package:collection/collection.dart';
 

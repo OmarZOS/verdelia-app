@@ -36,12 +36,12 @@ dependencies:
   google_maps_flutter: ^2.12.3
   locator: 
     path: ../locator
-  gluttex_core:
-    path: ../gluttex_core
+  verdelia_core:
+    path: ../verdelia_core
   app_constants:
     path: ../app_constants
-  gluttex_localizations:
-    path: ../gluttex_localizations
+  verdelia_localizations:
+    path: ../verdelia_localizations
   ui:
     path: ../ui
   event:

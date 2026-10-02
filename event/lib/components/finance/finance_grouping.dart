@@ -1,4 +1,4 @@
-import 'package:gluttex_core/business/finance/FinancialDocument.dart';
+import 'package:verdelia_core/business/finance/FinancialDocument.dart';
 
 class FinanceGrouping {
   final Map<int, List<int>> _documentGroups = {};

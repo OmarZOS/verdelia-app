@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider_store/components/selling_point/checkout/checkout_button.dart';
 import 'package:provider_store/components/selling_point/checkout/order_summary_section.dart';
 import 'package:provider/provider.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:event/cart_change_notifier.dart';
 
 class CheckoutFooter extends StatelessWidget {

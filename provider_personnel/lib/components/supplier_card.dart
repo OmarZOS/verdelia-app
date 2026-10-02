@@ -2,9 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:gluttex_core/app/ManagementRule.dart';
-import 'package:gluttex_core/business/Supplier.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/app/ManagementRule.dart';
+import 'package:verdelia_core/business/Supplier.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:provider_personnel/personnel_management_screen.dart';
 
 class SupplierCard extends StatelessWidget {

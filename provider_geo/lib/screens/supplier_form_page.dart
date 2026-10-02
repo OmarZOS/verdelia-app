@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/app/GluttexException.dart';
-import 'package:gluttex_core/app/GluttexImage.dart';
-import 'package:gluttex_core/business/Organisation.dart';
-import 'package:gluttex_core/business/Supplier.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
+import 'package:verdelia_core/app/VerdeliaImage.dart';
+import 'package:verdelia_core/business/Organisation.dart';
+import 'package:verdelia_core/business/Supplier.dart';
 import 'package:event/supplier_change_notifier.dart';
 import 'package:event/user_change_notifier.dart';
 import 'package:ui/components/ImagePickerSection.dart';
@@ -68,7 +68,7 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
   String _address_country = "";
   bool updatePage = false;
 
-  GluttexImage? supplier_image;
+  VerdeliaImage? supplier_image;
 
   final List<String> _contactTypes = [
     'instagram',
@@ -339,7 +339,7 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
         // Navigate back on success
         Navigator.pop(context);
       }
-    } on GluttexException catch (e) {
+    } on VerdeliaException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

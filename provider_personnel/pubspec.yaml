@@ -32,8 +32,8 @@ dependencies:
     sdk: flutter
   locator: 
     path: ../locator
-  gluttex_core:
-    path: ../gluttex_core
+  verdelia_core:
+    path: ../verdelia_core
   app_constants:
     path: ../app_constants
   event:

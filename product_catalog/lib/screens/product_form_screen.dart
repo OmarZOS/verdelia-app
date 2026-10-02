@@ -2,9 +2,9 @@
 
 import 'package:event/user_change_notifier.dart';
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/business/Product.dart';
-import 'package:gluttex_core/business/product_form_data.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/business/Product.dart';
+import 'package:verdelia_core/business/product_form_data.dart';
 import 'package:event/assistant_change_notifier.dart';
 import 'package:ui/components/ImagePickerSection.dart';
 import 'package:product_catalog/screens/components/form/ai_assistance_section.dart';

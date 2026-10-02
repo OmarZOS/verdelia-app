@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart'; // <-- Add this
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:event/preferenceChangeNotifier.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:flutter/services.dart' show Uint8List, rootBundle;

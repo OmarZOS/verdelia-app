@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/app/GluttexException.dart';
-import 'package:gluttex_core/business/ProductResponse.dart';
-import 'package:gluttex_core/business/iProduct.dart';
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
+import 'package:verdelia_core/business/ProductResponse.dart';
+import 'package:verdelia_core/business/iProduct.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 import 'package:locator/locator.dart';
 
 import 'components/lib.dart';

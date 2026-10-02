@@ -3,8 +3,8 @@
 // import 'package:locator/locator.dart';
 
 // import 'package:event/finance_change_notifier.dart';
-// import 'package:gluttex_core/business/finance/services/InvoiceService.dart';
-// import 'package:gluttex_core/business/finance/FinancialDocument.dart';
+// import 'package:verdelia_core/business/finance/services/InvoiceService.dart';
+// import 'package:verdelia_core/business/finance/FinancialDocument.dart';
 
 // class MockInvoiceService extends Mock implements InvoiceService {}
 

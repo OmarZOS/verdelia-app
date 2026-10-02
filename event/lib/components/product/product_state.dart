@@ -1,6 +1,6 @@
 // lib/event/components/product/product_state.dart
 
-import 'package:gluttex_core/business/Product.dart';
+import 'package:verdelia_core/business/Product.dart';
 
 class ProductState {
   final List<Product> products = [];

@@ -9,10 +9,10 @@ import 'package:event/components/supplier/supplier_state.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:locator/locator.dart';
-import 'package:gluttex_core/business/Organisation.dart';
-import 'package:gluttex_core/business/Supplier.dart';
-import 'package:gluttex_core/business/services/SupplierService.dart';
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_core/business/Organisation.dart';
+import 'package:verdelia_core/business/Supplier.dart';
+import 'package:verdelia_core/business/services/SupplierService.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SupplierChangeNotifier extends ChangeNotifier {

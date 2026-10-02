@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/app/ManagementRule.dart';
-import 'package:gluttex_core/business/finance/Order.dart';
-import 'package:gluttex_core/business/Supplier.dart';
-import 'package:gluttex_core/business/privileges/Privileges.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/app/ManagementRule.dart';
+import 'package:verdelia_core/business/finance/Order.dart';
+import 'package:verdelia_core/business/Supplier.dart';
+import 'package:verdelia_core/business/privileges/Privileges.dart';
 import 'package:event/order_change_notifier.dart';
 import 'package:provider/provider.dart';
 import 'package:event/cart_change_notifier.dart';

@@ -61,7 +61,7 @@ enum DataSource {
   aiGenerated('AI Generated', Icons.auto_awesome, Colors.purple),
   databaseFetched('Database', Icons.storage, Colors.blue),
   userInput('Manual', Icons.edit, Colors.orange),
-  gluttexInput('Auto', Icons.settings_system_daydream, Colors.lightGreenAccent);
+  verdeliaInput('Auto', Icons.settings_system_daydream, Colors.lightGreenAccent);
 
   final String displayName;
   final IconData icon;
@@ -78,7 +78,7 @@ extension DataSourceTheme on DataSource {
       DataSource.aiGenerated => scheme.tertiary,
       DataSource.databaseFetched => scheme.primary,
       DataSource.userInput => scheme.secondary,
-      DataSource.gluttexInput => scheme.primary,
+      DataSource.verdeliaInput => scheme.primary,
     };
   }
 
@@ -88,7 +88,7 @@ extension DataSourceTheme on DataSource {
       DataSource.databaseFetched => scheme.primaryContainer,
       DataSource.aiGenerated => scheme.tertiaryContainer,
       DataSource.userInput => scheme.secondaryContainer,
-      DataSource.gluttexInput => scheme.primaryContainer,
+      DataSource.verdeliaInput => scheme.primaryContainer,
     };
   }
 }

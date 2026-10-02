@@ -3,11 +3,11 @@ import 'dart:io';
 import 'package:app_constants/app_routes.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/app/GluttexImage.dart';
-import 'package:gluttex_core/business/iProduct.dart';
-import 'package:gluttex_core/business/product_form_data.dart';
+import 'package:verdelia_core/app/VerdeliaImage.dart';
+import 'package:verdelia_core/business/iProduct.dart';
+import 'package:verdelia_core/business/product_form_data.dart';
 import 'package:event/assistant_change_notifier.dart';
 import 'package:event/components/lib.dart';
 import 'package:locator/locator.dart';
@@ -295,8 +295,8 @@ class AiAssistant {
 
     if (capturedImage != null) {
       // Handle image setup
-      final gluttexImage = AppLocator.get<GluttexImage>();
-      gluttexImage.setupImage(
+      final verdeliaImage = AppLocator.get<VerdeliaImage>();
+      verdeliaImage.setupImage(
         filepath: capturedImage.path,
         filename: path.basename(capturedImage.path),
         entityType: "product",
@@ -306,7 +306,7 @@ class AiAssistant {
 
       // Update form data
       formData.imageFile = capturedImage;
-      formData.image = gluttexImage;
+      formData.image = verdeliaImage;
 
       // Show loading indicator
       ScaffoldMessenger.of(context).showSnackBar(

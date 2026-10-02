@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/foundation.dart';
-import 'package:gluttex_core/app/AppUser.dart';
-import 'package:gluttex_core/app/Services/UserService.dart';
+import 'package:verdelia_core/app/AppUser.dart';
+import 'package:verdelia_core/app/Services/UserService.dart';
 import 'auth_state.dart';
 import 'auth_persistence.dart';
 import 'auth_token.dart';

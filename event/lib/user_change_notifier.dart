@@ -8,10 +8,10 @@ import 'package:event/components/user/auth_state.dart';
 import 'package:event/components/user/auth_token.dart';
 import 'package:event/components/user/auth_user.dart';
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/app/AppUser.dart';
-import 'package:gluttex_core/app/Services/AuthService.dart';
-import 'package:gluttex_core/app/Services/UserService.dart';
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_core/app/AppUser.dart';
+import 'package:verdelia_core/app/Services/AuthService.dart';
+import 'package:verdelia_core/app/Services/UserService.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 import 'package:locator/locator.dart';
 
 class AppUserNotifier extends ChangeNotifier {

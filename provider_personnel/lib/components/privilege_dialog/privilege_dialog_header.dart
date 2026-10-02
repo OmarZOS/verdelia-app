@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/app/AppUser.dart';
+import 'package:verdelia_core/app/AppUser.dart';
 
 class PrivilegeDialogHeader extends StatelessWidget {
   final String supplierName;

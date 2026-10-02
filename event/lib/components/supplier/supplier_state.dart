@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:gluttex_core/business/Organisation.dart';
-import 'package:gluttex_core/business/Supplier.dart';
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_core/business/Organisation.dart';
+import 'package:verdelia_core/business/Supplier.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 import 'supplier_filter.dart';
 
 class SupplierState {

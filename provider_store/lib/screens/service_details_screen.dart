@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/business/finance/ProvidedService.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/business/finance/ProvidedService.dart';
 import 'package:provider_store/components/service/details/service_details_header.dart';
 import 'package:provider_store/components/service/details/service_info_section.dart';
 import 'package:provider_store/components/service/details/service_pricing_section.dart';

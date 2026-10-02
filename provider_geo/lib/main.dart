@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/business/services/SupplierService.dart';
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_core/business/services/SupplierService.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 import 'package:event/supplier_change_notifier.dart';
 import 'package:provider_geo/screens/suppliers_map_screen.dart';
 

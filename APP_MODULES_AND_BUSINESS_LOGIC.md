@@ -1,4 +1,4 @@
-# Gluttex App: Modules, Widgets, and Business Logic
+# Verdelia App: Modules, Widgets, and Business Logic
 
 This document summarizes the architecture of the Flutter monorepo, the main UI widgets, and the business logic that drives the app.
 
@@ -15,7 +15,7 @@ The app is organized as a multi-package Flutter workspace with a shared core and
 
 The root app runs as a Provider-based state tree. The central setup is:
 
-- `GluttexApp` creates a `MultiProvider` with state notifiers for products, cart, user, recipes, suppliers, delivery, notifications, orders, personnel, services, finance, pricing, and locale.
+- `VerdeliaApp` creates a `MultiProvider` with state notifiers for products, cart, user, recipes, suppliers, delivery, notifications, orders, personnel, services, finance, pricing, and locale.
 - `AppRouter.generateRoute` handles navigation and guards screens based on auth state.
 - `HomePage` acts as the main shell for catalog, suppliers, recipes, games, and profile areas.
 
@@ -52,13 +52,13 @@ The root app runs as a Provider-based state tree. The central setup is:
   - API endpoint constants
   - common app-level settings
 
-#### gluttex_localizations
+#### verdelia_localizations
 - Purpose: internationalization.
 - Responsibilities:
   - Arabic, French, and English localization support
   - used by `LocaleProvider` and screens through `AppLocalizations`
 
-#### gluttex_core
+#### verdelia_core
 - Purpose: domain model and shared abstractions.
 - Responsibilities:
   - business models like `Product`, `Order`, `Cart`, `Supplier`, `AppUser`, `Delivery`, `ProvidedService`
@@ -92,17 +92,17 @@ The root app runs as a Provider-based state tree. The central setup is:
 #### business
 - Purpose: concrete business services that interact with storage and the API layer.
 - Main files:
-  - `business/lib/gluttex_impl_product.dart`
-  - `business/lib/gluttex_impl_order.dart`
-  - `business/lib/gluttex_impl_cart.dart`
-  - `business/lib/gluttex_impl_recipe.dart`
-  - `business/lib/gluttex_impl_supplier.dart`
-  - `business/lib/gluttex_impl_delivery.dart`
-  - `business/lib/gluttex_impl_service.dart`
+  - `business/lib/verdelia_impl_product.dart`
+  - `business/lib/verdelia_impl_order.dart`
+  - `business/lib/verdelia_impl_cart.dart`
+  - `business/lib/verdelia_impl_recipe.dart`
+  - `business/lib/verdelia_impl_supplier.dart`
+  - `business/lib/verdelia_impl_delivery.dart`
+  - `business/lib/verdelia_impl_service.dart`
   - `business/lib/finance/business_operation.dart`
-  - `business/lib/finance/gluttex_impl_invoice.dart`
+  - `business/lib/finance/verdelia_impl_invoice.dart`
 - Responsibilities:
-  - implement service contracts from `gluttex_core`
+  - implement service contracts from `verdelia_core`
   - call external or mediated storage APIs
   - translate backend payloads into domain objects
   - persist traceable response metadata for debugging and auditability
@@ -118,7 +118,7 @@ The root app runs as a Provider-based state tree. The central setup is:
 
 #### io
 - Purpose: infrastructure implementations for file/image handling.
-- `io/GluttexImageImpl.dart`
+- `io/VerdeliaImageImpl.dart`
 - Responsibilities:
   - image upload / file handling abstraction
 
@@ -196,7 +196,7 @@ The root app runs as a Provider-based state tree. The central setup is:
 #### tabbed_home
 - Purpose: app shell and global navigation.
 - Main file:
-  - `tabbed_home/lib/gluttex_router.dart`
+  - `tabbed_home/lib/verdelia_router.dart`
   - `tabbed_home/lib/screens/home_screen.dart`
 - Responsibilities:
   - navigation guard logic
@@ -210,10 +210,10 @@ The root app runs as a Provider-based state tree. The central setup is:
   - `ui/components/document/DocumentTypeManager.dart`
   - `ui/SupplierProductCard.dart`
 
-#### health and gluttex_play
+#### health and verdelia_play
 - Purpose: extra feature packages.
 - `health` contains medical or wellbeing screens.
-- `gluttex_play` contains game catalog / playful UI examples.
+- `verdelia_play` contains game catalog / playful UI examples.
 
 ---
 
@@ -221,7 +221,7 @@ The root app runs as a Provider-based state tree. The central setup is:
 
 ### 3.1 Root application
 
-#### `GluttexApp`
+#### `VerdeliaApp`
 Located in `launcher/lib/main.dart`.
 
 Responsibilities:
@@ -232,7 +232,7 @@ Responsibilities:
 - Uses `AppRouter.generateRoute` to route the app.
 
 #### `AppRouter`
-Located in `tabbed_home/lib/gluttex_router.dart`.
+Located in `tabbed_home/lib/verdelia_router.dart`.
 
 Flow:
 - Reads `AppUserNotifier` from the provider tree.
@@ -380,10 +380,10 @@ This is the app’s real authentication backbone.
 ### 4.3 Product logic
 
 #### `ProductService`
-Contract in `gluttex_core/lib/business/services/ProductService.dart`.
+Contract in `verdelia_core/lib/business/services/ProductService.dart`.
 
 Concrete implementation:
-- `ProductServiceImpl` in `business/lib/gluttex_impl_product.dart`
+- `ProductServiceImpl` in `business/lib/verdelia_impl_product.dart`
 
 Functionality:
 - add product
@@ -416,10 +416,10 @@ Main behavior:
 ### 4.4 Cart and ordering logic
 
 #### `CartService`
-Located in `gluttex_core/lib/business/services/CartService.dart`.
+Located in `verdelia_core/lib/business/services/CartService.dart`.
 
 Concrete implementation:
-- `CartServiceImpl` in `business/lib/gluttex_impl_cart.dart`
+- `CartServiceImpl` in `business/lib/verdelia_impl_cart.dart`
 
 Responsibilities:
 - fetch carts by filters
@@ -449,10 +449,10 @@ Business rules in the cart model include:
 ### 4.5 Order flow
 
 #### `OrderService`
-Contract in `gluttex_core/lib/business/services/OrderService.dart`.
+Contract in `verdelia_core/lib/business/services/OrderService.dart`.
 
 Implementation:
-- `OrderServiceImpl` in `business/lib/gluttex_impl_order.dart`
+- `OrderServiceImpl` in `business/lib/verdelia_impl_order.dart`
 
 Responsibilities:
 - add order
@@ -473,10 +473,10 @@ Typical app flow:
 ### 4.6 Supplier and provider logic
 
 #### `SupplierService`
-Contract in `gluttex_core/lib/business/services/SupplierService.dart`.
+Contract in `verdelia_core/lib/business/services/SupplierService.dart`.
 
 Implementation:
-- `SupplierServiceImpl` in `business/lib/gluttex_impl_supplier.dart`
+- `SupplierServiceImpl` in `business/lib/verdelia_impl_supplier.dart`
 
 Responsibilities:
 - fetch supplier profiles and organization details
@@ -496,10 +496,10 @@ This state feeds screens such as `SuppliersMapScreen`, `SupplierFormScreen`, and
 ### 4.7 Delivery and logistics logic
 
 #### `DeliveryService`
-Contract in `gluttex_core/lib/business/services/DeliveryService.dart`.
+Contract in `verdelia_core/lib/business/services/DeliveryService.dart`.
 
 Implementation:
-- `DeliveryServiceImpl` in `business/lib/gluttex_impl_delivery.dart`
+- `DeliveryServiceImpl` in `business/lib/verdelia_impl_delivery.dart`
 
 Responsibilities:
 - fetch deliveries by provider/order/broker/query
@@ -554,7 +554,7 @@ Responsibilities:
 - update locale/theme on user action
 - notify the app to rebuild UI after preference change
 
-This provider is included in the `GluttexApp` state tree so language and theme are global.
+This provider is included in the `VerdeliaApp` state tree so language and theme are global.
 
 ---
 
@@ -583,14 +583,14 @@ This project uses a hybrid architecture built on a few strong patterns:
 - Provider state management for global app state
 - Service locator via GetIt
 - Repository-like service implementations for persistence and API calls
-- Domain models in `gluttex_core`
+- Domain models in `verdelia_core`
 - Feature packages organized by responsibility
 - Screen-level state and notifier-driven UI composition
 - Traceable service responses using caller keys and stored success/failure metadata
 
 This is a clean modular structure for a mid-sized Flutter application, with a clear separation between:
 
-- model layer (`gluttex_core`)
+- model layer (`verdelia_core`)
 - data / API implementation (`business`, `impl_app`, `impl_mediation`)
 - state layer (`event`)
 - UI layer (`login`, `product_catalog`, `provider_store`, `tabbed_home`, etc.)
@@ -602,7 +602,7 @@ This is a clean modular structure for a mid-sized Flutter application, with a cl
 The app is a modular Flutter monorepo centered around:
 
 - `launcher` for bootstrapping
-- `gluttex_core` for domain contracts/models
+- `verdelia_core` for domain contracts/models
 - `business` for implementation of business services
 - `event` for state management / view models
 - feature packages for login, catalog, recipes, suppliers, dashboards, scanning, and selling flows

@@ -3,9 +3,9 @@ library business;
 import 'dart:developer' as developer;
 
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/business/finance/BusinessOperation.dart';
-import 'package:gluttex_core/business/services/BusinessOperationService.dart';
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_core/business/finance/BusinessOperation.dart';
+import 'package:verdelia_core/business/services/BusinessOperationService.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 import 'package:locator/locator.dart';
 
 class BusinessOperationServiceImpl implements BusinessOperationService {

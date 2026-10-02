@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:event/cart_change_notifier.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:gluttex_core/business/Product.dart';
-import 'package:gluttex_core/business/finance/Cart.dart';
-import 'package:gluttex_core/business/finance/ProvidedService.dart';
-import 'package:gluttex_core/business/services/CartService.dart';
+import 'package:verdelia_core/business/Product.dart';
+import 'package:verdelia_core/business/finance/Cart.dart';
+import 'package:verdelia_core/business/finance/ProvidedService.dart';
+import 'package:verdelia_core/business/services/CartService.dart';
 import 'package:locator/locator.dart';
 
 class MockCartService extends Mock implements CartService {}

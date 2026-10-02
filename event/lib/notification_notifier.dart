@@ -6,12 +6,12 @@ import 'package:event/TraceableNotifier.dart';
 import 'package:flutter/material.dart';
 import 'package:locator/locator.dart';
 
-import 'package:gluttex_core/app/GluttexException.dart';
-import 'package:gluttex_core/app/Notifications/GluttexNotification.dart';
-import 'package:gluttex_core/app/Notifications/NotificationContent.dart';
-import 'package:gluttex_core/app/Notifications/NotificationList.dart';
-import 'package:gluttex_core/app/Services/NotificationService.dart';
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
+import 'package:verdelia_core/app/Notifications/VerdeliaNotification.dart';
+import 'package:verdelia_core/app/Notifications/NotificationContent.dart';
+import 'package:verdelia_core/app/Notifications/NotificationList.dart';
+import 'package:verdelia_core/app/Services/NotificationService.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 
 // ============ CACHE ENTRY WITH TTL ============
 class _CacheEntry<T> {
@@ -32,11 +32,11 @@ class NotificationNotifier extends TraceableNotifier {
       AppLocator.get<NotificationService>();
 
   // ============ CACHE STORAGE ============
-  final Map<int, GluttexNotification> _notificationCache = {};
+  final Map<int, VerdeliaNotification> _notificationCache = {};
   final Map<String, _CacheEntry<NotificationList>> _listCache = {};
 
   // LRU cache for frequently accessed notifications
-  final LinkedHashMap<int, _CacheEntry<GluttexNotification>> _lruCache =
+  final LinkedHashMap<int, _CacheEntry<VerdeliaNotification>> _lruCache =
       LinkedHashMap();
 
   // Cache statistics
@@ -110,7 +110,7 @@ class NotificationNotifier extends TraceableNotifier {
     }
   }
 
-  void _addToLRUCache(int id, GluttexNotification notification) {
+  void _addToLRUCache(int id, VerdeliaNotification notification) {
     if (_lruCache.containsKey(id)) {
       _lruCache.remove(id);
     }
@@ -124,7 +124,7 @@ class NotificationNotifier extends TraceableNotifier {
         _CacheEntry(notification, ttlSeconds: _defaultCacheTTLSeconds);
   }
 
-  GluttexNotification? _getFromLRUCache(int id) {
+  VerdeliaNotification? _getFromLRUCache(int id) {
     final entry = _lruCache[id];
     if (entry == null) return null;
 
@@ -165,13 +165,13 @@ class NotificationNotifier extends TraceableNotifier {
     return entry.data;
   }
 
-  void _cacheNotification(GluttexNotification notification, {int? ttlSeconds}) {
+  void _cacheNotification(VerdeliaNotification notification, {int? ttlSeconds}) {
     final ttl = ttlSeconds ?? _defaultCacheTTLSeconds;
     _notificationCache[notification.idNotification] = notification;
     _addToLRUCache(notification.idNotification, notification);
   }
 
-  GluttexNotification? _getCachedNotification(int id) {
+  VerdeliaNotification? _getCachedNotification(int id) {
     final lruCached = _getFromLRUCache(id);
     if (lruCached != null) return lruCached;
 
@@ -516,28 +516,28 @@ class NotificationNotifier extends TraceableNotifier {
     _setError(null);
   }
 
-  GluttexNotification? getNotificationById(int id) {
+  VerdeliaNotification? getNotificationById(int id) {
     return _getCachedNotification(id) ??
         _notificationList.getNotificationById(id);
   }
 
   // ============ FILTER METHODS ============
 
-  List<GluttexNotification> get unreadNotifications =>
+  List<VerdeliaNotification> get unreadNotifications =>
       _notificationList.unreadNotifications;
 
-  List<GluttexNotification> get readNotifications =>
+  List<VerdeliaNotification> get readNotifications =>
       _notificationList.readNotifications;
 
-  List<GluttexNotification> get requiresActionNotifications =>
+  List<VerdeliaNotification> get requiresActionNotifications =>
       _notificationList.requiresActionNotifications;
 
-  List<GluttexNotification> get sortedByDate => _notificationList.sortedByDate;
+  List<VerdeliaNotification> get sortedByDate => _notificationList.sortedByDate;
 
-  List<GluttexNotification> getRoleInvitations() =>
+  List<VerdeliaNotification> getRoleInvitations() =>
       _notificationList.getRoleInvitations();
 
-  List<GluttexNotification> getByContentType<T extends NotificationContent>() =>
+  List<VerdeliaNotification> getByContentType<T extends NotificationContent>() =>
       _notificationList.getByContentType<T>();
 
   // ============ STATE RESET ============

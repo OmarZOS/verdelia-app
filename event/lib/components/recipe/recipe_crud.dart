@@ -1,6 +1,6 @@
-import 'package:gluttex_core/business/Recipe.dart';
-import 'package:gluttex_core/business/services/RecipeService.dart';
-import 'package:gluttex_core/app/GluttexException.dart';
+import 'package:verdelia_core/business/Recipe.dart';
+import 'package:verdelia_core/business/services/RecipeService.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
 import 'recipe_state.dart';
 import 'recipe_cache.dart';
 
@@ -38,7 +38,7 @@ class RecipeCrud {
       }
       return false;
     } catch (e) {
-      throw GluttexException(
+      throw VerdeliaException(
           'Failed to ${isNew ? 'add' : 'update'} recipe: $e');
     }
   }
@@ -55,7 +55,7 @@ class RecipeCrud {
       }
       return false;
     } catch (e) {
-      throw GluttexException('Failed to delete recipe: $e');
+      throw VerdeliaException('Failed to delete recipe: $e');
     }
   }
 

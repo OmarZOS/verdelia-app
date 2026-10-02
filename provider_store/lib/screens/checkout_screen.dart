@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/app/AppUser.dart';
-import 'package:gluttex_core/app/Person.dart';
+import 'package:verdelia_core/app/AppUser.dart';
+import 'package:verdelia_core/app/Person.dart';
 import 'package:event/cart_change_notifier.dart';
 import 'package:event/product_change_notifier.dart';
 import 'package:event/user_change_notifier.dart';
 import 'package:event/views/checkout_view_model.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:provider_store/components/selling_point/checkout/checkout_footer.dart';
 import 'package:provider_store/components/selling_point/checkout/delivery_section.dart';

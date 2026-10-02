@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gluttex_core/business/Delivery.dart';
+import 'package:verdelia_core/business/Delivery.dart';
 
 void main() {
   group('Delivery Model Tests', () {

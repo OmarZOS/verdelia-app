@@ -14,8 +14,8 @@
 
 import 'package:flutter/foundation.dart';
 
-import 'package:gluttex_core/business/finance/BusinessOperation.dart';
-import 'package:gluttex_core/business/services/BusinessOperationService.dart';
+import 'package:verdelia_core/business/finance/BusinessOperation.dart';
+import 'package:verdelia_core/business/services/BusinessOperationService.dart';
 
 /// A loaded snapshot of one request: operations + stats + metadata.
 @immutable

@@ -4,9 +4,9 @@ import 'dart:developer';
 
 import 'package:event/components/finance/finance_download.dart';
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/business/finance/FinancialDocument.dart';
-import 'package:gluttex_core/business/finance/business_analytics.dart';
-import 'package:gluttex_core/business/finance/services/InvoiceService.dart';
+import 'package:verdelia_core/business/finance/FinancialDocument.dart';
+import 'package:verdelia_core/business/finance/business_analytics.dart';
+import 'package:verdelia_core/business/finance/services/InvoiceService.dart';
 import 'package:event/components/finance/finance_analytics.dart';
 import 'package:event/components/finance/finance_constants.dart';
 import 'package:event/components/finance/finance_document_operations.dart';

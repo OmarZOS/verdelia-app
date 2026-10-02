@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/app/AppUser.dart';
-import 'package:gluttex_core/business/finance/Customer.dart';
-import 'package:gluttex_core/business/finance/FinancialDocument.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/app/AppUser.dart';
+import 'package:verdelia_core/business/finance/Customer.dart';
+import 'package:verdelia_core/business/finance/FinancialDocument.dart';
 import 'package:event/finance_change_notifier.dart';
 import 'package:event/personnel_notifier.dart';
 import 'package:event/supplier_change_notifier.dart';

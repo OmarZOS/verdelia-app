@@ -1,8 +1,8 @@
 import 'dart:developer';
 
-import 'package:gluttex_core/app/AppUser.dart';
-import 'package:gluttex_core/app/ManagementRule.dart';
-import 'package:gluttex_core/app/Person.dart';
+import 'package:verdelia_core/app/AppUser.dart';
+import 'package:verdelia_core/app/ManagementRule.dart';
+import 'package:verdelia_core/app/Person.dart';
 
 class PersonnelCache {
   // Existing caches

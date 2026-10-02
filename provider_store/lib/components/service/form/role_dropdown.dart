@@ -1,6 +1,6 @@
 // components/role_dropdown.dart
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/business/finance/ProvidedService.dart';
+import 'package:verdelia_core/business/finance/ProvidedService.dart';
 
 class RoleDropdown extends StatelessWidget {
   final List<StaffRole> roles;

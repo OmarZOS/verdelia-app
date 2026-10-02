@@ -212,13 +212,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  gluttex_localizations:
-    dependency: "direct main"
-    description:
-      path: "../gluttex_localizations"
-      relative: true
-    source: path
-    version: "0.0.1"
   http:
     dependency: transitive
     description:
@@ -472,6 +465,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.4"
+  verdelia_localizations:
+    dependency: "direct main"
+    description:
+      path: "../verdelia_localizations"
+      relative: true
+    source: path
+    version: "0.0.1"
   vibration:
     dependency: "direct main"
     description:

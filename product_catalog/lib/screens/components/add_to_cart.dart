@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/business/Product.dart';
+import 'package:verdelia_core/business/Product.dart';
 import 'package:product_catalog/screens/order_now_screen.dart';
 
 class AddToCart extends StatelessWidget {

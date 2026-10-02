@@ -1,4 +1,4 @@
-import 'package:gluttex_core/business/finance/FinancialDocument.dart';
+import 'package:verdelia_core/business/finance/FinancialDocument.dart';
 
 extension FinanceSearchExtensions on List<FinancialDocument> {
   List<FinancialDocument> search(String query) {

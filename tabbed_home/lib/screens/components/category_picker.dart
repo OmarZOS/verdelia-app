@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:gluttex_core/app/AppUser.dart';
+import 'package:verdelia_core/app/AppUser.dart';
 
 class CategoryPicker extends StatefulWidget {
   final ValueChanged<int> onCategoryChanged;

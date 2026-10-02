@@ -3,12 +3,12 @@ import 'dart:developer' as developer;
 
 import 'package:event/cart_change_notifier.dart';
 import 'package:flutter/foundation.dart';
-import 'package:gluttex_core/app/AppUser.dart';
-import 'package:gluttex_core/app/Person.dart';
-import 'package:gluttex_core/business/Delivery.dart';
-import 'package:gluttex_core/business/finance/Cart.dart';
-import 'package:gluttex_core/business/finance/cart_payload_builder.dart';
-import 'package:gluttex_core/business/services/CartService.dart';
+import 'package:verdelia_core/app/AppUser.dart';
+import 'package:verdelia_core/app/Person.dart';
+import 'package:verdelia_core/business/Delivery.dart';
+import 'package:verdelia_core/business/finance/Cart.dart';
+import 'package:verdelia_core/business/finance/cart_payload_builder.dart';
+import 'package:verdelia_core/business/services/CartService.dart';
 import 'package:locator/locator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

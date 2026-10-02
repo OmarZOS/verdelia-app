@@ -9,14 +9,14 @@
       "dependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
-        "gluttex_localizations",
+        "verdelia_localizations",
         "recipe_catalog",
         "health",
         "provider_geo",
         "product_catalog",
-        "gluttex_play",
+        "verdelia_play",
         "login",
         "ui",
         "event",
@@ -32,14 +32,14 @@
       "directDependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
-        "gluttex_localizations",
+        "verdelia_localizations",
         "recipe_catalog",
         "health",
         "provider_geo",
         "product_catalog",
-        "gluttex_play",
+        "verdelia_play",
         "login",
         "ui",
         "event",
@@ -421,14 +421,14 @@
       "dependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "recipe_catalog",
         "health",
         "provider_geo",
         "product_catalog",
-        "gluttex_play",
-        "gluttex_localizations",
+        "verdelia_play",
+        "verdelia_localizations",
         "login",
         "ui",
         "event",
@@ -447,14 +447,14 @@
       "directDependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "recipe_catalog",
         "health",
         "provider_geo",
         "product_catalog",
-        "gluttex_play",
-        "gluttex_localizations",
+        "verdelia_play",
+        "verdelia_localizations",
         "login",
         "ui",
         "event",
@@ -557,7 +557,7 @@
       "dependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "event",
         "io",
@@ -573,7 +573,7 @@
       "directDependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "event",
         "io",
@@ -773,7 +773,7 @@
         "image_picker",
         "path",
         "app_constants",
-        "gluttex_localizations"
+        "verdelia_localizations"
       ],
       "directDependencies": [
         "flutter",
@@ -784,11 +784,11 @@
         "image_picker",
         "path",
         "app_constants",
-        "gluttex_localizations"
+        "verdelia_localizations"
       ]
     },
     {
-      "name": "gluttex_localizations",
+      "name": "verdelia_localizations",
       "version": "0.0.1",
       "kind": "direct",
       "source": "path",
@@ -1388,7 +1388,7 @@
       "source": "path",
       "dependencies": [
         "dio",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "sqflite",
         "path",
@@ -1397,7 +1397,7 @@
       ],
       "directDependencies": [
         "dio",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "sqflite",
         "path",
@@ -1726,7 +1726,7 @@
       ]
     },
     {
-      "name": "gluttex_core",
+      "name": "verdelia_core",
       "version": "0.0.1",
       "kind": "direct",
       "source": "path",
@@ -1781,13 +1781,13 @@
       "kind": "direct",
       "source": "path",
       "dependencies": [
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "locator",
         "google_sign_in"
       ],
       "directDependencies": [
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "locator",
         "google_sign_in"
@@ -1927,9 +1927,9 @@
       "dependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
-        "gluttex_localizations",
+        "verdelia_localizations",
         "event",
         "flutter_svg",
         "flutter_linkify",
@@ -1943,9 +1943,9 @@
       "directDependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
-        "gluttex_localizations",
+        "verdelia_localizations",
         "event",
         "flutter_svg",
         "flutter_linkify",
@@ -2318,14 +2318,14 @@
       "source": "path",
       "dependencies": [
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "shared_preferences",
         "geolocator"
       ],
       "directDependencies": [
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "shared_preferences",
         "geolocator"
@@ -2487,14 +2487,14 @@
       "kind": "direct",
       "source": "path",
       "dependencies": [
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "locator",
         "geolocator",
         "permission_handler"
       ],
       "directDependencies": [
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "locator",
         "geolocator",
@@ -2609,14 +2609,14 @@
       "dependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
-        "gluttex_localizations",
+        "verdelia_localizations",
         "recipe_catalog",
         "health",
         "provider_geo",
         "product_catalog",
-        "gluttex_play",
+        "verdelia_play",
         "ui",
         "login",
         "event",
@@ -2628,14 +2628,14 @@
       "directDependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
-        "gluttex_localizations",
+        "verdelia_localizations",
         "recipe_catalog",
         "health",
         "provider_geo",
         "product_catalog",
-        "gluttex_play",
+        "verdelia_play",
         "ui",
         "login",
         "event",
@@ -2681,8 +2681,8 @@
         "provider",
         "font_awesome_flutter",
         "locator",
-        "gluttex_core",
-        "gluttex_localizations",
+        "verdelia_core",
+        "verdelia_localizations",
         "ui",
         "event",
         "flutter_svg",
@@ -2694,8 +2694,8 @@
         "provider",
         "font_awesome_flutter",
         "locator",
-        "gluttex_core",
-        "gluttex_localizations",
+        "verdelia_core",
+        "verdelia_localizations",
         "ui",
         "event",
         "flutter_svg",
@@ -2786,7 +2786,7 @@
       ]
     },
     {
-      "name": "gluttex_play",
+      "name": "verdelia_play",
       "version": "1.0.0+1",
       "kind": "direct",
       "source": "path",
@@ -2795,14 +2795,14 @@
         "flame",
         "flutter_svg",
         "app_constants",
-        "gluttex_localizations"
+        "verdelia_localizations"
       ],
       "directDependencies": [
         "flutter",
         "flame",
         "flutter_svg",
         "app_constants",
-        "gluttex_localizations"
+        "verdelia_localizations"
       ]
     },
     {
@@ -2841,9 +2841,9 @@
       "dependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
-        "gluttex_localizations",
+        "verdelia_localizations",
         "event",
         "ui",
         "scanner",
@@ -2860,9 +2860,9 @@
       "directDependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
-        "gluttex_localizations",
+        "verdelia_localizations",
         "event",
         "ui",
         "scanner",
@@ -2982,9 +2982,9 @@
         "flutter",
         "google_maps_flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
-        "gluttex_localizations",
+        "verdelia_localizations",
         "ui",
         "event",
         "http",
@@ -3000,9 +3000,9 @@
         "flutter",
         "google_maps_flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
-        "gluttex_localizations",
+        "verdelia_localizations",
         "ui",
         "event",
         "http",
@@ -3036,13 +3036,13 @@
         "flutter",
         "fl_chart",
         "app_constants",
-        "gluttex_localizations"
+        "verdelia_localizations"
       ],
       "directDependencies": [
         "flutter",
         "fl_chart",
         "app_constants",
-        "gluttex_localizations"
+        "verdelia_localizations"
       ]
     },
     {
@@ -3053,9 +3053,9 @@
       "dependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
-        "gluttex_localizations",
+        "verdelia_localizations",
         "event",
         "ui",
         "cupertino_icons",
@@ -3068,9 +3068,9 @@
       "directDependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
-        "gluttex_localizations",
+        "verdelia_localizations",
         "event",
         "ui",
         "cupertino_icons",
@@ -3088,17 +3088,17 @@
       "source": "path",
       "dependencies": [
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
-        "gluttex_localizations",
+        "verdelia_localizations",
         "path",
         "dio"
       ],
       "directDependencies": [
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
-        "gluttex_localizations",
+        "verdelia_localizations",
         "path",
         "dio"
       ]

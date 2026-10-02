@@ -1,10 +1,10 @@
 import 'package:app_constants/app_routes.dart';
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/business/Supplier.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/app/ManagementRule.dart';
-import 'package:gluttex_core/business/finance/ProvidedService.dart';
-import 'package:gluttex_core/business/privileges/Privileges.dart';
+import 'package:verdelia_core/business/Supplier.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/app/ManagementRule.dart';
+import 'package:verdelia_core/business/finance/ProvidedService.dart';
+import 'package:verdelia_core/business/privileges/Privileges.dart';
 import 'package:event/personnel_notifier.dart';
 import 'package:event/service_change_notifier.dart';
 import 'package:provider_store/components/selling_point/selling_point_supplier.dart';

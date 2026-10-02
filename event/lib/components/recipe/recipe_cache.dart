@@ -1,5 +1,5 @@
-import 'package:gluttex_core/app/AppUser.dart';
-import 'package:gluttex_core/business/Recipe.dart';
+import 'package:verdelia_core/app/AppUser.dart';
+import 'package:verdelia_core/business/Recipe.dart';
 
 class RecipeCache {
   final Map<int, Recipe> recipes = {};

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/app/AppUser.dart';
-import 'package:gluttex_core/business/privileges/role_bit_mapper.dart';
+import 'package:verdelia_core/app/AppUser.dart';
+import 'package:verdelia_core/business/privileges/role_bit_mapper.dart';
 import 'package:provider_personnel/components/privilege_dialog/privilege_dialog_content.dart';
 import 'package:provider_personnel/components/privilege_dialog/privilege_dialog_header.dart';
 

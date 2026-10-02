@@ -1,4 +1,4 @@
-import 'package:gluttex_core/business/Recipe.dart';
+import 'package:verdelia_core/business/Recipe.dart';
 
 class RecipeState {
   final Map<int, Recipe> recipes = {};

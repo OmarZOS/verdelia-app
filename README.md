@@ -1,4 +1,4 @@
-# gluttex_app
+# verdelia_app
 
 >   cd launcher
 > 

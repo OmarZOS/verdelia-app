@@ -3,12 +3,12 @@ library impl_app;
 import 'dart:developer';
 
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/app/AppUser.dart';
-import 'package:gluttex_core/app/GluttexException.dart';
-import 'package:gluttex_core/app/ManagementRule.dart';
-import 'package:gluttex_core/app/Person.dart';
-import 'package:gluttex_core/app/Services/UserService.dart';
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_core/app/AppUser.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
+import 'package:verdelia_core/app/ManagementRule.dart';
+import 'package:verdelia_core/app/Person.dart';
+import 'package:verdelia_core/app/Services/UserService.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 import 'package:locator/locator.dart';
 
 class AppUserServiceImpl extends AppUserService {
@@ -57,7 +57,7 @@ class AppUserServiceImpl extends AppUserService {
       return userId;
     } catch (e) {
       _storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       return null;
     }
   }
@@ -83,7 +83,7 @@ class AppUserServiceImpl extends AppUserService {
       return user;
     } catch (e) {
       _storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       return null;
     }
   }
@@ -104,7 +104,7 @@ class AppUserServiceImpl extends AppUserService {
       return result;
     } catch (e) {
       _storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       return null;
     }
   }
@@ -130,7 +130,7 @@ class AppUserServiceImpl extends AppUserService {
       return result as int?;
     } catch (e) {
       _storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       return null;
     }
   }
@@ -160,7 +160,7 @@ class AppUserServiceImpl extends AppUserService {
       return user ?? AppUser.empty();
     } catch (e) {
       _storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       return AppUser.empty();
     }
   }
@@ -194,7 +194,7 @@ class AppUserServiceImpl extends AppUserService {
       return rules;
     } catch (e) {
       _storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       return null;
     }
   }
@@ -227,7 +227,7 @@ class AppUserServiceImpl extends AppUserService {
       return rule;
     } catch (e) {
       _storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       return null;
     }
   }
@@ -263,7 +263,7 @@ class AppUserServiceImpl extends AppUserService {
       return rule;
     } catch (e) {
       _storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       return null;
     }
   }
@@ -286,7 +286,7 @@ class AppUserServiceImpl extends AppUserService {
       return success;
     } catch (e) {
       _storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       return false;
     }
   }
@@ -314,7 +314,7 @@ class AppUserServiceImpl extends AppUserService {
       return users;
     } catch (e) {
       _storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       return [];
     }
   }
@@ -367,7 +367,7 @@ class AppUserServiceImpl extends AppUserService {
       return people;
     } catch (e) {
       _storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       log('❌ Search people failed: $e', name: 'AppUserServiceImpl');
       return [];
     }
@@ -399,7 +399,7 @@ class AppUserServiceImpl extends AppUserService {
       return person ?? Person.empty();
     } catch (e) {
       _storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       return Person.empty();
     }
   }
@@ -432,7 +432,7 @@ class AppUserServiceImpl extends AppUserService {
       return categories;
     } catch (e) {
       _storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       return [];
     }
   }

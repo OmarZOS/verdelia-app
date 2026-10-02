@@ -1,6 +1,6 @@
-import 'package:gluttex_core/business/Recipe.dart';
-import 'package:gluttex_core/business/services/RecipeService.dart';
-import 'package:gluttex_core/app/GluttexException.dart';
+import 'package:verdelia_core/business/Recipe.dart';
+import 'package:verdelia_core/business/services/RecipeService.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
 import 'recipe_state.dart';
 import 'recipe_cache.dart';
 
@@ -62,7 +62,7 @@ class RecipeFetch {
         _state.hasMoreRecipes = false;
       }
     } catch (e) {
-      throw GluttexException('Failed to fetch recipes: $e');
+      throw VerdeliaException('Failed to fetch recipes: $e');
     } finally {
       _state.setLoading(false);
     }
@@ -87,7 +87,7 @@ class RecipeFetch {
       }
       return recipe;
     } catch (e) {
-      throw GluttexException('Failed to fetch recipe: $e');
+      throw VerdeliaException('Failed to fetch recipe: $e');
     }
   }
 
@@ -111,7 +111,7 @@ class RecipeFetch {
         }
       }
     } catch (e) {
-      throw GluttexException('Failed to fetch all ingredients: $e');
+      throw VerdeliaException('Failed to fetch all ingredients: $e');
     } finally {
       _state.setLoading(false);
     }
@@ -152,7 +152,7 @@ class RecipeFetch {
         _state.hasMoreIngredients = false;
       }
     } catch (e) {
-      throw GluttexException('Failed to fetch ingredients: $e');
+      throw VerdeliaException('Failed to fetch ingredients: $e');
     } finally {
       _state.setLoading(false);
     }

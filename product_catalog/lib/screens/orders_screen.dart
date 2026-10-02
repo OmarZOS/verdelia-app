@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/business/finance/Order.dart';
+import 'package:verdelia_core/business/finance/Order.dart';
 import 'package:event/order_change_notifier.dart';
 import 'package:event/user_change_notifier.dart';
 import 'package:provider/provider.dart';
@@ -691,7 +691,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             children: [
               Text(
-                loc.order_number(order?.idPlacedOrder ?? 0),
+                loc.order_number(order?.idPlacedOrder.toString() ?? "0"),
                 // "${loc.orderFor} #${}",
                 style: theme.textTheme.headlineSmall
                     ?.copyWith(fontWeight: FontWeight.bold),

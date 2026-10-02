@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/app/Address.dart';
-import 'package:gluttex_core/app/Person.dart';
-import 'package:gluttex_core/business/Delivery.dart';
-import 'package:gluttex_core/business/finance/Order.dart';
+import 'package:verdelia_core/app/Address.dart';
+import 'package:verdelia_core/app/Person.dart';
+import 'package:verdelia_core/business/Delivery.dart';
+import 'package:verdelia_core/business/finance/Order.dart';
 import 'package:provider_store/components/selling_point/checkout/delivery_section.dart';
 
 class OrderDetailsCard extends StatefulWidget {

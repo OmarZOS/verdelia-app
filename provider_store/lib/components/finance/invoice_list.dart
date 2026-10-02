@@ -1,9 +1,9 @@
 // lib/ui/screens/finance/enhanced_invoice_list.dart
 
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/business/finance/Customer.dart';
-import 'package:gluttex_core/business/finance/FinancialDocument.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/business/finance/Customer.dart';
+import 'package:verdelia_core/business/finance/FinancialDocument.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:event/finance_change_notifier.dart';
 import 'package:event/personnel_notifier.dart';
 import 'package:provider_store/components/finance/document/document_details_sheet.dart';
@@ -786,7 +786,7 @@ class _DocumentCard extends StatelessWidget {
 
   String _guestLabel(FinancialDocument doc, AppLocalizations loc) {
     final cartId = doc.sourceId ?? 0;
-    return cartId > 0 ? loc.guestWithId(cartId) : loc.guestLabel;
+    return cartId > 0 ? loc.guestWithId(cartId.toString()) : loc.guestLabel;
   }
 
   Widget _buildDocumentTypeRow(BuildContext context) {

@@ -3,7 +3,7 @@ import 'package:provider_store/components/delivery/DeliveryListView.dart';
 import 'package:provider_store/components/delivery/DeliveryDetailsSheet.dart';
 import 'package:provider/provider.dart';
 import 'package:event/delivery_change_notifier.dart';
-import 'package:gluttex_core/business/Delivery.dart';
+import 'package:verdelia_core/business/Delivery.dart';
 import 'package:ui/components/store/StoreDashboardHeader.dart';
 
 // ============================================================================

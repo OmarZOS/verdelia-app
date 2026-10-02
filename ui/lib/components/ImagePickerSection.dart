@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gluttex_core/app/GluttexImage.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/app/VerdeliaImage.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:locator/locator.dart';
 
@@ -14,7 +14,7 @@ class ImagePickerSection extends StatefulWidget {
   final String entityId;
   final bool landscape;
   final File? capturedImageFile;
-  final void Function(GluttexImage? newImageUrl)? onImageUploaded;
+  final void Function(VerdeliaImage? newImageUrl)? onImageUploaded;
 
   const ImagePickerSection({
     super.key,
@@ -86,7 +86,7 @@ class _ImagePickerSectionState extends State<ImagePickerSection> {
       );
       if (picked == null || !mounted) return;
 
-      final image = AppLocator.get<GluttexImage>()
+      final image = AppLocator.get<VerdeliaImage>()
         ..setupImage(
           filepath: picked.path,
           filename: picked.name,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/business/iProduct.dart';
+import 'package:verdelia_core/business/iProduct.dart';
 import 'package:event/assistant_change_notifier.dart';
 import 'package:event/components/lib.dart';
 import 'package:product_catalog/screens/components/iproduct_screen/available_products_section.dart';

@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:developer';
-import 'package:gluttex_core/app/AppUser.dart';
-import 'package:gluttex_core/app/Person.dart';
+import 'package:verdelia_core/app/AppUser.dart';
+import 'package:verdelia_core/app/Person.dart';
 import 'package:flutter/foundation.dart';
-import 'package:gluttex_core/app/Services/UserService.dart';
+import 'package:verdelia_core/app/Services/UserService.dart';
 import 'personnel_cache.dart';
 import 'personnel_state.dart';
 

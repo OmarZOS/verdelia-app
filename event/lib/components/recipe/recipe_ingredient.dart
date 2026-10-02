@@ -1,7 +1,7 @@
 import 'package:event/components/recipe/recipe_fetch.dart';
-import 'package:gluttex_core/business/Recipe.dart';
-import 'package:gluttex_core/business/services/RecipeService.dart';
-import 'package:gluttex_core/app/GluttexException.dart';
+import 'package:verdelia_core/business/Recipe.dart';
+import 'package:verdelia_core/business/services/RecipeService.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
 import 'recipe_state.dart';
 import 'recipe_cache.dart';
 
@@ -36,7 +36,7 @@ class RecipeIngredientManager {
       }
       return false;
     } catch (e) {
-      throw GluttexException('Failed to add ingredient: $e');
+      throw VerdeliaException('Failed to add ingredient: $e');
     }
   }
 
@@ -59,7 +59,7 @@ class RecipeIngredientManager {
       }
       return false;
     } catch (e) {
-      throw GluttexException('Failed to update ingredient: $e');
+      throw VerdeliaException('Failed to update ingredient: $e');
     }
   }
 
@@ -75,7 +75,7 @@ class RecipeIngredientManager {
       }
       return false;
     } catch (e) {
-      throw GluttexException('Failed to delete ingredient: $e');
+      throw VerdeliaException('Failed to delete ingredient: $e');
     }
   }
 

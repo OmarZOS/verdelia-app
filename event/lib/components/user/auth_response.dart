@@ -1,5 +1,5 @@
 import 'dart:developer';
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 import 'package:flutter/foundation.dart';
 
 class AuthResponseManager {

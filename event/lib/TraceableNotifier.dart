@@ -1,8 +1,8 @@
 // traceable_notifier.dart
 import 'dart:developer';
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/app/GluttexException.dart';
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 import 'package:locator/locator.dart';
 
 /// A base class for notifiers that provides traceability through StorageService
@@ -89,7 +89,7 @@ abstract class TraceableNotifier extends ChangeNotifier {
   /// Handle an exception with proper tracing
   T? handleException<T>(String key, dynamic e, {T? fallback}) {
     storeFailure(key, e.toString(),
-        errorCode: e is GluttexException ? e.message : 'ERROR');
+        errorCode: e is VerdeliaException ? e.message : 'ERROR');
     logError('Operation failed', error: e);
     return fallback;
   }

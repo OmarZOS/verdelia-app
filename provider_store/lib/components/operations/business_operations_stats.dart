@@ -3,8 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/business/finance/BusinessOperation.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/business/finance/BusinessOperation.dart';
 import 'package:ui/components/finance/financial_ui_manager.dart';
 
 /// Stats panel for the business operations screen.

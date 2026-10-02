@@ -5,7 +5,7 @@ import 'package:event/user_change_notifier.dart';
 import 'package:event/preferenceChangeNotifier.dart';
 import 'package:provider/provider.dart';
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class RegistrationForm extends StatefulWidget {
@@ -166,7 +166,7 @@ class _RegistrationFormState extends State<RegistrationForm> {
             _buildAgreementTile(
               context,
               title: AppLocalizations.of(context)!.termsOfUse,
-              url: 'https://gluttex.com/terms/terms_of_use_',
+              url: 'https://verdelia.com/terms/terms_of_use_',
               content: AppLocalizations.of(context)!.termsAgreementText,
               value: agreedToTerms,
               onChanged: (value) => setState(() => agreedToTerms = value!),
@@ -179,7 +179,7 @@ class _RegistrationFormState extends State<RegistrationForm> {
               context,
               title: AppLocalizations.of(context)!.privacyPolicy,
               content: AppLocalizations.of(context)!.privacyAgreementText,
-              url: 'https://gluttex.com/policy/privacy_policy_',
+              url: 'https://verdelia.com/policy/privacy_policy_',
               value: agreedToPrivacy,
               onChanged: (value) => setState(() => agreedToPrivacy = value!),
             ),

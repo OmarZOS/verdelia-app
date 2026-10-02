@@ -5,8 +5,8 @@ import 'dart:developer' as developer;
 
 import 'package:dio/dio.dart';
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/app/GluttexException.dart';
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 
 class StorageServiceImpl extends StorageService<FormData> {
   final Dio _dio;
@@ -91,7 +91,7 @@ class StorageServiceImpl extends StorageService<FormData> {
     return options;
   }
 
-  GluttexException _createGluttexException(DioException e) {
+  VerdeliaException _createVerdeliaException(DioException e) {
     final responseData = e.response?.data;
     String? errorCode;
     String? message;
@@ -159,7 +159,7 @@ class StorageServiceImpl extends StorageService<FormData> {
       }
     }
 
-    return GluttexException(
+    return VerdeliaException(
       errorCode,
       statusCode: statusCode,
       error: e,
@@ -226,16 +226,16 @@ class StorageServiceImpl extends StorageService<FormData> {
           statusCode: response.statusCode, responseCode: 'SUCCESS');
       return response.statusCode;
     } on DioException catch (e) {
-      final gluttexException = _createGluttexException(e);
+      final verdeliaException = _createVerdeliaException(e);
       setFailureResponse(
         key,
-        data: gluttexException.message,
-        statusCode: gluttexException.statusCode,
-        errorCode: gluttexException.message,
-        message: gluttexException.message,
-        responseCode: gluttexException.responseCode,
+        data: verdeliaException.message,
+        statusCode: verdeliaException.statusCode,
+        errorCode: verdeliaException.message,
+        message: verdeliaException.message,
+        responseCode: verdeliaException.responseCode,
       );
-      throw gluttexException;
+      throw verdeliaException;
     }
   }
 
@@ -282,16 +282,16 @@ class StorageServiceImpl extends StorageService<FormData> {
     } on DioException catch (e) {
       developer.log('GET Error: ${e.message}', name: 'StorageService');
       developer.log('URL: $url', name: 'StorageService');
-      final gluttexException = _createGluttexException(e);
+      final verdeliaException = _createVerdeliaException(e);
       setFailureResponse(
         key,
-        data: gluttexException.message,
-        statusCode: gluttexException.statusCode,
-        errorCode: gluttexException.message,
-        message: gluttexException.message,
-        responseCode: gluttexException.responseCode,
+        data: verdeliaException.message,
+        statusCode: verdeliaException.statusCode,
+        errorCode: verdeliaException.message,
+        message: verdeliaException.message,
+        responseCode: verdeliaException.responseCode,
       );
-      throw gluttexException;
+      throw verdeliaException;
     }
   }
 
@@ -355,16 +355,16 @@ class StorageServiceImpl extends StorageService<FormData> {
         'data=${e.response?.data}',
         name: 'StorageService',
       );
-      final gluttexException = _createGluttexException(e);
+      final verdeliaException = _createVerdeliaException(e);
       setFailureResponse(
         key,
-        data: gluttexException.message,
-        statusCode: gluttexException.statusCode,
-        errorCode: gluttexException.message,
-        message: gluttexException.message,
-        responseCode: gluttexException.responseCode,
+        data: verdeliaException.message,
+        statusCode: verdeliaException.statusCode,
+        errorCode: verdeliaException.message,
+        message: verdeliaException.message,
+        responseCode: verdeliaException.responseCode,
       );
-      throw gluttexException;
+      throw verdeliaException;
     }
   }
 
@@ -435,16 +435,16 @@ class StorageServiceImpl extends StorageService<FormData> {
       developer.log('Error response data: ${e.response?.data}',
           name: 'StorageService');
 
-      final gluttexException = _createGluttexException(e);
+      final verdeliaException = _createVerdeliaException(e);
       setFailureResponse(
         key,
-        data: gluttexException.message,
-        statusCode: gluttexException.statusCode,
-        errorCode: gluttexException.message,
-        message: gluttexException.message,
-        responseCode: gluttexException.responseCode,
+        data: verdeliaException.message,
+        statusCode: verdeliaException.statusCode,
+        errorCode: verdeliaException.message,
+        message: verdeliaException.message,
+        responseCode: verdeliaException.responseCode,
       );
-      throw gluttexException;
+      throw verdeliaException;
     } catch (e, stackTrace) {
       developer.log('❌ UNEXPECTED INSERT ERROR: $e', name: 'StorageService');
       developer.log('Stack trace: $stackTrace', name: 'StorageService');
@@ -494,16 +494,16 @@ class StorageServiceImpl extends StorageService<FormData> {
     } on DioException catch (e) {
       developer.log('Insert Binary Error: ${e.message}',
           name: 'StorageService');
-      final gluttexException = _createGluttexException(e);
+      final verdeliaException = _createVerdeliaException(e);
       setFailureResponse(
         key,
-        data: gluttexException.message,
-        statusCode: gluttexException.statusCode,
-        errorCode: gluttexException.message,
-        message: gluttexException.message,
-        responseCode: gluttexException.responseCode,
+        data: verdeliaException.message,
+        statusCode: verdeliaException.statusCode,
+        errorCode: verdeliaException.message,
+        message: verdeliaException.message,
+        responseCode: verdeliaException.responseCode,
       );
-      throw gluttexException;
+      throw verdeliaException;
     } catch (e) {
       developer.log('Unexpected binary upload error: $e',
           name: 'StorageService');
@@ -560,16 +560,16 @@ class StorageServiceImpl extends StorageService<FormData> {
     } on DioException catch (e) {
       developer.log('Update Error: ${e.message}', name: 'StorageService');
       developer.log('Error Stack: ${e.stackTrace}', name: 'StorageService');
-      final gluttexException = _createGluttexException(e);
+      final verdeliaException = _createVerdeliaException(e);
       setFailureResponse(
         key,
-        data: gluttexException.message,
-        statusCode: gluttexException.statusCode,
-        errorCode: gluttexException.message,
-        message: gluttexException.message,
-        responseCode: gluttexException.responseCode,
+        data: verdeliaException.message,
+        statusCode: verdeliaException.statusCode,
+        errorCode: verdeliaException.message,
+        message: verdeliaException.message,
+        responseCode: verdeliaException.responseCode,
       );
-      throw gluttexException;
+      throw verdeliaException;
     }
   }
 
@@ -623,7 +623,7 @@ class StorageServiceImpl extends StorageService<FormData> {
           message: errorMessage,
           responseCode: errorCode,
         );
-        throw GluttexException(
+        throw VerdeliaException(
           errorCode,
           statusCode: response.statusCode,
           error: errorMessage,
@@ -632,16 +632,16 @@ class StorageServiceImpl extends StorageService<FormData> {
       }
     } on DioException catch (e) {
       developer.log('SignUp Dio Error: ${e.message}', name: 'StorageService');
-      final gluttexException = _createGluttexException(e);
+      final verdeliaException = _createVerdeliaException(e);
       setFailureResponse(
         key,
-        data: gluttexException.message,
-        statusCode: gluttexException.statusCode,
-        errorCode: gluttexException.message,
-        message: gluttexException.message,
-        responseCode: gluttexException.responseCode,
+        data: verdeliaException.message,
+        statusCode: verdeliaException.statusCode,
+        errorCode: verdeliaException.message,
+        message: verdeliaException.message,
+        responseCode: verdeliaException.responseCode,
       );
-      throw gluttexException;
+      throw verdeliaException;
     } catch (e) {
       developer.log('Unexpected SignUp Error: $e', name: 'StorageService');
       setFailureResponse(
@@ -725,7 +725,7 @@ class StorageServiceImpl extends StorageService<FormData> {
           responseCode: errorCode,
         );
 
-        throw GluttexException(
+        throw VerdeliaException(
           errorCode,
           statusCode: response.statusCode,
           error: errorMessage,
@@ -758,7 +758,7 @@ class StorageServiceImpl extends StorageService<FormData> {
         } catch (_) {}
       }
 
-      final gluttexException = GluttexException(
+      final verdeliaException = VerdeliaException(
         errorCode,
         statusCode: e.response?.statusCode,
         error: e,
@@ -769,12 +769,12 @@ class StorageServiceImpl extends StorageService<FormData> {
       setFailureResponse(
         key,
         data: errorMessage,
-        statusCode: gluttexException.statusCode,
+        statusCode: verdeliaException.statusCode,
         errorCode: errorCode,
         message: errorMessage,
         responseCode: errorCode,
       );
-      throw gluttexException;
+      throw verdeliaException;
     }
   }
 
@@ -830,16 +830,16 @@ class StorageServiceImpl extends StorageService<FormData> {
     } on DioException catch (e) {
       developer.log('Provider SignIn Error: ${e.message}',
           name: 'StorageService');
-      final gluttexException = _createGluttexException(e);
+      final verdeliaException = _createVerdeliaException(e);
       setFailureResponse(
         key,
-        data: gluttexException.message,
-        statusCode: gluttexException.statusCode,
-        errorCode: gluttexException.message,
-        message: gluttexException.message,
-        responseCode: gluttexException.responseCode,
+        data: verdeliaException.message,
+        statusCode: verdeliaException.statusCode,
+        errorCode: verdeliaException.message,
+        message: verdeliaException.message,
+        responseCode: verdeliaException.responseCode,
       );
-      throw gluttexException;
+      throw verdeliaException;
     }
   }
 

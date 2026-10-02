@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/business/product_form_data.dart';
+import 'package:verdelia_core/business/product_form_data.dart';
 
 class FormControllers {
   final TextEditingController barcode = TextEditingController();

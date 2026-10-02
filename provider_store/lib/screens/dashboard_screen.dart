@@ -1,8 +1,8 @@
 import 'dart:developer';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/app/AppUser.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/app/AppUser.dart';
 import 'package:provider_store/components/dashboard/dashboard_content.dart';
 import 'package:provider/provider.dart';
 import 'package:event/personnel_notifier.dart';

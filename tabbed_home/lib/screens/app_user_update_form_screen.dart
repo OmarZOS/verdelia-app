@@ -1,13 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:app_constants/app_constants.dart';
 import 'package:app_constants/app_response_codes.dart';
-import 'package:gluttex_core/app/AppUser.dart';
-import 'package:gluttex_core/app/GluttexException.dart';
-import 'package:gluttex_core/app/GluttexImage.dart';
-import 'package:gluttex_core/app/Services/UserService.dart';
+import 'package:verdelia_core/app/AppUser.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
+import 'package:verdelia_core/app/VerdeliaImage.dart';
+import 'package:verdelia_core/app/Services/UserService.dart';
 import 'package:event/user_change_notifier.dart';
 import 'package:ui/Services/ResponseHandler.dart';
 import 'package:ui/components/map_picker.dart';
@@ -91,7 +91,7 @@ class _AppUserEditFormScreenState extends State<AppUserEditFormScreen> {
     unawaited(Future(() async {
       try {
         if (_imageChanged && _editedImage != null) {
-          GluttexImage image = AppLocator.get<GluttexImage>();
+          VerdeliaImage image = AppLocator.get<VerdeliaImage>();
           image.setupImage(
             filepath: _editedImage!.path,
             filename: _editedImage!.path.split("/").last,
@@ -115,7 +115,7 @@ class _AppUserEditFormScreenState extends State<AppUserEditFormScreen> {
               finalMessage: AppLocalizations.of(context)!.putSuccess);
           Navigator.pop(context, localUser);
         }
-      } on GluttexException catch (e) {
+      } on VerdeliaException catch (e) {
         // _showErrorSnackbar(AppLocalizations.of(context)!.putFailure);
         ResponseHandler.handleResponse(
             context: context,

@@ -1,8 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:recipe_catalog/screens/recipe_catalog_screen.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/app/AppUser.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/app/AppUser.dart';
 import 'package:event/supplier_change_notifier.dart';
 import 'package:tabbed_home/screens/SettingsScreen.dart';
 import 'package:tabbed_home/screens/components/notification_button.dart';
@@ -11,7 +10,6 @@ import 'package:tabbed_home/screens/profile_screen.dart';
 import 'package:event/user_change_notifier.dart';
 import 'package:event/product_change_notifier.dart';
 import 'package:provider_geo/screens/suppliers_map_screen.dart';
-import 'package:gluttex_play/screens/game_catalog.dart';
 import 'package:product_catalog/screens/product_catalog_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -25,11 +23,9 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
-  static var _pages = <Widget>[
+  static final _pages = <Widget>[
     const ProductCatalogScreen(),
     const SuppliersMapScreen(),
-    const RecipeCatalogScreen(),
-    GameSelectionScreen(),
     const ProfileScreen(),
   ];
 
@@ -114,10 +110,6 @@ class _HomePageState extends State<HomePage> {
         return loc.productsText;
       case _Tab.suppliers:
         return loc.providersText;
-      case _Tab.recipes:
-        return loc.recipesText;
-      case _Tab.games:
-        return loc.gamesText;
       case _Tab.profile:
         return loc.profileText;
       default:
@@ -141,16 +133,6 @@ class _HomePageState extends State<HomePage> {
         label: loc.providersText,
       ),
       NavigationDestination(
-        icon: const Icon(Icons.food_bank_outlined),
-        selectedIcon: const Icon(Icons.food_bank),
-        label: loc.recipesText,
-      ),
-      NavigationDestination(
-        icon: const Icon(Icons.videogame_asset_outlined),
-        selectedIcon: const Icon(Icons.videogame_asset),
-        label: loc.gamesText,
-      ),
-      NavigationDestination(
         icon: _ProfileAvatar(user: appUser, selected: false),
         selectedIcon: _ProfileAvatar(user: appUser, selected: true),
         label: _profileLabel(appUser, loc),
@@ -171,9 +153,7 @@ class _HomePageState extends State<HomePage> {
 abstract class _Tab {
   static const int catalog = 0;
   static const int suppliers = 1;
-  static const int recipes = 2;
-  static const int games = 3;
-  static const int profile = 4;
+  static const int profile = 2;
 }
 
 // ==================== PROFILE AVATAR ====================

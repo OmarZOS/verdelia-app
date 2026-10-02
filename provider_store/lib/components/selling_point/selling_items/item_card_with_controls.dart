@@ -2,9 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/business/Product.dart';
-import 'package:gluttex_core/business/finance/ProvidedService.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/business/Product.dart';
+import 'package:verdelia_core/business/finance/ProvidedService.dart';
 
 class ItemCardWithConfiguration extends StatelessWidget {
   final dynamic item;

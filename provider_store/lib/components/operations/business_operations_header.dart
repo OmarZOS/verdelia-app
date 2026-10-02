@@ -2,10 +2,10 @@
 
 import 'package:event/views/business_ops_notifier.dart';
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
-import 'package:gluttex_core/business/finance/BusinessOperation.dart';
+import 'package:verdelia_core/business/finance/BusinessOperation.dart';
 
 class BusinessOperationsHeader extends StatelessWidget {
   const BusinessOperationsHeader({super.key});

@@ -4,8 +4,8 @@ import 'package:event/components/product/product_state.dart';
 import 'package:event/product_change_notifier.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
-import 'package:gluttex_core/business/Product.dart';
-import 'package:gluttex_core/business/services/ProductService.dart';
+import 'package:verdelia_core/business/Product.dart';
+import 'package:verdelia_core/business/services/ProductService.dart';
 import 'package:locator/locator.dart';
 
 class FakeProductService extends ProductService {

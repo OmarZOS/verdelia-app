@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:gluttex_core/business/finance/ProvidedService.dart';
+import 'package:verdelia_core/business/finance/ProvidedService.dart';
 import 'package:event/TraceableNotifier.dart';
-import 'package:gluttex_core/app/GluttexException.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
 import 'package:locator/locator.dart';
-import 'package:gluttex_core/business/services/ProvidedServiceManagementService.dart';
+import 'package:verdelia_core/business/services/ProvidedServiceManagementService.dart';
 
 class ServiceNotifier extends TraceableNotifier {
   final ProvidedServiceManagementService _serviceManager =
@@ -244,7 +244,7 @@ class ServiceNotifier extends TraceableNotifier {
         error: e,
       );
       storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       logError('Error fetching services', error: e);
       rethrow;
     } finally {
@@ -285,7 +285,7 @@ class ServiceNotifier extends TraceableNotifier {
       return service;
     } catch (e) {
       storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       logError('Error fetching service details', error: e);
       return null;
     } finally {
@@ -385,7 +385,7 @@ class ServiceNotifier extends TraceableNotifier {
       return created;
     } catch (e) {
       storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       logError('Error adding service', error: e);
       return null;
     } finally {
@@ -423,7 +423,7 @@ class ServiceNotifier extends TraceableNotifier {
       return updated;
     } catch (e) {
       storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       logError('Error updating service', error: e);
       return null;
     } finally {
@@ -457,7 +457,7 @@ class ServiceNotifier extends TraceableNotifier {
       return result;
     } catch (e) {
       storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       logError('Error deleting service', error: e);
       return null;
     } finally {

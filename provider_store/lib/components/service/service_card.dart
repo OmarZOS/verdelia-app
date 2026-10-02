@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/business/finance/ProvidedService.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/business/finance/ProvidedService.dart';
 import 'package:provider_store/components/service/service_chip.dart';
 import 'package:provider_store/components/service/service_price_column.dart';
 

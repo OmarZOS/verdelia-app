@@ -1,9 +1,9 @@
 import 'package:app_constants/app_routes.dart';
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/app/AppUser.dart';
-import 'package:gluttex_core/app/Person.dart';
+import 'package:verdelia_core/app/AppUser.dart';
+import 'package:verdelia_core/app/Person.dart';
 import 'package:event/personnel_notifier.dart';
 import 'package:event/user_change_notifier.dart';
 import 'package:ui/components/search/CustomerSearchDialog.dart';

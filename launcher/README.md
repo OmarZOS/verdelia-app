@@ -15,9 +15,9 @@ A few resources to get you started if this is your first Flutter project:
 
 ## Generating the signed appbundle
 
-        keytool -genkey -v -keystore gluttex_keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias gluttex_android_key
+        keytool -genkey -v -keystore verdelia_keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias verdelia_android_key
 
-        jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore gluttex_keystore.jks build/app/outputs/bundle/release/app-release.aab gluttex_android_key
+        jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore verdelia_keystore.jks build/app/outputs/bundle/release/app-release.aab verdelia_android_key
 
         # Check certificates in the AAB
         jarsigner -verify -verbose -certs build/app/outputs/bundle/release/app-release.aab

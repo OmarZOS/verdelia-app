@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:event/delivery_change_notifier.dart';
-import 'package:gluttex_core/business/Delivery.dart';
+import 'package:verdelia_core/business/Delivery.dart';
 import 'package:provider_store/components/delivery/DeliveryCard.dart';
 
 /// DeliveryListView — displays deliveries filtered by one or more

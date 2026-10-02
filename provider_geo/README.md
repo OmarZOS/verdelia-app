@@ -1,8 +1,8 @@
 
 
-# Gluttex Localiser
+# Verdelia Localiser
 
-The `Gluttex Localiser` is a Flutter-based application package that enables users to view and manage the locations of suppliers on an interactive map. This package integrates with Google Maps, allowing users to search for suppliers, filter results, and view detailed information about each supplier.
+The `Verdelia Localiser` is a Flutter-based application package that enables users to view and manage the locations of suppliers on an interactive map. This package integrates with Google Maps, allowing users to search for suppliers, filter results, and view detailed information about each supplier.
 
 ## Features
 
@@ -16,7 +16,7 @@ The `Gluttex Localiser` is a Flutter-based application package that enables user
 
 ### Prerequisites
 
-To use `Gluttex Localiser`, ensure you have the following set up:
+To use `Verdelia Localiser`, ensure you have the following set up:
 
 - **Flutter SDK**: Version 3.0.0 or higher.
 - **Google Maps API Key**: Required for integrating Google Maps. [Get a key here](https://developers.google.com/maps/documentation/embed/get-api-key).

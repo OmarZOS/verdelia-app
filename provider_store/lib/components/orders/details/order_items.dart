@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/app/ManagementRule.dart';
-import 'package:gluttex_core/business/finance/Order.dart';
-import 'package:gluttex_core/business/Supplier.dart';
-import 'package:gluttex_core/business/privileges/Privileges.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/app/ManagementRule.dart';
+import 'package:verdelia_core/business/finance/Order.dart';
+import 'package:verdelia_core/business/Supplier.dart';
+import 'package:verdelia_core/business/privileges/Privileges.dart';
 import 'package:provider_store/components/orders/details/customer_details_card.dart';
 import 'package:provider_store/components/orders/details/order_items.dart';
 import 'package:ui/components/finance/financial_ui_manager.dart';
@@ -15,8 +15,8 @@ import 'package:event/personnel_notifier.dart';
 import 'package:badges/badges.dart' as badges;
 
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/business/finance/Order.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/business/finance/Order.dart';
 import 'package:ui/components/order/order_ui_manager.dart';
 
 class OrderItemsCard extends StatefulWidget {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gluttex_core/business/Supplier.dart';
+import 'package:verdelia_core/business/Supplier.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 ListTile buildLocationTile(BuildContext context, Supplier supplier) {

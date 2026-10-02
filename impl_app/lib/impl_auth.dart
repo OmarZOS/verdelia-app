@@ -3,10 +3,10 @@ library impl_app;
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/app/AppUser.dart';
-import 'package:gluttex_core/app/GluttexException.dart';
-import 'package:gluttex_core/app/Services/AuthService.dart';
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_core/app/AppUser.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
+import 'package:verdelia_core/app/Services/AuthService.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 import 'package:locator/locator.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 // import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
@@ -58,7 +58,7 @@ class AuthServiceImpl extends AuthService {
       String responseCode = 'FACEBOOK_SIGNIN_ERROR';
       int statusCode = 500;
 
-      if (e is GluttexException) {
+      if (e is VerdeliaException) {
         statusCode = e.statusCode ?? statusCode;
         errorCode = e.message;
         message = e.message;
@@ -93,7 +93,7 @@ class AuthServiceImpl extends AuthService {
       String responseCode = 'SIGNOUT_ERROR';
       int statusCode = 500;
 
-      if (e is GluttexException) {
+      if (e is VerdeliaException) {
         statusCode = e.statusCode ?? statusCode;
         errorCode = e.message;
         message = e.message;
@@ -154,7 +154,7 @@ class AuthServiceImpl extends AuthService {
       String responseCode = 'SIGNUP_ERROR';
       int statusCode = 500;
 
-      if (e is GluttexException) {
+      if (e is VerdeliaException) {
         statusCode = e.statusCode ?? statusCode;
         errorCode = e.message;
         message = e.message;
@@ -217,7 +217,7 @@ class AuthServiceImpl extends AuthService {
       String responseCode = 'SIGNIN_ERROR';
       int statusCode = 500;
 
-      if (e is GluttexException) {
+      if (e is VerdeliaException) {
         statusCode = e.statusCode ?? statusCode;
         errorCode = e.message;
         message = e.message;
@@ -279,7 +279,7 @@ class AuthServiceImpl extends AuthService {
       String responseCode = 'REFRESH_ERROR';
       int statusCode = 500;
 
-      if (e is GluttexException) {
+      if (e is VerdeliaException) {
         statusCode = e.statusCode ?? statusCode;
         errorCode = e.message;
         message = e.message;

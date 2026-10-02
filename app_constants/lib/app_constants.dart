@@ -296,7 +296,7 @@ class AppConstants {
   static const kDefaultPaddin = 20.0;
 }
 
-class GluttexPageIndex {
+class VerdeliaPageIndex {
   static const int catalog = 0;
   static const int suppliers = 1;
   static const int recipes = 2;

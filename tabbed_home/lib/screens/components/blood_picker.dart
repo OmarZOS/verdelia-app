@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:gluttex_core/health/blood_type.dart';
+import 'package:verdelia_core/health/blood_type.dart';
 
 class BloodPicker extends StatefulWidget {
   final ValueChanged<int> onBloodChanged;

@@ -8,7 +8,7 @@
 PRODUCT_NAME = provider_geo
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.gluttex.gluttexLocaliser
+PRODUCT_BUNDLE_IDENTIFIER = com.verdelia.verdeliaLocaliser
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2024 com.gluttex. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2024 com.verdelia. All rights reserved.

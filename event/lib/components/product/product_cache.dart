@@ -1,6 +1,6 @@
 // lib/event/components/product/product_cache.dart
 
-import 'package:gluttex_core/business/Product.dart';
+import 'package:verdelia_core/business/Product.dart';
 
 class ProductCache {
   final Map<int, Product> _productCache = {};

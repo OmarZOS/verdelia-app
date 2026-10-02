@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gluttex_core/business/Product.dart';
+import 'package:verdelia_core/business/Product.dart';
 import 'package:event/cart_change_notifier.dart';
 import 'package:event/product_change_notifier.dart';
 import 'package:provider_store/components/selling_point/cart_summary/cart_summary_screen.dart';

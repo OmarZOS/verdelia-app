@@ -1,8 +1,8 @@
 import 'package:event/user_change_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/business/Organisation.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/business/Organisation.dart';
 import 'package:event/supplier_change_notifier.dart';
 import 'package:ui/components/organisation_management_popup.dart';
 import 'package:provider/provider.dart';

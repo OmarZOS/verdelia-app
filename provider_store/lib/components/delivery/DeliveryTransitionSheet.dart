@@ -1,8 +1,8 @@
 // lib/provider_store/components/delivery/DeliveryTransitionSheet.dart
 import 'package:event/delivery_change_notifier.dart';
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/business/Delivery.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/business/Delivery.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:provider_store/components/delivery/DeliveryDetailsSheet.dart';
 

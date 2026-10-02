@@ -9,8 +9,8 @@ import 'package:event/components/product/product_state.dart';
 import 'package:event/components/product/product_supplier.dart';
 import 'package:flutter/material.dart';
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/business/Product.dart';
-import 'package:gluttex_core/business/services/ProductService.dart';
+import 'package:verdelia_core/business/Product.dart';
+import 'package:verdelia_core/business/services/ProductService.dart';
 import 'package:locator/locator.dart';
 
 class ProductNotifier extends ChangeNotifier {

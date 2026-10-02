@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/business/privileges/Privileges.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/business/privileges/Privileges.dart';
 import 'package:provider_store/components/inventory/product_list.dart';
 import 'package:provider_store/screens/inventory_screen.dart';
 

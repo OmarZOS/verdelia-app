@@ -2,7 +2,7 @@ import 'dart:collection';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/business/Supplier.dart';
+import 'package:verdelia_core/business/Supplier.dart';
 
 class _CacheEntry<T> {
   final T data;

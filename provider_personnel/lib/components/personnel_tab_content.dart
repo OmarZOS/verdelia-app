@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/app/ManagementRule.dart';
+import 'package:verdelia_core/app/ManagementRule.dart';
 import 'package:provider_personnel/components/supplier_user_card.dart';
 import 'package:event/personnel_notifier.dart';
 import 'package:provider/provider.dart';

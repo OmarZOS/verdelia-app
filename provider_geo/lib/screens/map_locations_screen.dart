@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/business/Supplier.dart';
+import 'package:verdelia_core/business/Supplier.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 
 class MapScreen extends StatefulWidget {
   final Function(GoogleMapController) onMapCreated;

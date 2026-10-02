@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:developer';
 
-import 'package:gluttex_core/business/Supplier.dart';
-import 'package:gluttex_core/business/services/SupplierService.dart';
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_core/business/Supplier.dart';
+import 'package:verdelia_core/business/services/SupplierService.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 import 'package:flutter/foundation.dart';
 import 'supplier_cache.dart';
 import 'supplier_state.dart';

@@ -6,7 +6,7 @@
 <uses-permission android:name="android.permission.FLASHLIGHT" />
 <application
         android:usesCleartextTraffic="true"
-        android:label="Gluttex"
+        android:label="Verdelia"
         android:enableOnBackInvokedCallback="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
@@ -38,7 +38,7 @@
         <category android:name="android.intent.category.DEFAULT" />
         <category android:name="android.intent.category.BROWSABLE" />
         <data
-            android:scheme="gluttex"
+            android:scheme="verdelia"
             android:host="auth"
             android:pathPrefix="/callback"/>
     </intent-filter>

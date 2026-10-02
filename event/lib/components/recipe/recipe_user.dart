@@ -1,6 +1,6 @@
-import 'package:gluttex_core/app/AppUser.dart';
-import 'package:gluttex_core/app/Services/UserService.dart';
-import 'package:gluttex_core/app/GluttexException.dart';
+import 'package:verdelia_core/app/AppUser.dart';
+import 'package:verdelia_core/app/Services/UserService.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
 import 'recipe_cache.dart';
 import 'recipe_state.dart';
 
@@ -37,7 +37,7 @@ class RecipeUserManager {
       }
       return null;
     } catch (e) {
-      throw GluttexException('Failed to fetch user: $e');
+      throw VerdeliaException('Failed to fetch user: $e');
     } finally {
       _isLoading = false;
     }

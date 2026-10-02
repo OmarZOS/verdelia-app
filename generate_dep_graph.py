@@ -11,9 +11,9 @@ with open("deps.json", "r") as f:
 # # Initialize graph
 # G = nx.DiGraph()
 
-internal_packages = ["recipe_catalog",     "launcher" ,"io","ui"     ,"event"     ,"gluttex_core","impl_app","impl_mediation","login","gluttex_play","app_constants","tabbed_home","business","provider_geo"  ,"health","locator","product_catalog"]
+internal_packages = ["recipe_catalog",     "launcher" ,"io","ui"     ,"event"     ,"verdelia_core","impl_app","impl_mediation","login","verdelia_play","app_constants","tabbed_home","business","provider_geo"  ,"health","locator","product_catalog"]
 
-ui_packages = ["recipe_catalog",     "launcher","ui","login","gluttex_play","product_catalog","tabbed_home","health","provider_geo"]
+ui_packages = ["recipe_catalog",     "launcher","ui","login","verdelia_play","product_catalog","tabbed_home","health","provider_geo"]
 
 # Define what counts as "internal"
 def is_internal(pkg):

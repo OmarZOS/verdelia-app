@@ -1,9 +1,9 @@
 import 'dart:developer' as developer;
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/app/Notifications/GluttexNotification.dart';
-import 'package:gluttex_core/app/Notifications/NotificationList.dart';
-import 'package:gluttex_core/app/Services/NotificationService.dart';
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_core/app/Notifications/VerdeliaNotification.dart';
+import 'package:verdelia_core/app/Notifications/NotificationList.dart';
+import 'package:verdelia_core/app/Services/NotificationService.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 import 'package:locator/locator.dart';
 
 class NotificationImpl extends NotificationService {
@@ -71,7 +71,7 @@ class NotificationImpl extends NotificationService {
   }
 
   @override
-  Future<GluttexNotification?> getNotificationById(
+  Future<VerdeliaNotification?> getNotificationById(
     int notificationId, {
     String? callerKey,
   }) async {
@@ -103,7 +103,7 @@ class NotificationImpl extends NotificationService {
       }
 
       final notification =
-          GluttexNotification.fromJson(responseData as Map<String, dynamic>);
+          VerdeliaNotification.fromJson(responseData as Map<String, dynamic>);
 
       developer.log('Found notification $notificationId',
           name: 'NotificationImpl');
@@ -123,7 +123,7 @@ class NotificationImpl extends NotificationService {
   }
 
   @override
-  Future<GluttexNotification?> markAsRead(
+  Future<VerdeliaNotification?> markAsRead(
     int notificationId, {
     String? callerKey,
   }) async {
@@ -163,10 +163,10 @@ class NotificationImpl extends NotificationService {
         return null;
       }
 
-      GluttexNotification? notification;
+      VerdeliaNotification? notification;
 
       if (result is Map<String, dynamic>) {
-        notification = GluttexNotification.fromJson(result);
+        notification = VerdeliaNotification.fromJson(result);
       }
 
       if (notification != null) {
@@ -433,7 +433,7 @@ class NotificationImpl extends NotificationService {
   }
 
   @override
-  Future<GluttexNotification?> sendInvitation(
+  Future<VerdeliaNotification?> sendInvitation(
     int userId,
     String roleName,
     String invitedBy, {
@@ -476,10 +476,10 @@ class NotificationImpl extends NotificationService {
         return null;
       }
 
-      GluttexNotification? notification;
+      VerdeliaNotification? notification;
 
       if (result is Map<String, dynamic>) {
-        notification = GluttexNotification.fromJson(result);
+        notification = VerdeliaNotification.fromJson(result);
       }
 
       if (notification != null) {
@@ -502,7 +502,7 @@ class NotificationImpl extends NotificationService {
   }
 
   @override
-  Future<List<GluttexNotification>> bulkCreateNotifications(
+  Future<List<VerdeliaNotification>> bulkCreateNotifications(
     List<Map<String, dynamic>> notificationsData, {
     String? callerKey,
   }) async {
@@ -539,18 +539,18 @@ class NotificationImpl extends NotificationService {
         return [];
       }
 
-      List<GluttexNotification> notifications = [];
+      List<VerdeliaNotification> notifications = [];
 
       if (result is List) {
         notifications = result
             .map((item) =>
-                GluttexNotification.fromJson(item as Map<String, dynamic>))
+                VerdeliaNotification.fromJson(item as Map<String, dynamic>))
             .toList();
       } else if (result is Map<String, dynamic> &&
           result.containsKey('notifications')) {
         notifications = (result['notifications'] as List)
             .map((item) =>
-                GluttexNotification.fromJson(item as Map<String, dynamic>))
+                VerdeliaNotification.fromJson(item as Map<String, dynamic>))
             .toList();
       }
 

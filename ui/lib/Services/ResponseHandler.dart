@@ -1,8 +1,8 @@
 // ResponseHandler.dart
 import 'package:flutter/material.dart';
 import 'SnackbarService.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 
 class ResponseHandler {
   // Response message mapping

@@ -1,7 +1,7 @@
 import 'package:event/user_change_notifier.dart';
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/app/GluttexException.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
 import 'package:event/supplier_change_notifier.dart';
 import 'package:provider/provider.dart';
 import 'package:ui/Services/ResponseHandler.dart';
@@ -24,7 +24,7 @@ void showDeleteConfirmation(BuildContext context,
           finalMessage: AppLocalizations.of(context)!.deleteSuccess,
         );
         Navigator.pop(context);
-      } on GluttexException catch (e) {
+      } on VerdeliaException catch (e) {
         ResponseHandler.handleResponse(
           context: context,
           statusCode: e.statusCode ?? 300,

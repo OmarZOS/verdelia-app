@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/app/Notifications/GluttexNotification.dart';
+import 'package:verdelia_core/app/Notifications/VerdeliaNotification.dart';
 import 'package:event/notification_notifier.dart';
 import 'package:event/user_change_notifier.dart';
 import 'package:tabbed_home/screens/components/NotificationAction.dart';

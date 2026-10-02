@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:gluttex_core/app/AppUser.dart';
+import 'package:verdelia_core/app/AppUser.dart';
 
 class AuthPersistence {
   static const String _TOKEN_KEY = 'auth_token';

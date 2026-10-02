@@ -2,10 +2,10 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/app/GluttexException.dart';
-import 'package:gluttex_core/business/Product.dart';
-import 'package:gluttex_core/business/finance/ProvidedService.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
+import 'package:verdelia_core/business/Product.dart';
+import 'package:verdelia_core/business/finance/ProvidedService.dart';
 import 'package:event/product_change_notifier.dart';
 import 'package:event/service_change_notifier.dart';
 import 'package:event/user_change_notifier.dart';
@@ -410,7 +410,7 @@ class _ProvidedServiceFormScreenState extends State<ProvidedServiceFormScreen>
                 response?.message ?? AppLocalizations.of(context)!.putFailure,
           );
         }
-      } on GluttexException catch (e) {
+      } on VerdeliaException catch (e) {
         if (mounted) {
           ResponseHandler.handleResponse(
             context: context,

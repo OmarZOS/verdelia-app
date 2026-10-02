@@ -9,7 +9,7 @@
       "dependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "impl_app",
         "business",
@@ -18,7 +18,7 @@
         "health",
         "provider_geo",
         "product_catalog",
-        "gluttex_play",
+        "verdelia_play",
         "login",
         "flutter_pdfview",
         "cupertino_icons",
@@ -28,7 +28,7 @@
       "directDependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "impl_app",
         "business",
@@ -37,7 +37,7 @@
         "health",
         "provider_geo",
         "product_catalog",
-        "gluttex_play",
+        "verdelia_play",
         "login",
         "flutter_pdfview",
         "cupertino_icons"
@@ -457,7 +457,7 @@
         "impl_app",
         "locator",
         "impl_mediation",
-        "gluttex_core",
+        "verdelia_core",
         "url_launcher",
         "flutter_svg",
         "cupertino_icons"
@@ -469,7 +469,7 @@
         "impl_app",
         "locator",
         "impl_mediation",
-        "gluttex_core",
+        "verdelia_core",
         "url_launcher",
         "flutter_svg",
         "cupertino_icons"
@@ -810,7 +810,7 @@
       ]
     },
     {
-      "name": "gluttex_core",
+      "name": "verdelia_core",
       "version": "0.0.1",
       "kind": "direct",
       "source": "path",
@@ -985,7 +985,7 @@
       "dependencies": [
         "flutter",
         "dio",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "sqflite",
         "path",
@@ -995,7 +995,7 @@
       "directDependencies": [
         "flutter",
         "dio",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "sqflite",
         "path",
@@ -1340,14 +1340,14 @@
       "source": "path",
       "dependencies": [
         "flutter",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "locator",
         "google_sign_in"
       ],
       "directDependencies": [
         "flutter",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "locator",
         "google_sign_in"
@@ -1492,7 +1492,7 @@
       ]
     },
     {
-      "name": "gluttex_play",
+      "name": "verdelia_play",
       "version": "1.0.0+1",
       "kind": "direct",
       "source": "path",
@@ -1547,7 +1547,7 @@
       "dependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "impl_app",
         "business",
@@ -1568,7 +1568,7 @@
       "directDependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "impl_app",
         "business",
@@ -1962,7 +1962,7 @@
         "flutter",
         "google_maps_flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "impl_app",
         "business",
@@ -1984,7 +1984,7 @@
         "flutter",
         "google_maps_flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "impl_app",
         "business",
@@ -2182,7 +2182,7 @@
       "source": "path",
       "dependencies": [
         "flutter",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "locator",
         "geolocator",
@@ -2190,7 +2190,7 @@
       ],
       "directDependencies": [
         "flutter",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "locator",
         "geolocator",
@@ -2511,7 +2511,7 @@
       "dependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "impl_app",
         "business",
@@ -2527,7 +2527,7 @@
       "directDependencies": [
         "flutter",
         "locator",
-        "gluttex_core",
+        "verdelia_core",
         "app_constants",
         "impl_app",
         "business",

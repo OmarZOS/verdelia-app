@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:event/cart_change_notifier.dart';
-import 'package:gluttex_core/business/finance/Cart.dart';
+import 'package:verdelia_core/business/finance/Cart.dart';
 
 class OrderItemsSection extends StatelessWidget {
   const OrderItemsSection({super.key});

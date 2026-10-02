@@ -1,9 +1,9 @@
- 1005  docker-compose down gluttex-db
- 1006  docker down gluttex-db
+ 1005  docker-compose down verdelia-db
+ 1006  docker down verdelia-db
  1007  docker --hepl
  1008  docker --help
- 1009  docker stop gluttex-db
- 1010  docker rm gluttex-db
+ 1009  docker stop verdelia-db
+ 1010  docker rm verdelia-db
  1011  docker-compose down 
  1012  git add --all
  1013  git commit -a -m "paused blood type insertions"
@@ -42,7 +42,7 @@
  1046  flutter pub get
  1047  cd ../tabbed_home/
  1048  flutter run
- 1049  cd ../gluttex_lo
+ 1049  cd ../verdelia_lo
  1050  cd ../login/
  1051  flutter clean
  1052  flutter pub get
@@ -144,23 +144,23 @@
  1148  flutter clean
  1149  flutter pub get
  1150  flutter run
- 1151  sqlacodegen --outfile=api_server/core/models.py   mysql+pymysql://doadmin:AVNS_nv4Vo-PZHHeMOp69jCx@dbaas-db-10408380-do-user-13698920-0.e.db.ondigitalocean.com/gluttex
- 1152  sqlacodegen --outfile=api_server/core/models.py   mysql://doadmin:AVNS_nv4Vo-PZHHeMOp69jCx@dbaas-db-10408380-do-user-13698920-0.e.db.ondigitalocean.com/gluttex
- 1153  sqlacodegen --outfile=api_server/core/models.py   mysql+pymysql://doadmin:AVNS_nv4Vo-PZHHeMOp69jCx@dbaas-db-10408380-do-user-13698920-0.e.db.ondigitalocean.com/gluttex
+ 1151  sqlacodegen --outfile=api_server/core/models.py   mysql+pymysql://doadmin:AVNS_nv4Vo-PZHHeMOp69jCx@dbaas-db-10408380-do-user-13698920-0.e.db.ondigitalocean.com/verdelia
+ 1152  sqlacodegen --outfile=api_server/core/models.py   mysql://doadmin:AVNS_nv4Vo-PZHHeMOp69jCx@dbaas-db-10408380-do-user-13698920-0.e.db.ondigitalocean.com/verdelia
+ 1153  sqlacodegen --outfile=api_server/core/models.py   mysql+pymysql://doadmin:AVNS_nv4Vo-PZHHeMOp69jCx@dbaas-db-10408380-do-user-13698920-0.e.db.ondigitalocean.com/verdelia
  1154  docker compose up -d
  1155  docker compose down
  1156  docker compose up -d
  1157  docker compose down
  1158  docker compose up -d
- 1159  sudo docker exec -it gluttex-db mysql -u root gluttex -p
- 1160  sudo docker exec -it gluttex-db mysql -u root gluttex 
- 1161  sudo docker exec -it gluttex-db mysql -u root gluttex -p
- 1162  sudo docker exec -it gluttex-db mysql -u dev_user gluttex -p
- 1163  sudo docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' gluttex-db
- 1164  sqlacodegen --outfile=api_server/core/models.py   mysql+pymysql://dev_user:dev_password@172.19.0.5/gluttex
+ 1159  sudo docker exec -it verdelia-db mysql -u root verdelia -p
+ 1160  sudo docker exec -it verdelia-db mysql -u root verdelia 
+ 1161  sudo docker exec -it verdelia-db mysql -u root verdelia -p
+ 1162  sudo docker exec -it verdelia-db mysql -u dev_user verdelia -p
+ 1163  sudo docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' verdelia-db
+ 1164  sqlacodegen --outfile=api_server/core/models.py   mysql+pymysql://dev_user:dev_password@172.19.0.5/verdelia
  1165  docker compose down
- 1166  docker compose down gluttex-api
- 1167  docker compose up -d gluttex-api
+ 1166  docker compose down verdelia-api
+ 1167  docker compose up -d verdelia-api
  1168  docker compose down 
  1169  flutter run
  1170  docker compose down 
@@ -215,7 +215,7 @@
  1219  flutter run
  1220  flutter clean
  1221  flutter run
- 1222  source /home/omar/Projects/gluttex/gluttex-api/.venv/bin/activate
+ 1222  source /home/omar/Projects/verdelia/verdelia-api/.venv/bin/activate
  1223  flutter run
  1224  code .
  1225  cd tabbed_home/
@@ -232,7 +232,7 @@
  1236  lsblk
  1237  fdisk
  1238  flutter run
- 1239  source /home/omar/Projects/gluttex/gluttex-api/.venv/bin/activate
+ 1239  source /home/omar/Projects/verdelia/verdelia-api/.venv/bin/activate
  1240  flutter run
  1241  code .
  1242  cd tabbed_home/
@@ -371,16 +371,16 @@
  1375  flutter build apk  --split-per-abi
  1376  flutter build appbundle
  1377  flutter run --profile
- 1378  docker build -t omarzos/gluttex-api -f ./api_server/Dockerfile .
- 1379  sudo docker build -t omarzos/gluttex-api -f ./api_server/Dockerfile .
+ 1378  docker build -t omarzos/verdelia-api -f ./api_server/Dockerfile .
+ 1379  sudo docker build -t omarzos/verdelia-api -f ./api_server/Dockerfile .
  1380  docker images
- 1381  sudo docker build -t omarzos/gluttex-auth -f ./auth_server/Dockerfile .
- 1382  docker build --no-cache -t omarzos/gluttex-auth:latest -f ./auth_server/Dockerfile .
- 1383  sudo docker build --no-cache -t omarzos/gluttex-auth:latest -f ./auth_server/Dockerfile .
+ 1381  sudo docker build -t omarzos/verdelia-auth -f ./auth_server/Dockerfile .
+ 1382  docker build --no-cache -t omarzos/verdelia-auth:latest -f ./auth_server/Dockerfile .
+ 1383  sudo docker build --no-cache -t omarzos/verdelia-auth:latest -f ./auth_server/Dockerfile .
  1384  docker system prune -a --volumes
- 1385  sudo docker build --no-cache -t omarzos/gluttex-api:latest -f ./api_server/Dockerfile .
- 1386  sudo docker build --no-cache -t omarzos/gluttex-auth:latest -f ./auth_server/Dockerfile .
- 1387  sudo docker build --no-cache -t omarzos/gluttex-api:latest -f ./api_server/Dockerfile .
+ 1385  sudo docker build --no-cache -t omarzos/verdelia-api:latest -f ./api_server/Dockerfile .
+ 1386  sudo docker build --no-cache -t omarzos/verdelia-auth:latest -f ./auth_server/Dockerfile .
+ 1387  sudo docker build --no-cache -t omarzos/verdelia-api:latest -f ./api_server/Dockerfile .
  1388  git add --all
  1389  git commit -a -m "fixed automated image build"
  1390  git push
@@ -553,35 +553,35 @@
  1557  pydeps api_server/ --max-bacon=2 --show-deps --rmprefix api_server
  1558  pydeps api_server/ --max-bacon=3 --show-deps --rmprefix .api_server
  1559  pydeps api_server/ --max-bacon=2 --show-deps --rmprefix .api_server
- 1560  pydeps gluttex_api --json > deps.json
+ 1560  pydeps verdelia_api --json > deps.json
  1561  pydeps api_server/ --max-bacon=2 --show-deps --rmprefix .api_server -T json
  1562  pydeps api_server/ --max-bacon=2 --show-deps --rmprefix .api_server 
  1563  pydeps auth_server/ --max-bacon=2 --show-deps --rmprefix .auth_server 
  1564  pydeps file_server/ --max-bacon=2 --show-deps --rmprefix .file_server 
- 1565  pydeps file_server/ --max-bacon=2 --show-deps --rmprefix home.omar.Projects.gluttex.gluttex-api.file_server.
+ 1565  pydeps file_server/ --max-bacon=2 --show-deps --rmprefix home.omar.Projects.verdelia.verdelia-api.file_server.
  1566  pydeps auth_server/ --max-bacon=2 --show-deps --rmprefix .auth_server 
- 1567  pydeps auth_server/ --max-bacon=2 --show-deps --rmprefix home.omar.Projects.gluttex.gluttex-api.auth_server.
+ 1567  pydeps auth_server/ --max-bacon=2 --show-deps --rmprefix home.omar.Projects.verdelia.verdelia-api.auth_server.
  1568  pydeps auth_server/ --max-bacon=2 --show-deps --rmprefix .auth_server  -T json
  1569  flutter clean
  1570  flutter run
  1571  code .
  1572  docker-compose up -d
- 1573  sudo docker exec -it gluttex-db mysql -u root gluttex -p
- 1574  sudo docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' gluttex-db
- 1575  sqlacodegen --outfile=models.py   mysql+pymysql://dev_user:dev_password@172.18.0.2/gluttex
+ 1573  sudo docker exec -it verdelia-db mysql -u root verdelia -p
+ 1574  sudo docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' verdelia-db
+ 1575  sqlacodegen --outfile=models.py   mysql+pymysql://dev_user:dev_password@172.18.0.2/verdelia
  1576  docker-compose down
  1577  rm -r data/
  1578  sudo rm -r data/
  1579  docker-compose up -d
- 1580  sudo docker exec -it gluttex-db mysql -u root gluttex -p
- 1581  sudo docker exec -it gluttex-db mysql -u root 
- 1582  docker logs gluttex-db 
+ 1580  sudo docker exec -it verdelia-db mysql -u root verdelia -p
+ 1581  sudo docker exec -it verdelia-db mysql -u root 
+ 1582  docker logs verdelia-db 
  1583  docker-compose down
  1584  sudo rm -r data/
  1585  docker-compose up -d
- 1586  sudo docker exec -it gluttex-db mysql -u root gluttex -p
- 1587  sudo docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' gluttex-db
- 1588  sqlacodegen --outfile=models.py   mysql+pymysql://dev_user:dev_password@172.18.0.2/gluttex
+ 1586  sudo docker exec -it verdelia-db mysql -u root verdelia -p
+ 1587  sudo docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' verdelia-db
+ 1588  sqlacodegen --outfile=models.py   mysql+pymysql://dev_user:dev_password@172.18.0.2/verdelia
  1589  git add --all
  1590  git commit -a -m "added notification tables, management tables, more image tables and location tables"
  1591  git push
@@ -611,24 +611,24 @@
  1615  docker-compose  down
  1616  docker-compose  up -d
  1617  docker ps
- 1618  sudo docker exec -it gluttex-db mysql -u root gluttex -p
- 1619  sudo docker exec -it gluttex-db mysql -u dev_user gluttex -p
- 1620  docker logs gluttex-db 
+ 1618  sudo docker exec -it verdelia-db mysql -u root verdelia -p
+ 1619  sudo docker exec -it verdelia-db mysql -u dev_user verdelia -p
+ 1620  docker logs verdelia-db 
  1621  docker-compose down
  1622  sudo rm -r data/
  1623  docker-compose  up -d
- 1624  sudo docker exec -it gluttex-db mysql -u dev_user gluttex -p
- 1625  sudo docker exec -it gluttex-db mysql -u root gluttex -p
- 1626  docker logs gluttex-db 
- 1627  sudo docker exec -it gluttex-db mysql -u root gluttex -p
+ 1624  sudo docker exec -it verdelia-db mysql -u dev_user verdelia -p
+ 1625  sudo docker exec -it verdelia-db mysql -u root verdelia -p
+ 1626  docker logs verdelia-db 
+ 1627  sudo docker exec -it verdelia-db mysql -u root verdelia -p
  1628  docker-compose down
  1629  sudo rm -r data/
  1630  docker-compose  up -d
- 1631  docker logs gluttex-db 
- 1632  sudo docker exec -it gluttex-db mysql -u root gluttex -p
- 1633  sudo docker exec -it gluttex-db mysql -u dev_user gluttex -p
- 1634  sudo docker exec -it gluttex-api bash
- 1635  sudo docker exec -it gluttex-api sh
+ 1631  docker logs verdelia-db 
+ 1632  sudo docker exec -it verdelia-db mysql -u root verdelia -p
+ 1633  sudo docker exec -it verdelia-db mysql -u dev_user verdelia -p
+ 1634  sudo docker exec -it verdelia-api bash
+ 1635  sudo docker exec -it verdelia-api sh
  1636  docker ps
  1637  docker-compose  down
  1638  docker-compose  up -d
@@ -640,11 +640,11 @@
  1644  docker-compose  up -d
  1645  docker-compose  down
  1646  docker-compose  up -d
- 1647  docker logs gluttex-db 
- 1648  sudo docker exec -it gluttex-db mysql -u root gluttex -p
- 1649  sudo docker exec -it gluttex-db mysql -u dev_user gluttex -p
+ 1647  docker logs verdelia-db 
+ 1648  sudo docker exec -it verdelia-db mysql -u root verdelia -p
+ 1649  sudo docker exec -it verdelia-db mysql -u dev_user verdelia -p
  1650  docker ps
- 1651  sudo docker exec -it gluttex-api sh
+ 1651  sudo docker exec -it verdelia-api sh
  1652  docker-compose  down
  1653  docker-compose  up -d
  1654  docker ps
@@ -667,67 +667,67 @@
  1671  docker-compose  down
  1672  sudo rm -r data/
  1673  docker-compose  up -d
- 1674  docker logs gluttex-db 
+ 1674  docker logs verdelia-db 
  1675  docker-compose  down
  1676  docker-compose up -d
- 1677  docker logs gluttex-db 
- 1678  sudo docker exec -it gluttex-db mysql -u root gluttex -p
- 1679  docker logs gluttex-api
- 1680  sudo docker exec -it gluttex-db sh
- 1681  sudo docker exec -it gluttex-api sh
- 1682  docker logs gluttex-api
+ 1677  docker logs verdelia-db 
+ 1678  sudo docker exec -it verdelia-db mysql -u root verdelia -p
+ 1679  docker logs verdelia-api
+ 1680  sudo docker exec -it verdelia-db sh
+ 1681  sudo docker exec -it verdelia-api sh
+ 1682  docker logs verdelia-api
  1683  docker-compose  down
  1684  docker-compose up -d
  1685  docker-compose  
- 1686  docker-compose down gluttex-api
+ 1686  docker-compose down verdelia-api
  1687  docker ps
- 1688  docker-compose down gluttex-api
+ 1688  docker-compose down verdelia-api
  1689  docker-compose up -d
- 1690  docker-compose up -d gluttex-api
- 1691  docker-compose down gluttex-api
- 1692  docker-compose restart gluttex-api
- 1693  docker-compose up -d --build gluttex-api
- 1694  docker-compose up -d  gluttex-api
+ 1690  docker-compose up -d verdelia-api
+ 1691  docker-compose down verdelia-api
+ 1692  docker-compose restart verdelia-api
+ 1693  docker-compose up -d --build verdelia-api
+ 1694  docker-compose up -d  verdelia-api
  1695  docker-compose down 
- 1696  docker-compose up -d  gluttex-api
+ 1696  docker-compose up -d  verdelia-api
  1697  docker-compose down 
  1698  docker-compose up -d  
  1699  docker-compose down 
  1700  docker-compose up -d  
- 1701  docker logs gluttex-api
+ 1701  docker logs verdelia-api
  1702  docker-compose up -d  
  1703  docker-compose down 
  1704  docker-compose up -d  
- 1705  docker logs gluttex-api
+ 1705  docker logs verdelia-api
  1706  docker-compose down 
  1707  docker-compose up -d  
- 1708  docker logs gluttex-api
+ 1708  docker logs verdelia-api
  1709  docker-compose up -d  
  1710  docker-compose down 
  1711  docker-compose up -d  
- 1712  docker logs gluttex-api
- 1713  sudo docker exec -it gluttex-api sh
- 1714  docker logs gluttex-api
+ 1712  docker logs verdelia-api
+ 1713  sudo docker exec -it verdelia-api sh
+ 1714  docker logs verdelia-api
  1715  docker ps
- 1716  docker rm gluttex-api
- 1717  docker remove gluttex-api
- 1718  docker stop gluttex-api
- 1719  docker rm gluttex-api
+ 1716  docker rm verdelia-api
+ 1717  docker remove verdelia-api
+ 1718  docker stop verdelia-api
+ 1719  docker rm verdelia-api
  1720  docker-compose up -d  
- 1721  docker logs gluttex-api
- 1722  docker-compose up -d --build gluttex-api
+ 1721  docker logs verdelia-api
+ 1722  docker-compose up -d --build verdelia-api
  1723  docker-compose down
  1724  docker-compose up -d 
- 1725  docker logs gluttex-api
- 1726  docker-compose up -d --build gluttex-api
- 1727  sudo docker-compose up -d --build gluttex-api
+ 1725  docker logs verdelia-api
+ 1726  docker-compose up -d --build verdelia-api
+ 1727  sudo docker-compose up -d --build verdelia-api
  1728  docker-compose down
  1729  docker-compose up -d 
- 1730  docker logs gluttex-api
- 1731  sudo docker-compose up -d --build gluttex-api
+ 1730  docker logs verdelia-api
+ 1731  sudo docker-compose up -d --build verdelia-api
  1732  docker-compose down
  1733  docker-compose up -d 
- 1734  sudo docker-compose up -d --build gluttex-api
+ 1734  sudo docker-compose up -d --build verdelia-api
  1735  docker images
  1736  docker ps
  1737  docker containers
@@ -741,70 +741,70 @@
  1745  docker ps -a
  1746  docker ps prune
  1747  docker prune
- 1748  sudo docker-compose up -d --build gluttex-api
- 1749  sudo docker-compose up -d  gluttex-api
- 1750  docker rm 0f022fb7c53e_gluttex-api
- 1751  sudo docker-compose up -d  gluttex-api
- 1752  docker logs gluttex-api
- 1753  sudo docker-compose up -d  gluttex-api
- 1754  docker rm gluttex-api
+ 1748  sudo docker-compose up -d --build verdelia-api
+ 1749  sudo docker-compose up -d  verdelia-api
+ 1750  docker rm 0f022fb7c53e_verdelia-api
+ 1751  sudo docker-compose up -d  verdelia-api
+ 1752  docker logs verdelia-api
+ 1753  sudo docker-compose up -d  verdelia-api
+ 1754  docker rm verdelia-api
  1755  docker ps
- 1756  sudo docker-compose up -d --build gluttex-api
- 1757  docker rm 20dc234851c2_gluttex-api
- 1758  sudo docker-compose up -d gluttex-api
- 1759  docker logs gluttex-api
+ 1756  sudo docker-compose up -d --build verdelia-api
+ 1757  docker rm 20dc234851c2_verdelia-api
+ 1758  sudo docker-compose up -d verdelia-api
+ 1759  docker logs verdelia-api
  1760  sudo docker-compose down
  1761  sudo docker-compose up -d 
  1762  sudo docker-compose down
  1763  sudo docker-compose up -d 
- 1764  sudo docker-compose up -d --build gluttex-api
+ 1764  sudo docker-compose up -d --build verdelia-api
  1765  sudo docker-compose down
  1766  sudo docker-compose up -d 
- 1767  docker logs gluttex-api
+ 1767  docker logs verdelia-api
  1768  sudo docker-compose up -d 
- 1769  docker logs gluttex-api
- 1770  sudo docker-compose restart gluttex-api 
- 1771  docker logs gluttex-api
+ 1769  docker logs verdelia-api
+ 1770  sudo docker-compose restart verdelia-api 
+ 1771  docker logs verdelia-api
  1772  sudo docker-compose up -d 
- 1773  docker logs gluttex-api
- 1774  sudo docker-compose restart gluttex-api 
- 1775  docker logs gluttex-api
+ 1773  docker logs verdelia-api
+ 1774  sudo docker-compose restart verdelia-api 
+ 1775  docker logs verdelia-api
  1776  sudo docker-compose down
  1777  sudo docker-compose up 
  1778  sudo docker-compose up -d 
  1779  docker ps
- 1780  docker logs gluttex-api
- 1781  sudo docker exec -it gluttex-api sh
- 1782  docker logs gluttex-api
- 1783  docker-compose restart gluttex-api 
- 1784  docker logs gluttex-api
- 1785  docker-compose restart gluttex-api 
- 1786  docker logs gluttex-api
- 1787  docker-compose restart gluttex-api 
- 1788  docker logs gluttex-api
- 1789  docker-compose restart gluttex-api 
- 1790  docker logs gluttex-api
- 1791  docker-compose restart gluttex-api 
- 1792  docker logs gluttex-api
+ 1780  docker logs verdelia-api
+ 1781  sudo docker exec -it verdelia-api sh
+ 1782  docker logs verdelia-api
+ 1783  docker-compose restart verdelia-api 
+ 1784  docker logs verdelia-api
+ 1785  docker-compose restart verdelia-api 
+ 1786  docker logs verdelia-api
+ 1787  docker-compose restart verdelia-api 
+ 1788  docker logs verdelia-api
+ 1789  docker-compose restart verdelia-api 
+ 1790  docker logs verdelia-api
+ 1791  docker-compose restart verdelia-api 
+ 1792  docker logs verdelia-api
  1793  docker-compose down
  1794  docker-compose 
  1795  git add --all
  1796  git commit -a -m "enhanced dev env, fixed supplier edit"
  1797  git push
  1798  docker-compose up -d
- 1799  docker logs gluttex-api
+ 1799  docker logs verdelia-api
  1800  flutter run
- 1801  docker logs gluttex-api
- 1802  docker logs --follow gluttex-api
+ 1801  docker logs verdelia-api
+ 1802  docker logs --follow verdelia-api
  1803  cd api_server/
  1804  ls features/
  1805  ls -r features/
  1806  ls 
  1807  ls --recursive features/
  1808  cd ..
- 1809  docker logs --follow gluttex-api
+ 1809  docker logs --follow verdelia-api
  1810  flutter run
- 1811  docker logs --follow gluttex-api
+ 1811  docker logs --follow verdelia-api
  1812  git add --all
  1813  git commit -a -m "better handling exception, normalized error codes and status codes"
  1814  git push
@@ -826,14 +826,14 @@
  1830  git add --all
  1831  git commit -a -m "better endpoint responses, fixed password update feature"
  1832  git push
- 1833  docker logs gluttex-api --follow
- 1834  /home/omar/Projects/gluttex/gluttex-api/.venv/bin/python /home/omar/Projects/gluttex/gluttex-api/api_server/core/messages.py
- 1835  docker logs gluttex-auth --follow
- 1836  sudo docker exec -it gluttex-auth  sh
- 1837  docker logs gluttex-auth --follow
- 1838  sudo docker exec -it gluttex-auth  sh
- 1839  docker logs gluttex-auth --follow
- 1840  docker logs --follow gluttex-api
+ 1833  docker logs verdelia-api --follow
+ 1834  /home/omar/Projects/verdelia/verdelia-api/.venv/bin/python /home/omar/Projects/verdelia/verdelia-api/api_server/core/messages.py
+ 1835  docker logs verdelia-auth --follow
+ 1836  sudo docker exec -it verdelia-auth  sh
+ 1837  docker logs verdelia-auth --follow
+ 1838  sudo docker exec -it verdelia-auth  sh
+ 1839  docker logs verdelia-auth --follow
+ 1840  docker logs --follow verdelia-api
  1841  docker-compose down
  1842  sudo rm -r data/
  1843  sudo rm -r auth_db/
@@ -841,28 +841,28 @@
  1845  docker-compose up -d
  1846  docker-compose down
  1847  docker-compose up -d
- 1848  docker logs gluttex-db
- 1849  docker logs gluttex-auth
- 1850  sudo docker exec gluttex-auth -it sh
- 1851  sudo docker exec -it gluttex-auth  sh
+ 1848  docker logs verdelia-db
+ 1849  docker logs verdelia-auth
+ 1850  sudo docker exec verdelia-auth -it sh
+ 1851  sudo docker exec -it verdelia-auth  sh
  1852  docker-compose down
- 1853  docker-compose up -d --build gluttex-auth 
- 1854  sudo docker exec gluttex-auth -it sh
- 1855  sudo docker exec -it gluttex-auth  sh
- 1856  docker-compose up -d gluttex-auth 
- 1857  docker-compose up -d gluttex-auth --build
- 1858  docker-compose up -d --build gluttex-auth 
+ 1853  docker-compose up -d --build verdelia-auth 
+ 1854  sudo docker exec verdelia-auth -it sh
+ 1855  sudo docker exec -it verdelia-auth  sh
+ 1856  docker-compose up -d verdelia-auth 
+ 1857  docker-compose up -d verdelia-auth --build
+ 1858  docker-compose up -d --build verdelia-auth 
  1859  docker-compose up down
  1860  docker-compose  down
  1861  docker images
- 1862  docker images rm omarzos/gluttex-auth
+ 1862  docker images rm omarzos/verdelia-auth
  1863  docker images prune 
  1864  docker-compose up -d --build 
  1865  docker-compose up -d 
  1866  docker-compose down
  1867  docker-compose up -d 
- 1868  docker logs gluttex-fs
- 1869  docker logs gluttex-auth
+ 1868  docker logs verdelia-fs
+ 1869  docker logs verdelia-auth
  1870  docker-compose up -d --build 
  1871  docker-compose up -d 
  1872  docker ps
@@ -885,17 +885,17 @@
  1889  docker images prune
  1890  docker image prune
  1891  docker-compose up -d 
- 1892  docker logs gluttex-auth 
- 1893  docker logs gluttex-fs
- 1894  sudo docker exec -it gluttex-fs  sh
- 1895  docker logs gluttex-fs
- 1896  docker logs gluttex-fs --follow
- 1897  sudo docker exec -it gluttex-fs  sh
- 1898  docker logs gluttex-fs --follow
- 1899  sudo docker exec -it gluttex-fs  sh
- 1900  docker logs gluttex-fs --follow
+ 1892  docker logs verdelia-auth 
+ 1893  docker logs verdelia-fs
+ 1894  sudo docker exec -it verdelia-fs  sh
+ 1895  docker logs verdelia-fs
+ 1896  docker logs verdelia-fs --follow
+ 1897  sudo docker exec -it verdelia-fs  sh
+ 1898  docker logs verdelia-fs --follow
+ 1899  sudo docker exec -it verdelia-fs  sh
+ 1900  docker logs verdelia-fs --follow
  1901  code .
- 1902  docker logs gluttex-auth --follow
+ 1902  docker logs verdelia-auth --follow
  1903  flutter clean
  1904  flutter run
  1905  flutter clean
@@ -922,9 +922,9 @@
  1926  flutter build apk 
  1927  flutter run --release
  1928  flutter run 
- 1929  docker logs gluttex-fs --follow 
- 1930  docker logs gluttex-api
- 1931  docker logs gluttex-api --follow
+ 1929  docker logs verdelia-fs --follow 
+ 1930  docker logs verdelia-api
+ 1931  docker logs verdelia-api --follow
  1932  docker-compose up -d
  1933  docker-compose down
  1934  docker-compose up -d
@@ -938,38 +938,38 @@
  1942  flutter run 
  1943  cd launcher/
  1944  flutter run
- 1945  docker logs gluttex-api --follow
+ 1945  docker logs verdelia-api --follow
  1946  flutter run
  1947  npm run dev
  1948  docker ps
- 1949  sudo docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' gluttex-db
- 1950  sqlacodegen --outfile=models.py   mysql+pymysql://dev_user:dev_password@172.18.0.4/gluttex
+ 1949  sudo docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' verdelia-db
+ 1950  sqlacodegen --outfile=models.py   mysql+pymysql://dev_user:dev_password@172.18.0.4/verdelia
  1951  flutter run
- 1952  docker logs gluttex-api --follow
- 1953  docker push omarzos/gluttex-api
+ 1952  docker logs verdelia-api --follow
+ 1953  docker push omarzos/verdelia-api
  1954  flutter run
  1955  docker-compose down
- 1956  docker build -t omarzos/gluttex-api api_server/
+ 1956  docker build -t omarzos/verdelia-api api_server/
  1957  git add --all
  1958  git commit -a -m "added location for suppliers"
  1959  git push
  1960  flutter run
- 1961  docker logs gluttex-api
- 1962  docker logs gluttex-api --follow
+ 1961  docker logs verdelia-api
+ 1962  docker logs verdelia-api --follow
  1963  docker-compose up -d
  1964  docker-compose down
  1965  git add --all
  1966  git commit -a -m "fixed address fetch for suppliers"
  1967  git push
  1968  flutter run
- 1969  docker logs gluttex-api --follow
+ 1969  docker logs verdelia-api --follow
  1970  docker-compose up -d
  1971  git add --all
  1972  git commit -a -m "fixed location and person details insertion/update"
  1973  git push
  1974  flutter run
  1975  /bin/python3
- 1976  docker logs gluttex-api --follow
+ 1976  docker logs verdelia-api --follow
  1977  docker-compose up -d
  1978  docker-compose down
  1979  git add --all

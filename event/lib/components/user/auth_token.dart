@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/foundation.dart';
-import 'package:gluttex_core/app/Services/AuthService.dart';
+import 'package:verdelia_core/app/Services/AuthService.dart';
 import 'auth_state.dart';
 import 'auth_persistence.dart';
 

@@ -7,11 +7,11 @@ import 'package:event/components/recipe/recipe_state.dart';
 import 'package:event/components/recipe/recipe_user.dart';
 import 'package:flutter/material.dart';
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/app/AppUser.dart';
-import 'package:gluttex_core/app/GluttexException.dart';
-import 'package:gluttex_core/business/Recipe.dart';
-import 'package:gluttex_core/business/services/RecipeService.dart';
-import 'package:gluttex_core/app/Services/UserService.dart';
+import 'package:verdelia_core/app/AppUser.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
+import 'package:verdelia_core/business/Recipe.dart';
+import 'package:verdelia_core/business/services/RecipeService.dart';
+import 'package:verdelia_core/app/Services/UserService.dart';
 import 'package:event/TraceableNotifier.dart';
 import 'package:locator/locator.dart';
 
@@ -129,7 +129,7 @@ class RecipeNotifier extends TraceableNotifier {
       return result;
     } catch (e) {
       storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       logError('Failed to add/update recipe', error: e);
       return false;
     }
@@ -158,7 +158,7 @@ class RecipeNotifier extends TraceableNotifier {
       storeSuccess(key, _state.recipeList);
     } catch (e) {
       storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       logError('Failed to fetch recipes', error: e);
     }
   }
@@ -183,7 +183,7 @@ class RecipeNotifier extends TraceableNotifier {
       return result;
     } catch (e) {
       storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       logError('Failed to delete recipe', error: e);
       return false;
     }
@@ -216,7 +216,7 @@ class RecipeNotifier extends TraceableNotifier {
       storeSuccess(key, _state.ingredientList);
     } catch (e) {
       storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       logError('Failed to fetch ingredients', error: e);
     }
   }
@@ -241,7 +241,7 @@ class RecipeNotifier extends TraceableNotifier {
       return result;
     } catch (e) {
       storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       logError('Failed to add ingredient', error: e);
       return false;
     }
@@ -264,7 +264,7 @@ class RecipeNotifier extends TraceableNotifier {
       return result;
     } catch (e) {
       storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       logError('Failed to update ingredient', error: e);
       return false;
     }
@@ -285,7 +285,7 @@ class RecipeNotifier extends TraceableNotifier {
       return result;
     } catch (e) {
       storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       logError('Failed to delete ingredient', error: e);
       return false;
     }
@@ -305,7 +305,7 @@ class RecipeNotifier extends TraceableNotifier {
       storeSuccess(key, _state.ingredientList);
     } catch (e) {
       storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       logError('Failed to fetch all ingredients', error: e);
     }
   }
@@ -331,7 +331,7 @@ class RecipeNotifier extends TraceableNotifier {
       return user;
     } catch (e) {
       storeFailure(key, e.toString(),
-          errorCode: e is GluttexException ? e.message : 'ERROR');
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
       logError('Failed to fetch user', error: e);
       return null;
     }

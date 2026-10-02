@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/business/Product.dart';
+import 'package:verdelia_core/business/Product.dart';
 import 'product_state.dart';
 
 class ProductCart {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:event/assistant_change_notifier.dart';
 import 'package:provider/provider.dart';
 import 'package:event/components/lib.dart';
@@ -151,7 +151,7 @@ class _SmartFormFieldState extends State<SmartFormField> {
           loc.userInput,
           Icons.edit_outlined,
         ),
-      DataSource.gluttexInput => (
+      DataSource.verdeliaInput => (
           colorScheme.surfaceVariant,
           loc.userInput,
           Icons.edit_outlined,
@@ -196,7 +196,7 @@ class _SmartFormFieldState extends State<SmartFormField> {
       DataSource.aiGenerated => colorScheme.secondary,
       DataSource.databaseFetched => colorScheme.primary,
       DataSource.userInput => colorScheme.outline,
-      DataSource.gluttexInput => colorScheme.outline,
+      DataSource.verdeliaInput => colorScheme.outline,
     };
   }
 }
@@ -308,7 +308,7 @@ class _SmartDropdownFieldState<T> extends State<SmartDropdownField<T>> {
           loc.userInput,
           Icons.edit_outlined,
         ),
-      DataSource.gluttexInput => (
+      DataSource.verdeliaInput => (
           colorScheme.surfaceVariant,
           loc.userInput,
           Icons.edit_outlined,
@@ -353,7 +353,7 @@ class _SmartDropdownFieldState<T> extends State<SmartDropdownField<T>> {
       DataSource.aiGenerated => colorScheme.tertiary,
       DataSource.databaseFetched => colorScheme.secondary,
       DataSource.userInput => colorScheme.tertiary,
-      DataSource.gluttexInput => colorScheme.outline,
+      DataSource.verdeliaInput => colorScheme.outline,
     };
   }
 }

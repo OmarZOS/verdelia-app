@@ -1,6 +1,6 @@
 import 'package:event/views/business_ops_notifier.dart';
-import 'package:gluttex_core/business/finance/FinancialDocument.dart';
-import 'package:gluttex_core/business/finance/business_analytics.dart';
+import 'package:verdelia_core/business/finance/FinancialDocument.dart';
+import 'package:verdelia_core/business/finance/business_analytics.dart';
 
 class FinanceAnalytics {
   bool _isCalculating = false;

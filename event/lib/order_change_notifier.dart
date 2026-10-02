@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/business/finance/Order.dart';
-import 'package:gluttex_core/business/services/OrderService.dart';
+import 'package:verdelia_core/business/finance/Order.dart';
+import 'package:verdelia_core/business/services/OrderService.dart';
 import 'package:locator/locator.dart';
 
 class OrderResult {

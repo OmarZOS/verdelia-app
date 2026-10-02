@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/business/finance/BusinessOperation.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/business/finance/BusinessOperation.dart';
 import 'package:ui/components/finance/financial_ui_manager.dart';
 import 'operation_items_list.dart';
 import 'operation_summary.dart';

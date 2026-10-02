@@ -1,4 +1,4 @@
-import 'package:gluttex_core/business/finance/FinancialDocument.dart';
+import 'package:verdelia_core/business/finance/FinancialDocument.dart';
 import 'package:event/finance_change_notifier.dart';
 
 class PaymentRequestHelper {

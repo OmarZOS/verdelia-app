@@ -2,7 +2,7 @@
 
 import 'package:event/views/business_ops_notifier.dart';
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 class BusinessOperationsFilters extends StatelessWidget {

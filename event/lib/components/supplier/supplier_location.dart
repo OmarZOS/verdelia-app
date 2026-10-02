@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:developer';
 
 import 'package:geolocator/geolocator.dart';
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 import 'supplier_state.dart';
 
 class SupplierLocation {

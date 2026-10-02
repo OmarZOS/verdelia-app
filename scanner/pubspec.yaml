@@ -41,8 +41,8 @@ dependencies:
   path: ^1.8.3
   app_constants:
     path: ../app_constants
-  gluttex_localizations:
-    path: ../gluttex_localizations
+  verdelia_localizations:
+    path: ../verdelia_localizations
   # image: ^4.1.7  # For image processing
   # croppy: ^0.2.3
   # google_mlkit_object_detection: ^0.15.0

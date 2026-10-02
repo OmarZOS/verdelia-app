@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/app/GluttexImage.dart';
+import 'package:verdelia_core/app/VerdeliaImage.dart';
 import 'package:event/user_change_notifier.dart';
 import 'package:ui/components/ImagePickerSection.dart';
 import 'package:provider/provider.dart';
@@ -16,7 +16,7 @@ class UploadImagePage extends StatefulWidget {
 }
 
 class _UploadImagePageState extends State<UploadImagePage> {
-  GluttexImage? _selectedImage;
+  VerdeliaImage? _selectedImage;
   bool _isUploading = false;
 
   @override

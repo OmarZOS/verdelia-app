@@ -1,8 +1,8 @@
 // no_access_screen.dart
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/app/AppUser.dart';
-import 'package:gluttex_core/app/ManagementRule.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/app/AppUser.dart';
+import 'package:verdelia_core/app/ManagementRule.dart';
 import 'package:event/personnel_notifier.dart';
 import 'package:event/user_change_notifier.dart';
 import 'package:ui/Services/ResponseHandler.dart';

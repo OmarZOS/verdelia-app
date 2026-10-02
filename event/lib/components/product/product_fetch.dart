@@ -2,8 +2,8 @@
 
 import 'dart:developer';
 
-import 'package:gluttex_core/business/Product.dart';
-import 'package:gluttex_core/business/services/ProductService.dart';
+import 'package:verdelia_core/business/Product.dart';
+import 'package:verdelia_core/business/services/ProductService.dart';
 
 import 'product_cache.dart';
 import 'product_state.dart';

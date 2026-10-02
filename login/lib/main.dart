@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/app/Services/AuthService.dart';
-import 'package:gluttex_core/app/Services/UserService.dart';
+import 'package:verdelia_core/app/Services/AuthService.dart';
+import 'package:verdelia_core/app/Services/UserService.dart';
 import 'package:event/user_change_notifier.dart';
 import 'package:login/screens/login_screen.dart';
 import 'package:locator/locator.dart';
 import 'package:provider/provider.dart';
 
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 
 void main() {
   // AppLocator.registerSingletonService<AppUserService>(AppUserServiceImpl());

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider_store/components/selling_point/selling_items/item_card_with_controls.dart';
 import 'package:provider/provider.dart';
-import 'package:gluttex_core/business/Product.dart';
+import 'package:verdelia_core/business/Product.dart';
 import 'package:event/cart_change_notifier.dart';
 import 'package:event/product_change_notifier.dart';
 import 'package:provider_store/components/selling_point/selling_items/products/product_card.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 
 class ProductGrid extends StatelessWidget {
   final CartChangeNotifier cartNotifier;

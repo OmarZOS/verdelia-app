@@ -1,6 +1,6 @@
 // lib/views/finance/widgets/filter_dialog.dart
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:event/finance_change_notifier.dart';
 import 'package:ui/components/finance/financial_ui_manager.dart';
 

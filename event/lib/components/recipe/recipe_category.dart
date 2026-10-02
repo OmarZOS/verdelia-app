@@ -1,5 +1,5 @@
-import 'package:gluttex_core/business/services/RecipeService.dart';
-import 'package:gluttex_core/app/GluttexException.dart';
+import 'package:verdelia_core/business/services/RecipeService.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
 import 'recipe_state.dart';
 import 'recipe_cache.dart';
 
@@ -23,7 +23,7 @@ class RecipeCategoryManager {
         _state.categories = [];
       }
     } catch (e) {
-      throw GluttexException('Failed to fetch categories: $e');
+      throw VerdeliaException('Failed to fetch categories: $e');
     }
   }
 

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:developer' as developer;
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
-import 'package:gluttex_core/business/Product.dart';
-import 'package:gluttex_core/business/finance/ProvidedService.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_core/business/Product.dart';
+import 'package:verdelia_core/business/finance/ProvidedService.dart';
 import 'package:event/cart_change_notifier.dart';
 import 'package:event/personnel_notifier.dart';
 import 'package:event/product_change_notifier.dart';

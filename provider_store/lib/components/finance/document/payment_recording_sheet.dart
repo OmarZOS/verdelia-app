@@ -1,6 +1,6 @@
 // lib/views/finance/widgets/payment_recording_sheet.dart
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/business/finance/FinancialDocument.dart';
+import 'package:verdelia_core/business/finance/FinancialDocument.dart';
 
 class PaymentRecordingSheet extends StatelessWidget {
   final FinancialDocument document;

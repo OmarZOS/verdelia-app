@@ -145,6 +145,6 @@ Future<void> initializeService(String clientId) async {
 
   service.startService(args: {
     "client_id": clientId,
-    "base_url": "https://gluttex.com", // change if needed
+    "base_url": "https://verdelia.com", // change if needed
   });
 }

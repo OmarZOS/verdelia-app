@@ -12,7 +12,7 @@ class GoogleLoginManager {
   static Future<Map<String, dynamic>?> loginWithGoogle({
     required BuildContext context,
   }) async {
-    const loginUrl = 'https://gluttex.com/api/login/google';
+    const loginUrl = 'https://verdelia.com/api/login/google';
 
     // Initialize if not already done
     if (_appLinks == null) {
@@ -93,7 +93,7 @@ class GoogleLoginManager {
 
   static bool _isCallbackUrl(Uri uri) {
     // TODO: Replace 'yourapp' with your actual app scheme
-    final isMatch = uri.scheme == 'gluttex' &&
+    final isMatch = uri.scheme == 'verdelia' &&
         uri.host == 'auth' &&
         uri.path == '/callback';
 

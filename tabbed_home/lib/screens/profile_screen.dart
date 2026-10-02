@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/app/AppUser.dart';
+import 'package:verdelia_core/app/AppUser.dart';
 import 'package:event/user_change_notifier.dart';
 import 'package:tabbed_home/screens/components/flipping_avatar.dart';
 import 'package:provider/provider.dart';

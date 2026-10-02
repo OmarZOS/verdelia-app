@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:event/cart_change_notifier.dart';
 import 'package:event/product_change_notifier.dart';
 import 'package:event/views/checkout_view_model.dart';

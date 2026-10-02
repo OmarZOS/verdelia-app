@@ -36,10 +36,10 @@ dependencies:
   font_awesome_flutter: ^10.1.0 # For social media icons
   locator: 
     path: ../locator
-  gluttex_core:
-    path: ../gluttex_core
-  gluttex_localizations:
-    path: ../gluttex_localizations
+  verdelia_core:
+    path: ../verdelia_core
+  verdelia_localizations:
+    path: ../verdelia_localizations
   ui:
     path: ../ui
   event:

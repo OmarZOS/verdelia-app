@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/app/Person.dart';
+import 'package:verdelia_core/app/Person.dart';
 
 class NewCustomerDialog extends StatefulWidget {
   final Function(Person) onCustomerCreated;

@@ -5,7 +5,7 @@ import 'dart:developer';
 
 import 'package:event/personnel_notifier.dart';
 import 'package:event/supplier_change_notifier.dart';
-import 'package:gluttex_core/business/Supplier.dart';
+import 'package:verdelia_core/business/Supplier.dart';
 
 class AccessibleSupplier {
   final Supplier supplier;

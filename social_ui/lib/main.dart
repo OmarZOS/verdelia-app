@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/app/GluttexImage.dart';
-import 'package:gluttex_core/app/Services/NotificationService.dart';
-import 'package:gluttex_core/business/finance/services/InvoiceService.dart';
-import 'package:gluttex_core/business/services/CartService.dart';
-import 'package:gluttex_core/business/services/DeliveryService.dart';
-import 'package:gluttex_core/business/services/ProvidedServiceManagementService.dart';
+import 'package:verdelia_core/app/VerdeliaImage.dart';
+import 'package:verdelia_core/app/Services/NotificationService.dart';
+import 'package:verdelia_core/business/finance/services/InvoiceService.dart';
+import 'package:verdelia_core/business/services/CartService.dart';
+import 'package:verdelia_core/business/services/DeliveryService.dart';
+import 'package:verdelia_core/business/services/ProvidedServiceManagementService.dart';
 import 'package:event/assistant_change_notifier.dart';
 import 'package:event/delivery_change_notifier.dart';
 import 'package:event/finance_change_notifier.dart';
@@ -17,14 +17,14 @@ import 'package:event/service_change_notifier.dart';
 import 'package:event/supplier_dashboard_provider.dart';
 import 'package:event/views/checkout_view_model.dart';
 import 'package:event/views/finance_view_model.dart';
-import 'package:gluttex_core/app/Services/AuthService.dart';
-import 'package:gluttex_core/app/Services/UserService.dart';
-import 'package:gluttex_core/business/services/OrderService.dart';
-import 'package:gluttex_core/business/services/ProductService.dart';
-import 'package:gluttex_core/business/services/RecipeService.dart';
-import 'package:gluttex_core/business/services/BusinessOperationService.dart';
-import 'package:gluttex_core/business/services/SupplierService.dart';
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_core/app/Services/AuthService.dart';
+import 'package:verdelia_core/app/Services/UserService.dart';
+import 'package:verdelia_core/business/services/OrderService.dart';
+import 'package:verdelia_core/business/services/ProductService.dart';
+import 'package:verdelia_core/business/services/RecipeService.dart';
+import 'package:verdelia_core/business/services/BusinessOperationService.dart';
+import 'package:verdelia_core/business/services/SupplierService.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 import 'package:event/user_change_notifier.dart';
 import 'package:event/cart_change_notifier.dart';
 import 'package:event/recipe_change_notifier.dart';
@@ -55,7 +55,7 @@ void setupLocator() {
 
   AppLocator.registerSingletonService<InvoiceService>(InvoiceServiceImpl());
 
-  AppLocator.registerFactory<GluttexImage>(() => GluttexImageImpl());
+  AppLocator.registerFactory<VerdeliaImage>(() => VerdeliaImageImpl());
 }
 
 Future<void> main() async {
@@ -76,14 +76,14 @@ Future<void> main() async {
   );
   await appUserNotifier.initializeAuthState();
 
-  runApp(GluttexApp(localeProvider, appUserNotifier));
+  runApp(VerdeliaApp(localeProvider, appUserNotifier));
 }
 
-class GluttexApp extends StatelessWidget {
+class VerdeliaApp extends StatelessWidget {
   final LocaleProvider localeProvider;
   final AppUserNotifier appUserNotifier;
 
-  const GluttexApp(this.localeProvider, this.appUserNotifier, {super.key});
+  const VerdeliaApp(this.localeProvider, this.appUserNotifier, {super.key});
 
   @override
   Widget build(BuildContext context) {

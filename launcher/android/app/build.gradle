@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.gluttex.launcher"
+    namespace = "com.verdelia.launcher"
     compileSdk = 35
     ndkVersion = flutter.ndkVersion
 
@@ -21,9 +21,9 @@ android {
 
     signingConfigs {
         release {
-            storeFile file("gluttex_keystore.jks")
+            storeFile file("verdelia_keystore.jks")
             storePassword "omarstarwars"
-            keyAlias "gluttex_android_key"
+            keyAlias "verdelia_android_key"
             keyPassword "omarstarwars"
         }
         // Remove any other signing configs for release
@@ -31,7 +31,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.gluttex.launcher"
+        applicationId = "com.verdelia.launcher"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

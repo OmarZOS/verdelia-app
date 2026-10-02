@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:app_constants/app_routes.dart';
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/app/GluttexException.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
 import 'package:event/user_change_notifier.dart';
 import 'package:login/screens/registration_screen.dart';
 import 'package:login/screens/web_view.dart';
@@ -185,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen>
           customErrorMessage: AppLocalizations.of(context)!.failedLogin,
         );
       }
-    } on GluttexException catch (error) {
+    } on VerdeliaException catch (error) {
       if (mounted) {
         ResponseHandler.handleResponse(
           context: context,

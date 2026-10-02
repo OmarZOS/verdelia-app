@@ -6,12 +6,12 @@ import 'package:event/components/personnel/personnel_persistence.dart';
 import 'package:event/components/personnel/personnel_rules.dart';
 import 'package:event/components/personnel/personnel_search.dart';
 import 'package:event/components/personnel/personnel_state.dart';
-import 'package:gluttex_core/app/AppUser.dart';
-import 'package:gluttex_core/app/ManagementRule.dart';
-import 'package:gluttex_core/app/Person.dart';
-import 'package:gluttex_core/app/Services/UserService.dart';
-import 'package:gluttex_core/business/finance/Customer.dart';
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_core/app/AppUser.dart';
+import 'package:verdelia_core/app/ManagementRule.dart';
+import 'package:verdelia_core/app/Person.dart';
+import 'package:verdelia_core/app/Services/UserService.dart';
+import 'package:verdelia_core/business/finance/Customer.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 import 'package:locator/locator.dart';
 
 class PersonnelNotifier extends TraceableNotifier {

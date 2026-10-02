@@ -4,13 +4,13 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/app/AppUser.dart';
-// import 'package:gluttex_core/app/ManagementRule.dart';
-import 'package:gluttex_core/app/Notifications/GluttexNotification.dart';
-import 'package:gluttex_core/app/Notifications/Notifications/RoleInvitation.dart';
-import 'package:gluttex_core/business/privileges/role_bit_mapper.dart';
+import 'package:verdelia_core/app/AppUser.dart';
+// import 'package:verdelia_core/app/ManagementRule.dart';
+import 'package:verdelia_core/app/Notifications/VerdeliaNotification.dart';
+import 'package:verdelia_core/app/Notifications/Notifications/RoleInvitation.dart';
+import 'package:verdelia_core/business/privileges/role_bit_mapper.dart';
 import 'package:event/personnel_notifier.dart';
 import 'package:event/supplier_change_notifier.dart';
 import 'package:event/user_change_notifier.dart';
@@ -26,7 +26,7 @@ class NotificationItem extends StatelessWidget {
   static const _regularPadding = EdgeInsets.all(20);
   static const _margin = EdgeInsets.symmetric(vertical: 6, horizontal: 0);
 
-  final GluttexNotification notification;
+  final VerdeliaNotification notification;
   final VoidCallback? onMarkAsRead;
   final VoidCallback? onDismiss;
   final Function(NotificationAction)? onAction;

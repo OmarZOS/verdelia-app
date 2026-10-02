@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/business/Product.dart';
+import 'package:verdelia_core/business/Product.dart';
 import 'package:event/views/pricing_config_view_model.dart';
 import 'package:ui/components/pricing_config_card.dart';
 import 'package:provider/provider.dart';

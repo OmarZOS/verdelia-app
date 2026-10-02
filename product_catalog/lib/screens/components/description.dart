@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/business/Product.dart';
+import 'package:verdelia_core/business/Product.dart';
 
 class Description extends StatelessWidget {
   const Description({super.key, required this.product});

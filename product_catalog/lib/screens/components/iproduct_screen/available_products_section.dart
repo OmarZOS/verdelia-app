@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/business/Product.dart';
+import 'package:verdelia_core/business/Product.dart';
 import 'package:event/product_change_notifier.dart';
 import 'package:product_catalog/screens/components/ProductCard.dart';
 import 'package:provider/provider.dart';

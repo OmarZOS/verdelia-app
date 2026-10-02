@@ -1,7 +1,7 @@
 // notification_content.dart
 
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/app/Notifications/GluttexNotification.dart';
+import 'package:verdelia_core/app/Notifications/VerdeliaNotification.dart';
 import 'package:event/notification_notifier.dart';
 import 'package:tabbed_home/screens/components/notification_item.dart';
 import 'package:tabbed_home/screens/components/NotificationAction.dart';
@@ -9,7 +9,7 @@ import 'notification_helpers.dart';
 
 class NotificationContent extends StatelessWidget {
   final NotificationNotifier notifier;
-  final List<GluttexNotification> notifications;
+  final List<VerdeliaNotification> notifications;
   final bool isLoading;
   final String? error;
   final bool hasMore;

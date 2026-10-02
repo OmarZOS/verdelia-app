@@ -3,8 +3,8 @@
 import 'dart:developer';
 
 import 'package:app_constants/app_constants.dart';
-import 'package:gluttex_core/app/ManagementRule.dart';
-import 'package:gluttex_core/business/privileges/role_bit_mapper.dart';
+import 'package:verdelia_core/app/ManagementRule.dart';
+import 'package:verdelia_core/business/privileges/role_bit_mapper.dart';
 import 'personnel_cache.dart';
 import 'personnel_state.dart';
 import 'personnel_persistence.dart';

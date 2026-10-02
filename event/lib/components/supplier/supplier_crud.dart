@@ -1,9 +1,9 @@
 import 'dart:developer';
 
-import 'package:gluttex_core/app/GluttexException.dart';
-import 'package:gluttex_core/business/Supplier.dart';
-import 'package:gluttex_core/business/services/SupplierService.dart';
-import 'package:gluttex_core/mediation/StorageService.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
+import 'package:verdelia_core/business/Supplier.dart';
+import 'package:verdelia_core/business/services/SupplierService.dart';
+import 'package:verdelia_core/mediation/StorageService.dart';
 import 'supplier_cache.dart';
 import 'supplier_state.dart';
 import 'supplier_persistence.dart';
@@ -53,7 +53,7 @@ class SupplierCrud {
           : await _service.updateSupplier(supplier, token: token);
 
       if (result == null) {
-        throw GluttexException('Failed to save supplier');
+        throw VerdeliaException('Failed to save supplier');
       }
 
       _cache.invalidate(supplierId: result.idProductProvider);

@@ -1,7 +1,7 @@
 // components/staff_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gluttex_core/business/finance/ProvidedService.dart';
+import 'package:verdelia_core/business/finance/ProvidedService.dart';
 
 class StaffRequirementDialog extends StatefulWidget {
   final ServiceStaffRequirement? existing;

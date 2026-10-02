@@ -2,8 +2,8 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/app/ManagementRule.dart';
-import 'package:gluttex_core/business/Supplier.dart';
+import 'package:verdelia_core/app/ManagementRule.dart';
+import 'package:verdelia_core/business/Supplier.dart';
 import 'package:event/personnel_notifier.dart';
 import 'package:event/supplier_change_notifier.dart';
 import 'package:event/user_change_notifier.dart';

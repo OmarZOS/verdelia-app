@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/app/Notifications/GluttexNotification.dart';
+import 'package:verdelia_core/app/Notifications/VerdeliaNotification.dart';
 import 'package:event/notification_notifier.dart';
 
 class NotificationHelpers {

@@ -1,6 +1,6 @@
-# Gluttex Home
+# Verdelia Home
 
-Gluttex Home is the central Flutter application that integrates multiple modules and packages to deliver a cohesive experience for users. This application is designed for managing products, recipes, medical data, localization, and other features related to the Gluttex ecosystem.
+Verdelia Home is the central Flutter application that integrates multiple modules and packages to deliver a cohesive experience for users. This application is designed for managing products, recipes, medical data, localization, and other features related to the Verdelia ecosystem.
 
 ---
 
@@ -33,18 +33,18 @@ The application uses the following custom packages and modules:
 
 ### Core Packages
 - **locator**: Handles dependency injection and service location.
-- **gluttex_core**: Core business logic and shared utilities.
+- **verdelia_core**: Core business logic and shared utilities.
 - **app_constants**: Centralized constants and localization files.
 
 ### Feature-Specific Packages
 - **impl_app**: Application-level implementation details.
-- **business**: Business logic specific to Gluttex.
+- **business**: Business logic specific to Verdelia.
 - **impl_mediation**: Handles communication between different modules.
 - **recipe_catalog**: Module for managing recipe_catalogs and related data.
 - **health**: Manages medical-related functionality and data.
 - **provider_geo**: Localization handling and location-based services.
 - **product_catalog**: Catalog management, including product browsing and supplier details.
-- **gluttex_play**: Entertainment and gamification features.
+- **verdelia_play**: Entertainment and gamification features.
 - **login**: User authentication and login system.
 
 ---
@@ -58,7 +58,7 @@ The application uses the following custom packages and modules:
 ### Steps
 1. Clone the repository:
    ```bash
-   git clone https://github.com/OmarZos/gluttex-app.git
+   git clone https://github.com/OmarZos/verdelia-app.git
    ```
 
 2. Navigate to the project directory:
@@ -132,5 +132,5 @@ This project is licensed under the [MIT License](LICENSE).
 ---
 
 ## Contact
-For any inquiries, reach out at [support@gluttex.com](mailto:support@gluttex.com).
+For any inquiries, reach out at [support@verdelia.com](mailto:support@verdelia.com).
 

@@ -1,4 +1,4 @@
-import 'package:gluttex_core/app/AppUser.dart';
+import 'package:verdelia_core/app/AppUser.dart';
 
 class AuthState {
   AppUser? appUser;

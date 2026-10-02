@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:app_constants/app_response_codes.dart';
-import 'package:gluttex_core/app/GluttexException.dart';
-import 'package:gluttex_core/business/product_form_data.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
+import 'package:verdelia_core/business/product_form_data.dart';
 import 'package:event/assistant_change_notifier.dart';
 import 'package:event/components/lib.dart';
 import 'package:event/product_change_notifier.dart';
@@ -54,7 +54,7 @@ class SubmitHandler {
 
       // Pop just the form and hand the saved product back to the caller.
       Navigator.of(context).pop(savedProduct);
-    } on GluttexException catch (e) {
+    } on VerdeliaException catch (e) {
       if (!context.mounted) return;
       ResponseHandler.handleResponse(
         context: context,

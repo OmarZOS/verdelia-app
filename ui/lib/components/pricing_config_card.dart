@@ -6,7 +6,7 @@ import 'package:app_constants/app_constants.dart';
 import 'package:event/views/pricing_config_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 
 /// Pure view over [PricingState].
 ///

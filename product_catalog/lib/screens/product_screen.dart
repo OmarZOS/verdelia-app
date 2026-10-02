@@ -2,7 +2,7 @@
 
 import 'package:app_constants/app_constants.dart';
 import 'package:flutter/material.dart';
-import 'package:gluttex_core/business/Product.dart';
+import 'package:verdelia_core/business/Product.dart';
 import 'package:event/preferenceChangeNotifier.dart';
 import 'package:event/product_change_notifier.dart';
 import 'package:event/user_change_notifier.dart';

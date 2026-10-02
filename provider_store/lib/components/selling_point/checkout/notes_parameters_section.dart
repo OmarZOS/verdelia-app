@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gluttex_localizations/gen_l10n/app_localizations.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:event/views/checkout_view_model.dart';
 import 'package:provider_store/components/selling_point/checkout/parameter_input_dialog.dart';
 
