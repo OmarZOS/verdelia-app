@@ -6999,4 +6999,86 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get banking => 'الخدمات المصرفية';
+
+  @override
+  String get pricingModeByProfit => 'حسب الهامش';
+
+  @override
+  String get pricingModeByFinalPrice => 'حسب السعر النهائي';
+
+  @override
+  String get pricingAiPriceApplied => 'تم تطبيق سعر الذكاء الاصطناعي';
+
+  @override
+  String get pricingAiSuggestedPrice => 'السعر المقترح من الذكاء الاصطناعي';
+
+  @override
+  String pricingAiHigherDiff(String amount) {
+    return 'سعرك أعلى بمقدار $amount دج';
+  }
+
+  @override
+  String pricingAiLowerDiff(String amount) {
+    return 'سعرك أقل بمقدار $amount دج';
+  }
+
+  @override
+  String get pricingAiAcceptTooltip => 'استخدم سعر الذكاء الاصطناعي';
+
+  @override
+  String get pricingAiResetTooltip => 'إعادة التعيين إلى سعر الذكاء الاصطناعي';
+
+  @override
+  String get pricingBasePriceLabel => 'السعر الأساسي';
+
+  @override
+  String get pricingBasePriceHelper => 'التكلفة قبل الضريبة';
+
+  @override
+  String get pricingTaxLabel => 'الضريبة';
+
+  @override
+  String get pricingTaxHelper => 'تُطبَّق على السعر الأساسي';
+
+  @override
+  String get pricingProfitLabel => 'هامش الربح';
+
+  @override
+  String get pricingProfitHelper => 'الهامش على السعر بعد الضريبة';
+
+  @override
+  String get pricingFinalPriceLabel => 'السعر النهائي';
+
+  @override
+  String get pricingFinalPriceHelper => 'ما يدفعه العميل';
+
+  @override
+  String get pricingBreakdownLabel => 'التفصيل';
+
+  @override
+  String get pricingPriceAfterTaxLabel => 'السعر بعد الضريبة';
+
+  @override
+  String pricingProfitRowLabel(String percent) {
+    return 'الربح ($percent%)';
+  }
+
+  @override
+  String get selectProductTitle => 'اختر منتجًا';
+
+  @override
+  String get searchProductsHint => 'ابحث عن المنتجات…';
+
+  @override
+  String get supplierProductsBadge => 'منتجات المورد';
+
+  @override
+  String noProductsFoundForQuery(String query) {
+    return 'لم يتم العثور على منتجات لـ «$query»';
+  }
+
+  @override
+  String stockLabel(String count) {
+    return 'المخزون: $count';
+  }
 }

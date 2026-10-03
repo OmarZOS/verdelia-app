@@ -28,8 +28,6 @@ class ProductFormData {
   int? providerId;
   int? categoryId;
   int? productId;
-  int? imageId;
-  String? imageUrl;
   bool isUpdate = false;
   int selectedProviderId = 0;
 
@@ -50,6 +48,40 @@ class ProductFormData {
   /// Assistant-origin data synced into this form, if any.
   IProduct? assistantOrigin;
 
+  /// Full gallery carried through on update. Empty for new products;
+  /// populated from the existing Product when editing.
+  ///
+  /// The write path emits every entry here. Editing the list (adding,
+  /// removing, reordering) is what changes the product's gallery on
+  /// the server.
+  List<ProductImage> productImages;
+
+  ProductFormData({
+    this.productName,
+    this.productBrand,
+    this.productBarcode,
+    this.productDescription,
+    this.image,
+    this.imageFile,
+    this.typeId,
+    this.price,
+    this.productBasePrice,
+    this.quantity,
+    this.quantifier,
+    this.ownerId,
+    this.providerId,
+    this.categoryId,
+    this.productId,
+    this.isUpdate = false,
+    this.selectedProviderId = 0,
+    this.lockProvider = false,
+    this.visibility = 'VISIBLE',
+    this.reservedQuantity,
+    this.originId,
+    this.assistantOrigin,
+    this.productImages = const [],
+  });
+
   // ==================== Convert to Product ====================
 
   /// Build the Product for the write path.
@@ -65,15 +97,14 @@ class ProductFormData {
       product_owner_id: ownerId ?? 1,
       id_product_category: typeId ?? categoryId ?? 1,
       product_category_id: typeId ?? categoryId ?? 1,
-      id_product_image: imageId,
       product_ref_id: productId,
       // Write path sends the flat name. Read path resolves it via the
       // `product_name` getter on the Product model.
       product_nameRaw: productName ?? '',
       product_brand: productBrand ?? '',
       product_barcode: productBarcode ?? '',
-      product_image_url: imageUrl,
       product_category_name: '',
+      product_images: productImages,
       product_price: price ?? 0.0,
       product_base_price: productBasePrice ?? 0.0,
       product_quantity: quantity ?? 0,
@@ -100,7 +131,6 @@ class ProductFormData {
     productName = product.product_name;
     productBrand = product.product_brand;
     productBarcode = product.product_barcode;
-    imageUrl = product.product_image_url;
     typeId = product.product_category_id ?? 1;
     price = product.product_price;
     productBasePrice = product.product_base_price;
@@ -111,7 +141,6 @@ class ProductFormData {
     providerId = product.product_provider_id;
     categoryId = product.product_category_id;
     productId = product.id_product;
-    imageId = product.id_product_image;
     isUpdate = true;
     selectedProviderId = product.product_provider_id ?? 0;
     lockProvider = true;
@@ -119,5 +148,9 @@ class ProductFormData {
     // Fields carried through on update
     visibility = product.product_visibility ?? 'VISIBLE';
     reservedQuantity = product.product_reserved_quantity;
+
+    // Full gallery carried over so the write path re-emits it
+    // unchanged unless the caller edits the list.
+    productImages = List<ProductImage>.from(product.product_images);
   }
 }

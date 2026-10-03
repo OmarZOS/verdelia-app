@@ -1,6 +1,8 @@
 // components/category_dropdown.dart
 import 'package:flutter/material.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:verdelia_core/business/finance/ProvidedService.dart';
+import 'package:ui/components/hierarchical_category_picker.dart';
 
 class CategoryDropdown extends StatelessWidget {
   final List<ProvidedServiceCategory> categories;
@@ -20,6 +22,8 @@ class CategoryDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final localizations = AppLocalizations.of(context)!;
+    final languageCode = Localizations.localeOf(context).languageCode;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,62 +63,42 @@ class CategoryDropdown extends StatelessWidget {
             ],
           ),
         ),
-        Container(
-          decoration: BoxDecoration(
-            color: colors.surfaceVariant,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: colors.outline.withOpacity(0.2),
-              width: 1,
-            ),
-          ),
-          child: DropdownButtonFormField<int>(
-            value:
-                categories.any((category) => category.id == selectedCategoryId)
-                    ? selectedCategoryId
-                    : null,
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 4,
-              ),
-            ),
-            hint: Text(
-              isLoading ? 'Loading categories...' : 'Select a category',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colors.onSurfaceVariant.withOpacity(0.6),
-              ),
-            ),
-            items: categories
-                .map((category) => DropdownMenuItem<int>(
-                      value: category.id,
-                      child: Text(
-                        category.name,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colors.onSurface,
-                        ),
+        FormField<int>(
+          initialValue: selectedCategoryId == 0 ? null : selectedCategoryId,
+          validator: (value) =>
+              value == null || value == 0 ? 'Please select a category' : null,
+          builder: (field) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              HierarchicalCategoryPicker(
+                label: localizations.category,
+                showLabel: false,
+                options: categories
+                    .map(
+                      (category) => HierarchicalCategoryOption(
+                        id: category.id,
+                        path: category.name,
+                        leafLabel: category.nameFor(languageCode),
                       ),
-                    ))
-                .toList(),
-            validator: (value) {
-              if (value == null || value == 0) {
-                return 'Please select a category';
-              }
-              return null;
-            },
-            onChanged: onChanged,
-            disabledHint:
-                isLoading ? const Text('Loading categories...') : null,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colors.onSurface,
-            ),
-            icon: Icon(
-              Icons.arrow_drop_down,
-              color: colors.onSurfaceVariant,
-            ),
-            dropdownColor: colors.surface,
-            isExpanded: true,
+                    )
+                    .toList(),
+                selectedId: field.value ?? selectedCategoryId,
+                onChanged: (id) {
+                  field.didChange(id.leafId);
+                  onChanged(id.leafId);
+                },
+              ),
+              if (field.errorText != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 12, top: 6),
+                  child: Text(
+                    field.errorText!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.error,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ],

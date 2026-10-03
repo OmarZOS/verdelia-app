@@ -240,23 +240,39 @@ class StorageServiceImpl extends StorageService<FormData> {
   }
 
   @override
-  Future<dynamic> get(String destination, String id,
-      {String? callerKey,
-      String? token,
-      Map<String, dynamic>? parameters}) async {
+  Future<dynamic> get(
+    String destination,
+    String id, {
+    String? callerKey,
+    String? token,
+    Map<String, dynamic>? parameters,
+  }) async {
     final key = _getCallerKey(callerKey, 'get_$id');
-    final url = '$destination/$id';
+
+    // Build the URL exactly once. Append the id only when it's
+    // non-empty; otherwise use the destination as-is. This avoids
+    // both the trailing slash (`/x/`) and the doubled id (`/x/45/45`).
+    final hasId = id.isNotEmpty;
+    final url = hasId ? '$destination/$id' : destination;
+
     _logRequest('GET', url, callerKey: key, token: token);
 
     try {
       final options = _applyToken(Options(), token);
-      final response =
-          await _dio.get(url, options: options, queryParameters: parameters);
+      final response = await _dio.get(
+        url,
+        options: options,
+        queryParameters: parameters,
+      );
 
       if (response.statusCode == 200) {
         _logResponse(response.data);
-        setSuccessResponse(key, response.data,
-            statusCode: response.statusCode, responseCode: 'SUCCESS');
+        setSuccessResponse(
+          key,
+          response.data,
+          statusCode: response.statusCode,
+          responseCode: 'SUCCESS',
+        );
         return response.data;
       } else if (response.statusCode == 404) {
         setFailureResponse(
@@ -480,7 +496,7 @@ class StorageServiceImpl extends StorageService<FormData> {
         token,
       );
 
-      final response = await _dio.post(
+      final response = await _dio.put(
         destination,
         data: data,
         options: options,
@@ -524,7 +540,10 @@ class StorageServiceImpl extends StorageService<FormData> {
       Map<String, dynamic> parameters, Map<String, dynamic> data,
       {String? callerKey, String? token, String method = "PUT"}) async {
     final key = _getCallerKey(callerKey, 'update_$id');
-    final url = '$destination/$id';
+    var url = destination;
+    if (id != '') {
+      url += '/$id';
+    }
     _logRequest('PUT', url,
         data: data, params: parameters, callerKey: key, token: token);
     try {

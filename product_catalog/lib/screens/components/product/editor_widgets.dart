@@ -1,9 +1,34 @@
 // lib/screens/product_details/editor_widgets.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:verdelia_core/business/Product.dart';
+import 'package:event/product_change_notifier.dart';
+import 'package:provider/provider.dart';
+import 'package:ui/utils/category_hierarchy.dart';
+import 'package:ui/components/image/image_url.dart';
+
+String _productCategoryHierarchy(
+  Product product,
+  List<ProductCategory> categories,
+  String languageCode,
+  AppLocalizations localizations,
+) {
+  for (final category in categories) {
+    if (category.productCategoryId == product.product_category_id) {
+      return localizedCategoryHierarchy(
+        categoryPath: category.productCategoryDesc,
+        localizedLeaf: category.nameFor(languageCode),
+        localizations: localizations,
+      );
+    }
+  }
+  return localizedCategoryHierarchy(
+    categoryPath: product.product_category_name ?? '',
+    localizedLeaf: '',
+    localizations: localizations,
+  );
+}
 
 // ==================================================================
 // Hero strip
@@ -28,21 +53,30 @@ class EditorHero extends StatelessWidget {
     this.displayName,
   });
 
+  /// Prefer the seller's own image (first gallery entry); fall back to
+  /// the linked IProduct's reference image when the gallery is empty or
+  /// its primary URL is malformed.
+  String? _resolvedImageUrl() {
+    return resolveImageUrl(product.primaryImageUrl) ??
+        resolveImageUrl(product.product_origin?.iproductImageUrl);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final loc = AppLocalizations.of(context)!;
+    final categoryLabel = _productCategoryHierarchy(
+      product,
+      context.watch<ProductNotifier>().productCategories,
+      Localizations.localeOf(context).languageCode,
+      loc,
+    );
 
-    // Prefer the origin's reference image when the flat product has
-    // none. Same rule the customer view uses.
     final imageUrl = _resolvedImageUrl();
     final hasImage = imageUrl != null;
+    final hasGallery = product.product_images.length > 1;
 
-    // Caller-supplied display name wins; otherwise use the product's
-    // own resolved name. The product's getter already handles the
-    // English / Arabic / French fallback when the caller didn't
-    // provide one.
     final name = (displayName != null && displayName!.isNotEmpty)
         ? displayName!
         : product.product_name;
@@ -59,25 +93,72 @@ class EditorHero extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              width: 110,
-              height: 110,
-              color: cs.surfaceVariant,
-              child: hasImage
-                  ? Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _placeholder(cs),
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
-                        return const Center(
-                          child: CircularProgressIndicator(),
-                        );
-                      },
-                    )
-                  : _placeholder(cs),
+          // ─── Thumbnail with optional gallery count badge ──────
+          SizedBox(
+            width: 110,
+            height: 110,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    color: cs.surfaceVariant,
+                    child: hasImage
+                        ? Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _placeholder(cs),
+                            loadingBuilder: (context, child, progress) {
+                              if (progress == null) return child;
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            },
+                          )
+                        : _placeholder(cs),
+                  ),
+                ),
+                if (hasGallery)
+                  Positioned(
+                    right: 6,
+                    bottom: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.55),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.15),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.collections_outlined,
+                            size: 11,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            '${product.product_images.length}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              height: 1.0,
+                              fontFeatures: [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
           const SizedBox(width: 16),
@@ -113,9 +194,9 @@ class EditorHero extends StatelessWidget {
                   spacing: 6,
                   runSpacing: 4,
                   children: [
-                    if ((product.product_category_name ?? '').isNotEmpty)
+                    if (categoryLabel.isNotEmpty)
                       _Pill(
-                        label: product.product_category_name!,
+                        label: categoryLabel,
                         color: cs.secondary,
                       ),
                     if ((product.product_quantifier ?? '').isNotEmpty)
@@ -123,8 +204,6 @@ class EditorHero extends StatelessWidget {
                         label: product.product_quantifier!,
                         color: cs.onSurfaceVariant,
                       ),
-                    // Origin-derived pill: gluten status. Only shown
-                    // when the linked IProduct actually carries one.
                     if (_originGlutenStatus() != null)
                       _Pill(
                         label: _originGlutenLabel(context)!,
@@ -138,18 +217,6 @@ class EditorHero extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  /// Prefer the seller's own image; fall back to the linked IProduct's
-  /// reference image when the flat URL is missing or malformed.
-  String? _resolvedImageUrl() {
-    final flat = product.product_image_url;
-    if (_isValidImage(flat)) return flat;
-
-    final origin = product.product_origin?.iproductImageUrl;
-    if (_isValidImage(origin)) return origin;
-
-    return null;
   }
 
   /// The origin's gluten status, or null when there's no origin, the
@@ -189,9 +256,6 @@ class EditorHero extends StatelessWidget {
         return cs.onSurfaceVariant;
     }
   }
-
-  static bool _isValidImage(String? url) =>
-      url != null && url.isNotEmpty && url.startsWith('http');
 
   Widget _placeholder(ColorScheme cs) {
     return Center(
@@ -522,6 +586,12 @@ class MetadataCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final origin = product.product_origin;
+    final categoryLabel = _productCategoryHierarchy(
+      product,
+      context.watch<ProductNotifier>().productCategories,
+      Localizations.localeOf(context).languageCode,
+      loc,
+    );
 
     // Barcode: prefer the origin's extracted barcode when present —
     // it came from the physical product, not from a human typing.
@@ -547,7 +617,7 @@ class MetadataCard extends StatelessWidget {
       _MetaEntry(
         icon: Icons.category_outlined,
         label: loc.metaCategoryLabel,
-        value: product.product_category_name ?? '—',
+        value: categoryLabel.isNotEmpty ? categoryLabel : '—',
       ),
       _MetaEntry(
         icon: Icons.qr_code,

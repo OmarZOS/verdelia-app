@@ -2695,5 +2695,36 @@
   "accommodation": "Accommodation",
   "events": "Events",
 
-  "banking": "Banking"
+  "banking": "Banking",
+
+  "pricingModeByProfit": "By Profit",
+  "pricingModeByFinalPrice": "By Final Price",
+  "pricingAiPriceApplied": "AI price applied",
+  "pricingAiSuggestedPrice": "AI Suggested Price",
+  "pricingAiHigherDiff": "Your price is DZD {amount} higher",
+  "@pricingAiHigherDiff": { "placeholders": { "amount": { "type": "String" } } },
+  "pricingAiLowerDiff": "Your price is DZD {amount} lower",
+  "@pricingAiLowerDiff": { "placeholders": { "amount": { "type": "String" } } },
+  "pricingAiAcceptTooltip": "Use AI price",
+  "pricingAiResetTooltip": "Reset to AI price",
+  "pricingBasePriceLabel": "Base price",
+  "pricingBasePriceHelper": "Cost before tax",
+  "pricingTaxLabel": "Tax",
+  "pricingTaxHelper": "Applied on base price",
+  "pricingProfitLabel": "Profit margin",
+  "pricingProfitHelper": "Markup on price after tax",
+  "pricingFinalPriceLabel": "Final price",
+  "pricingFinalPriceHelper": "What the customer pays",
+  "pricingBreakdownLabel": "BREAKDOWN",
+  "pricingPriceAfterTaxLabel": "Price after tax",
+  "pricingProfitRowLabel": "Profit ({percent}%)",
+  "@pricingProfitRowLabel": { "placeholders": { "percent": { "type": "String" } } },
+
+  "selectProductTitle": "Select Product",
+  "searchProductsHint": "Search products…",
+  "supplierProductsBadge": "Supplier Products",
+  "noProductsFoundForQuery": "No products found for \"{query}\"",
+  "@noProductsFoundForQuery": { "placeholders": { "query": { "type": "String" } } },
+  "stockLabel": "Stock: {count}",
+  "@stockLabel": { "placeholders": { "count": { "type": "String" } } }
 }

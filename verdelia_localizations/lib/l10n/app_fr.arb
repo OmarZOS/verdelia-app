@@ -2472,5 +2472,31 @@
   "accommodation": "Hébergement",
   "events": "Événements",
 
-  "banking": "Banque"
+  "banking": "Banque",
+
+  "pricingModeByProfit": "Par marge",
+  "pricingModeByFinalPrice": "Par prix final",
+  "pricingAiPriceApplied": "Prix IA appliqué",
+  "pricingAiSuggestedPrice": "Prix suggéré par l'IA",
+  "pricingAiHigherDiff": "Votre prix est supérieur de {amount} DZD",
+  "pricingAiLowerDiff": "Votre prix est inférieur de {amount} DZD",
+  "pricingAiAcceptTooltip": "Utiliser le prix IA",
+  "pricingAiResetTooltip": "Réinitialiser au prix IA",
+  "pricingBasePriceLabel": "Prix de base",
+  "pricingBasePriceHelper": "Coût hors taxe",
+  "pricingTaxLabel": "Taxe",
+  "pricingTaxHelper": "Appliquée sur le prix de base",
+  "pricingProfitLabel": "Marge bénéficiaire",
+  "pricingProfitHelper": "Marge sur le prix après taxe",
+  "pricingFinalPriceLabel": "Prix final",
+  "pricingFinalPriceHelper": "Ce que paie le client",
+  "pricingBreakdownLabel": "DÉTAIL",
+  "pricingPriceAfterTaxLabel": "Prix après taxe",
+  "pricingProfitRowLabel": "Bénéfice ({percent}%)",
+
+  "selectProductTitle": "Sélectionner un produit",
+  "searchProductsHint": "Rechercher des produits…",
+  "supplierProductsBadge": "Produits du fournisseur",
+  "noProductsAvailable": "Aucun produit disponible",
+  "stockLabel": "Stock : {count}"
 }

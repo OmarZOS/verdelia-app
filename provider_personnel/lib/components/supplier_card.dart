@@ -8,6 +8,7 @@ import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:event/supplier_change_notifier.dart';
 import 'package:provider_personnel/personnel_management_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:ui/utils/category_hierarchy.dart';
 
 class SupplierCard extends StatelessWidget {
   final ManagementRule? managementRule;
@@ -216,6 +217,7 @@ class SupplierCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final languageCode = Localizations.localeOf(context).languageCode;
+    final localizations = AppLocalizations.of(context)!;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -281,10 +283,19 @@ class SupplierCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Selector<SupplierChangeNotifier, String>(
-                selector: (_, notifier) => notifier.categoryName(
-                  _providerTypeId,
-                  languageCode: languageCode,
-                ),
+                selector: (_, notifier) {
+                  final matchingCategories = notifier.supplierCategories.where(
+                    (category) =>
+                        category.productProviderTypeId == _providerTypeId,
+                  );
+                  if (matchingCategories.isEmpty) return '';
+                  final category = matchingCategories.first;
+                  return localizedCategoryHierarchy(
+                    categoryPath: category.productCategoryDesc,
+                    localizedLeaf: category.nameFor(languageCode),
+                    localizations: localizations,
+                  );
+                },
                 builder: (context, categoryName, _) => Text(
                   categoryName.isNotEmpty ? categoryName : 'General',
                   style: theme.textTheme.labelSmall?.copyWith(

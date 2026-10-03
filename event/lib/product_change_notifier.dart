@@ -9,6 +9,7 @@ import 'package:event/components/product/product_state.dart';
 import 'package:event/components/product/product_supplier.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_core/business/Product.dart';
+import 'package:verdelia_core/business/CategoryHierarchyIndex.dart';
 import 'package:verdelia_core/business/services/ProductService.dart';
 import 'package:locator/locator.dart';
 
@@ -34,6 +35,8 @@ class ProductNotifier extends ChangeNotifier {
   int get currentProviderId => _state.currentProviderId;
   int get currentCategory => _state.currentCategory;
   int get currentUserId => _state.currentUserId;
+  String? get currentDomain => _state.currentDomain;
+  String? get currentSubdomain => _state.currentSubdomain;
   int get itemsPerPage => _state.itemsPerPage;
 
   List<Product> get products => _state.products;
@@ -46,6 +49,7 @@ class ProductNotifier extends ChangeNotifier {
   List<ProductCategory> get productCategories => _state.categories;
   bool get supportsSupplierFilter => _state.supportsSupplierFilter;
   bool get isCacheEnabled => _cache.isEnabled;
+  bool get includeHidden => _state.includeHidden;
 
   /// Products hidden from buyers but visible to the current editor.
   List<Product> get hiddenProducts =>
@@ -65,6 +69,10 @@ class ProductNotifier extends ChangeNotifier {
       final cached = _cache.getCategories();
       if (cached != null) {
         _state.categories = List.of(cached);
+        _state.categoryHierarchy = CategoryHierarchyIndex.fromItems(
+          cached,
+          (category) => category.productCategoryDesc,
+        );
         _notify();
         return _state.categories;
       }
@@ -74,9 +82,16 @@ class ProductNotifier extends ChangeNotifier {
     final categories = fetched ?? <ProductCategory>[];
     _cache.cacheCategories(categories);
     _state.categories = List.of(categories);
+    _state.categoryHierarchy = CategoryHierarchyIndex.fromItems(
+      categories,
+      (category) => category.productCategoryDesc,
+    );
     _notify();
     return _state.categories;
   }
+
+  CategoryHierarchyIndex<ProductCategory> get categoryHierarchy =>
+      _state.categoryHierarchy;
 
   List<String> categoriesFor([String languageCode = 'en']) => _state.categories
       .map((category) => category.nameFor(languageCode))
@@ -90,6 +105,21 @@ class ProductNotifier extends ChangeNotifier {
       }
     }
     return '';
+  }
+
+  /// Return all category leaves that belong to the given domain (and
+  /// optional subdomain). Matches the `domain.subdomain.category`
+  /// convention used by the backend.
+  List<ProductCategory> categoriesForDomain({
+    required String domain,
+    String? subdomain,
+  }) {
+    final prefix = subdomain == null || subdomain.isEmpty
+        ? '$domain.'
+        : '$domain.$subdomain.';
+    return _state.categories
+        .where((c) => c.productCategoryDesc.startsWith(prefix))
+        .toList();
   }
 
   // ============ INIT ============
@@ -238,8 +268,6 @@ class ProductNotifier extends ChangeNotifier {
       _cache.invalidateProduct(productId);
 
       // 3. Drop any cached supplier lists that contained this product.
-      //    Both the buyer and editor variants, since a visibility flip
-      //    affects the buyer list's membership.
       final supplierId = updated.product_provider_id ?? 0;
       if (supplierId > 0) {
         _cache.invalidateSupplierCacheAll(supplierId);
@@ -286,6 +314,42 @@ class ProductNotifier extends ChangeNotifier {
     }
   }
 
+  /// Remove a product image from the in-memory product and product cache.
+  /// This is used for resources that fail to load; it does not delete the
+  /// image from the backend.
+  bool removeProductImage({
+    required Product product,
+    required ProductImage image,
+  }) {
+    final productId = product.id_product;
+    if (productId == null) return false;
+
+    final stateIndex =
+        _state.products.indexWhere((item) => item.id_product == productId);
+    final current = stateIndex >= 0
+        ? _state.products[stateIndex]
+        : _cache.getProduct(productId) ?? product;
+    final images = current.product_images;
+    final remaining = images.where((candidate) {
+      if (image.id > 0) return candidate.id != image.id;
+      return !identical(candidate, image);
+    }).toList(growable: false);
+
+    if (remaining.length == images.length) return false;
+
+    final updated = current.copyWith(product_images: remaining);
+    if (stateIndex >= 0) {
+      _state.products[stateIndex] = updated;
+    }
+    _cache.cacheProduct(updated);
+
+    final supplierId = updated.product_provider_id ?? 0;
+    if (supplierId > 0) _cache.invalidateSupplierCacheAll(supplierId);
+
+    _notify();
+    return true;
+  }
+
   // ============ FETCH OPERATIONS ============
 
   /// Fetch products.
@@ -293,6 +357,10 @@ class ProductNotifier extends ChangeNotifier {
   /// [includeHidden] defaults to false, matching the buyer-facing
   /// semantics of the service. Editors should pass `includeHidden: true`
   /// to load the full catalog.
+  ///
+  /// [domain] and [subdomain] filter by category hierarchy. `subdomain`
+  /// requires `domain`; if only `subdomain` is provided, the fetch
+  /// silently drops it and logs a warning.
   Future<void> fetchProducts({
     int categoryId = 0,
     int userId = 0,
@@ -300,7 +368,20 @@ class ProductNotifier extends ChangeNotifier {
     String query = "",
     bool reset = false,
     bool includeHidden = false,
+    String? domain,
+    String? subdomain,
   }) async {
+    final cleanDomain = _cleanSegment(domain);
+    var cleanSubdomain = _cleanSegment(subdomain);
+
+    if (cleanSubdomain != null && cleanDomain == null) {
+      debugPrint(
+        '[ProductNotifier] fetchProducts: subdomain "$cleanSubdomain" '
+        'ignored because domain is not set',
+      );
+      cleanSubdomain = null;
+    }
+
     await _fetch.fetchProducts(
       categoryId: categoryId,
       userId: userId,
@@ -308,6 +389,8 @@ class ProductNotifier extends ChangeNotifier {
       query: query,
       reset: reset,
       includeHidden: includeHidden,
+      domain: cleanDomain,
+      subdomain: cleanSubdomain,
     );
     _notify();
   }
@@ -324,13 +407,49 @@ class ProductNotifier extends ChangeNotifier {
   List<Product> filterProductsBySupplier(int supplierId) =>
       _fetch.filterBySupplier(supplierId);
 
-  Future<void> searchProducts(String query, {bool reset = true}) async {
+  /// Re-run the current search against the newly active domain /
+  /// subdomain filters. Useful when the user changes the picker without
+  /// typing a new query.
+  Future<void> applyCategoryFilters({
+    String? domain,
+    String? subdomain,
+    int categoryId = 0,
+    bool reset = true,
+  }) async {
+    await fetchProducts(
+      categoryId: categoryId,
+      domain: domain,
+      subdomain: subdomain,
+      reset: reset,
+    );
+  }
+
+  Future<void> searchProducts(
+    String query, {
+    bool reset = true,
+    String? domain,
+    String? subdomain,
+  }) async {
+    final cleanDomain = _cleanSegment(domain) ?? _state.currentDomain;
+    var cleanSubdomain = _cleanSegment(subdomain) ?? _state.currentSubdomain;
+
+    if (cleanSubdomain != null && cleanDomain == null) {
+      debugPrint(
+        '[ProductNotifier] searchProducts: subdomain "$cleanSubdomain" '
+        'ignored because domain is not set',
+      );
+      cleanSubdomain = null;
+    }
+
     await _fetch.fetchProducts(
       categoryId: _state.currentCategory,
       userId: _state.currentUserId,
       providerId: _state.currentProviderId,
       query: query,
       reset: reset,
+      includeHidden: _state.includeHidden,
+      domain: cleanDomain,
+      subdomain: cleanSubdomain,
     );
     _notify();
   }
@@ -380,8 +499,6 @@ class ProductNotifier extends ChangeNotifier {
   }
 
   /// Invalidate every cached variant for a supplier (buyer + editor).
-  /// Convenience for the visibility-change path, where both views may
-  /// be open in different screens.
   void invalidateSupplierCacheAll(int supplierId) {
     _cache.invalidateSupplierCacheAll(supplierId);
     _notify();
@@ -458,5 +575,15 @@ class ProductNotifier extends ChangeNotifier {
       'productCache': _cache.productCacheSize,
       'listCache': _cache.listCacheSize,
     };
+  }
+
+  // ============ HELPERS ============
+
+  /// Trim + lowercase a domain / subdomain segment. Returns null when
+  /// the input is null or blank, so downstream calls skip the filter.
+  String? _cleanSegment(String? value) {
+    if (value == null) return null;
+    final cleaned = value.trim().toLowerCase();
+    return cleaned.isEmpty ? null : cleaned;
   }
 }

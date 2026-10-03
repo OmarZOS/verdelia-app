@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:verdelia_core/business/finance/ProvidedService.dart';
+import 'package:verdelia_core/business/CategoryHierarchyIndex.dart';
 import 'package:event/TraceableNotifier.dart';
 import 'package:verdelia_core/app/VerdeliaException.dart';
 import 'package:locator/locator.dart';
@@ -13,6 +14,14 @@ class ServiceNotifier extends TraceableNotifier {
       AppLocator.get<ProvidedServiceManagementService>();
 
   final List<ProvidedService> _services = [];
+  List<ProvidedServiceCategory> _serviceCategories = [];
+  CategoryHierarchyIndex<ProvidedServiceCategory> _categoryHierarchy =
+      CategoryHierarchyIndex.fromItems(
+    <ProvidedServiceCategory>[],
+    (category) => category.name,
+  );
+  bool _serviceCategoriesLoaded = false;
+  Future<List<ProvidedServiceCategory>>? _pendingServiceCategoryFetch;
   bool _isLoading = false;
   bool _notificationScheduled = false;
   bool _hasMore = true;
@@ -55,18 +64,50 @@ class ServiceNotifier extends TraceableNotifier {
   bool get hasMore => _hasMore;
   String get searchQuery => _searchQuery;
   int? get currentProviderId => _currentProviderId;
+  List<ProvidedServiceCategory> get serviceCategories =>
+      List.unmodifiable(_serviceCategories);
+  CategoryHierarchyIndex<ProvidedServiceCategory> get categoryHierarchy =>
+      _categoryHierarchy;
 
   Future<List<ProvidedServiceCategory>> fetchServiceCategories(
-      {String? callerKey}) async {
+      {String? callerKey, bool forceRefresh = false}) async {
+    if (!forceRefresh && _serviceCategoriesLoaded) {
+      return serviceCategories;
+    }
+    if (!forceRefresh && _pendingServiceCategoryFetch != null) {
+      return _pendingServiceCategoryFetch!;
+    }
+
     final key = callerKey ?? getCallerKey('fetchServiceCategories');
+    final request = _loadServiceCategories(key);
+    _pendingServiceCategoryFetch = request;
+    try {
+      return await request;
+    } finally {
+      if (identical(_pendingServiceCategoryFetch, request)) {
+        _pendingServiceCategoryFetch = null;
+      }
+    }
+  }
+
+  Future<List<ProvidedServiceCategory>> _loadServiceCategories(
+    String key,
+  ) async {
     try {
       final categories =
           await _serviceManager.getServiceCategories(callerKey: key);
+      _serviceCategories = List.unmodifiable(categories);
+      _categoryHierarchy = CategoryHierarchyIndex.fromItems(
+        categories,
+        (category) => category.name,
+      );
+      _serviceCategoriesLoaded = true;
       storeSuccess(key, categories);
-      return categories;
+      _notifySafely();
+      return serviceCategories;
     } catch (e) {
       storeFailure(key, e.toString(), errorCode: 'CATEGORY_LOAD_FAILED');
-      return [];
+      return serviceCategories;
     }
   }
 

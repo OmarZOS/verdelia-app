@@ -652,7 +652,6 @@
   "noServicesDescription": "أضف خدمتك الأولى لبدء تقديم خدمات الرعاية الصحية للمرضى.",
   "proTip": "نصيحة",
   "addServicesToManage": "أضف خدمات لإدارة المواعيد والتسعير وتخصيص الموارد بكفاءة.",
-  "status_inactive": "غير نشط",
   "edit": "تعديل",
   "delete": "حذف",
   "searchServices": "ابحث عن خدمات...",
@@ -2472,5 +2471,31 @@
   "accommodation": "الإقامة",
   "events": "الفعاليات",
 
-  "banking": "الخدمات المصرفية"
+  "banking": "الخدمات المصرفية",
+
+  "pricingModeByProfit": "حسب الهامش",
+  "pricingModeByFinalPrice": "حسب السعر النهائي",
+  "pricingAiPriceApplied": "تم تطبيق سعر الذكاء الاصطناعي",
+  "pricingAiSuggestedPrice": "السعر المقترح من الذكاء الاصطناعي",
+  "pricingAiHigherDiff": "سعرك أعلى بمقدار {amount} دج",
+  "pricingAiLowerDiff": "سعرك أقل بمقدار {amount} دج",
+  "pricingAiAcceptTooltip": "استخدم سعر الذكاء الاصطناعي",
+  "pricingAiResetTooltip": "إعادة التعيين إلى سعر الذكاء الاصطناعي",
+  "pricingBasePriceLabel": "السعر الأساسي",
+  "pricingBasePriceHelper": "التكلفة قبل الضريبة",
+  "pricingTaxLabel": "الضريبة",
+  "pricingTaxHelper": "تُطبَّق على السعر الأساسي",
+  "pricingProfitLabel": "هامش الربح",
+  "pricingProfitHelper": "الهامش على السعر بعد الضريبة",
+  "pricingFinalPriceLabel": "السعر النهائي",
+  "pricingFinalPriceHelper": "ما يدفعه العميل",
+  "pricingBreakdownLabel": "التفصيل",
+  "pricingPriceAfterTaxLabel": "السعر بعد الضريبة",
+  "pricingProfitRowLabel": "الربح ({percent}%)",
+
+  "selectProductTitle": "اختر منتجًا",
+  "searchProductsHint": "ابحث عن المنتجات…",
+  "supplierProductsBadge": "منتجات المورد",
+  "noProductsFoundForQuery": "لم يتم العثور على منتجات لـ «{query}»",
+  "stockLabel": "المخزون: {count}"
 }

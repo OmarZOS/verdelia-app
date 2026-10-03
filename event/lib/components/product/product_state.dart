@@ -1,12 +1,18 @@
 // lib/event/components/product/product_state.dart
 
 import 'package:verdelia_core/business/Product.dart';
+import 'package:verdelia_core/business/CategoryHierarchyIndex.dart';
 
 class ProductState {
   final List<Product> products = [];
   final Map<int, int> cartQuantities = {};
   final List<Product> cartItems = [];
   List<ProductCategory> categories = [];
+  CategoryHierarchyIndex<ProductCategory> categoryHierarchy =
+      CategoryHierarchyIndex.fromItems(
+    <ProductCategory>[],
+    (category) => category.productCategoryDesc,
+  );
 
   bool isLoading = false;
   bool isCartLoading = false;
@@ -17,6 +23,18 @@ class ProductState {
   int currentProviderId = 0;
   String currentSearchQuery = "";
   int itemsPerPage = 20;
+
+  /// Active top-level domain filter, if any (e.g. `'food'`, `'retail'`).
+  ///
+  /// Matches the first segment of a product category key
+  /// (`domain.subdomain.category`). Null means "no domain filter".
+  String? currentDomain;
+
+  /// Active subdomain filter inside [currentDomain] (e.g. `'alimentary'`).
+  ///
+  /// Only meaningful when [currentDomain] is set; [ProductFetch] drops
+  /// it silently if a fetch arrives with a subdomain but no domain.
+  String? currentSubdomain;
 
   /// Whether the current product list includes hidden products.
   ///
@@ -32,6 +50,10 @@ class ProductState {
   void reset() {
     products.clear();
     categories.clear();
+    categoryHierarchy = CategoryHierarchyIndex.fromItems(
+      <ProductCategory>[],
+      (category) => category.productCategoryDesc,
+    );
     cartQuantities.clear();
     cartItems.clear();
     isLoading = false;
@@ -42,6 +64,8 @@ class ProductState {
     currentUserId = 0;
     currentProviderId = 0;
     currentSearchQuery = "";
+    currentDomain = null;
+    currentSubdomain = null;
     includeHidden = false;
   }
 
@@ -80,4 +104,18 @@ class ProductState {
   /// never return hidden products in the first place.
   List<Product> get hiddenProducts =>
       products.where((p) => !p.isVisible).toList();
+
+  // ================================================================
+  // Hierarchy helpers
+  // ================================================================
+
+  /// True when a domain filter is currently active.
+  bool get hasDomainFilter =>
+      currentDomain != null && currentDomain!.isNotEmpty;
+
+  /// True when both a domain and a subdomain filter are active.
+  bool get hasSubdomainFilter =>
+      hasDomainFilter &&
+      currentSubdomain != null &&
+      currentSubdomain!.isNotEmpty;
 }

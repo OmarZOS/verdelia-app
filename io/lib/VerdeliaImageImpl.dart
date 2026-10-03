@@ -30,6 +30,6 @@ class VerdeliaImageImpl extends VerdeliaImage<FormData> {
       throw StateError('Image upload response did not include a path.');
     }
 
-    return (result['path'] as String).replaceFirst('files/', '');
+    return (result['path'] as String).replaceFirst('/fs/base', '');
   }
 }

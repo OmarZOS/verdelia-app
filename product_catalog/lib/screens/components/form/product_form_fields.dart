@@ -15,7 +15,7 @@ import 'package:event/personnel_notifier.dart';
 import 'package:event/product_change_notifier.dart';
 import 'package:event/supplier_change_notifier.dart';
 import 'package:event/user_change_notifier.dart';
-import 'package:ui/components/category_picker.dart';
+import 'package:ui/components/hierarchical_category_picker.dart';
 import 'package:ui/components/pricing_config_card.dart';
 import 'package:ui/components/supplier/supplier_picker.dart';
 import 'package:product_catalog/screens/components/form/form_controllers.dart';
@@ -50,6 +50,11 @@ class _ProductFormFieldsState extends State<ProductFormFields> {
   @override
   void initState() {
     super.initState();
+    context.read<PricingState>().load(
+          basePrice: formData.productBasePrice ?? 0,
+          finalPrice: formData.price ?? 0,
+          mode: PricingMode.byFinalPrice,
+        );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<ProductNotifier>().fetchCategories();
     });
@@ -244,72 +249,45 @@ class _ProductFormFieldsState extends State<ProductFormFields> {
   // ==================================================================
 
   Widget _buildQuantifierField(BuildContext context, AppLocalizations loc) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    const options = <String>[
-      'pc',
-      'kg',
-      'g',
-      'L',
-      'ml',
-      'mg',
-      'tablet',
-      'capsule',
-      'bottle',
-      'unit',
-      'package',
-      'box',
-    ];
-
+    final options = AppConstants.productUnits;
     final current = (formData.quantifier ?? 'pc').trim();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          loc.productQuantifierTxt,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: cs.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 6),
-        DropdownButtonFormField<String>(
-          value: options.contains(current) ? current : 'pc',
-          items: options
-              .map((q) => DropdownMenuItem(value: q, child: Text(q)))
-              .toList(),
-          onChanged: (value) {
-            if (value == null) return;
-            context
-                .read<AssistantNotifier>()
-                .markFieldAsEdited(ProductAssistedFields.QUANTIFIER);
-            setState(() {
-              formData.quantifier = value;
-            });
-          },
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: cs.surfaceVariant.withOpacity(0.3),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+    return SmartDropdownField<String>(
+      fieldId: ProductAssistedFields.QUANTIFIER,
+      value: options.contains(current) ? current : 'pc',
+      labelText: loc.productQuantifierTxt,
+      items: options
+          .map(
+            (unit) => DropdownMenuItem<String>(
+              value: unit,
+              child: Text(_localizedQuantifier(unit, loc)),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: cs.outline.withOpacity(0.15)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: cs.primary, width: 2),
-            ),
-          ),
-        ),
-      ],
+          )
+          .toList(),
+      onChanged: (value) {
+        if (value == null) return;
+        setState(() {
+          formData.quantifier = value;
+        });
+      },
     );
+  }
+
+  String _localizedQuantifier(String unit, AppLocalizations loc) {
+    return switch (unit) {
+      'g' => loc.quantifier_g,
+      'kg' => loc.quantifier_kg,
+      'mg' => loc.quantifier_mg,
+      'L' => loc.quantifier_L,
+      'mL' => loc.quantifier_mL,
+      'pc' => loc.quantifier_pc,
+      'pkg' => loc.quantifier_pkg,
+      'box' => loc.quantifier_box,
+      'bag' => loc.quantifier_bag,
+      'slice' => loc.quantifier_slice,
+      'cup' => loc.quantifier_cup,
+      _ => unit,
+    };
   }
 
   // ==================================================================
@@ -464,22 +442,27 @@ class _ProductFormFieldsState extends State<ProductFormFields> {
     if (productCategories.isEmpty) return const SizedBox.shrink();
 
     final languageCode = Localizations.localeOf(context).languageCode;
-    return CategoryPicker(
-      category_id:
+    return HierarchicalCategoryPicker(
+      label: AppLocalizations.of(context)!.categoryText,
+      selectedId:
           formData.categoryId ?? productCategories.first.productCategoryId,
-      categories: productCategories
-          .map((category) => category.nameFor(languageCode))
+      options: productCategories
+          .map(
+            (category) => HierarchicalCategoryOption(
+              id: category.productCategoryId,
+              path: category.productCategoryDesc,
+              leafLabel: category.nameFor(languageCode),
+            ),
+          )
           .toList(),
-      categoryIds: productCategories
-          .map((category) => category.productCategoryId)
-          .toList(),
-      onCategoryChanged: (id) {
+      onChanged: (id) {
         setState(() {
-          formData.typeId = id;
-          formData.categoryId = id;
+          formData.typeId = id.leafId;
+          formData.categoryId = id.leafId;
         });
       },
-      pathFunction: (id) => 'assets/icons/$id.svg',
+      iconAsset:
+          'assets/icons/${formData.categoryId ?? productCategories.first.productCategoryId}.svg',
       package: 'product_catalog',
     );
   }

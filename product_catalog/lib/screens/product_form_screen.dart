@@ -7,6 +7,7 @@ import 'package:verdelia_core/business/Product.dart';
 import 'package:verdelia_core/business/product_form_data.dart';
 import 'package:event/assistant_change_notifier.dart';
 import 'package:ui/components/ImagePickerSection.dart';
+import 'package:ui/components/image/image_url.dart';
 import 'package:product_catalog/screens/components/form/ai_assistance_section.dart';
 import 'package:product_catalog/screens/components/form/ai_assistant.dart';
 import 'package:product_catalog/screens/components/form/form_controllers.dart';
@@ -175,15 +176,26 @@ class ProductFormScreenState extends State<ProductFormScreen> {
   }
 
   Widget _buildImagePickerSection() {
+    // Preview shows the primary image of the current gallery — either
+    // the first existing image on update, or whatever the last picked
+    // file produced in this session.
+    final initialUrl = _formData.productImages.isNotEmpty
+        ? resolveImageUrl(_formData.productImages.first.url) ?? ''
+        : '';
+
     return ImagePickerSection(
-      initialImageUrl: _formData.imageUrl ?? "",
+      initialImageUrl: initialUrl,
       entityType: 'product',
       ownerId: '${_formData.ownerId}',
       entityId: '${_formData.productId}',
       onImageUploaded: (newImage) {
         setState(() {
           _formData.image = newImage;
-          _formData.imageId = 0;
+          // VerdeliaImage carries the local file and the upload
+          // configuration; the actual row is written server-side by
+          // ProductCrud. Nothing else to update here — the gallery in
+          // `_formData.productImages` is the source of truth for
+          // existing images.
         });
       },
       capturedImageFile: _formData.imageFile,

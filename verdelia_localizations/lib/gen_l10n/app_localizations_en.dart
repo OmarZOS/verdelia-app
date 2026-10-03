@@ -6999,4 +6999,86 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get banking => 'Banking';
+
+  @override
+  String get pricingModeByProfit => 'By Profit';
+
+  @override
+  String get pricingModeByFinalPrice => 'By Final Price';
+
+  @override
+  String get pricingAiPriceApplied => 'AI price applied';
+
+  @override
+  String get pricingAiSuggestedPrice => 'AI Suggested Price';
+
+  @override
+  String pricingAiHigherDiff(String amount) {
+    return 'Your price is DZD $amount higher';
+  }
+
+  @override
+  String pricingAiLowerDiff(String amount) {
+    return 'Your price is DZD $amount lower';
+  }
+
+  @override
+  String get pricingAiAcceptTooltip => 'Use AI price';
+
+  @override
+  String get pricingAiResetTooltip => 'Reset to AI price';
+
+  @override
+  String get pricingBasePriceLabel => 'Base price';
+
+  @override
+  String get pricingBasePriceHelper => 'Cost before tax';
+
+  @override
+  String get pricingTaxLabel => 'Tax';
+
+  @override
+  String get pricingTaxHelper => 'Applied on base price';
+
+  @override
+  String get pricingProfitLabel => 'Profit margin';
+
+  @override
+  String get pricingProfitHelper => 'Markup on price after tax';
+
+  @override
+  String get pricingFinalPriceLabel => 'Final price';
+
+  @override
+  String get pricingFinalPriceHelper => 'What the customer pays';
+
+  @override
+  String get pricingBreakdownLabel => 'BREAKDOWN';
+
+  @override
+  String get pricingPriceAfterTaxLabel => 'Price after tax';
+
+  @override
+  String pricingProfitRowLabel(String percent) {
+    return 'Profit ($percent%)';
+  }
+
+  @override
+  String get selectProductTitle => 'Select Product';
+
+  @override
+  String get searchProductsHint => 'Search products…';
+
+  @override
+  String get supplierProductsBadge => 'Supplier Products';
+
+  @override
+  String noProductsFoundForQuery(String query) {
+    return 'No products found for \"$query\"';
+  }
+
+  @override
+  String stockLabel(String count) {
+    return 'Stock: $count';
+  }
 }

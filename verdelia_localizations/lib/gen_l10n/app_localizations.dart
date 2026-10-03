@@ -13422,6 +13422,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Banking'**
   String get banking;
+
+  /// No description provided for @pricingModeByProfit.
+  ///
+  /// In en, this message translates to:
+  /// **'By Profit'**
+  String get pricingModeByProfit;
+
+  /// No description provided for @pricingModeByFinalPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'By Final Price'**
+  String get pricingModeByFinalPrice;
+
+  /// No description provided for @pricingAiPriceApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'AI price applied'**
+  String get pricingAiPriceApplied;
+
+  /// No description provided for @pricingAiSuggestedPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Suggested Price'**
+  String get pricingAiSuggestedPrice;
+
+  /// No description provided for @pricingAiHigherDiff.
+  ///
+  /// In en, this message translates to:
+  /// **'Your price is DZD {amount} higher'**
+  String pricingAiHigherDiff(String amount);
+
+  /// No description provided for @pricingAiLowerDiff.
+  ///
+  /// In en, this message translates to:
+  /// **'Your price is DZD {amount} lower'**
+  String pricingAiLowerDiff(String amount);
+
+  /// No description provided for @pricingAiAcceptTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Use AI price'**
+  String get pricingAiAcceptTooltip;
+
+  /// No description provided for @pricingAiResetTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to AI price'**
+  String get pricingAiResetTooltip;
+
+  /// No description provided for @pricingBasePriceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Base price'**
+  String get pricingBasePriceLabel;
+
+  /// No description provided for @pricingBasePriceHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost before tax'**
+  String get pricingBasePriceHelper;
+
+  /// No description provided for @pricingTaxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax'**
+  String get pricingTaxLabel;
+
+  /// No description provided for @pricingTaxHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied on base price'**
+  String get pricingTaxHelper;
+
+  /// No description provided for @pricingProfitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit margin'**
+  String get pricingProfitLabel;
+
+  /// No description provided for @pricingProfitHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Markup on price after tax'**
+  String get pricingProfitHelper;
+
+  /// No description provided for @pricingFinalPriceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Final price'**
+  String get pricingFinalPriceLabel;
+
+  /// No description provided for @pricingFinalPriceHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'What the customer pays'**
+  String get pricingFinalPriceHelper;
+
+  /// No description provided for @pricingBreakdownLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'BREAKDOWN'**
+  String get pricingBreakdownLabel;
+
+  /// No description provided for @pricingPriceAfterTaxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Price after tax'**
+  String get pricingPriceAfterTaxLabel;
+
+  /// No description provided for @pricingProfitRowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit ({percent}%)'**
+  String pricingProfitRowLabel(String percent);
+
+  /// No description provided for @selectProductTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Product'**
+  String get selectProductTitle;
+
+  /// No description provided for @searchProductsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search products…'**
+  String get searchProductsHint;
+
+  /// No description provided for @supplierProductsBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier Products'**
+  String get supplierProductsBadge;
+
+  /// No description provided for @noProductsFoundForQuery.
+  ///
+  /// In en, this message translates to:
+  /// **'No products found for \"{query}\"'**
+  String noProductsFoundForQuery(String query);
+
+  /// No description provided for @stockLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock: {count}'**
+  String stockLabel(String count);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

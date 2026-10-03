@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:verdelia_core/business/Organisation.dart';
 import 'package:verdelia_core/business/Supplier.dart';
+import 'package:verdelia_core/business/CategoryHierarchyIndex.dart';
 import 'package:verdelia_core/mediation/StorageService.dart';
 import 'supplier_filter.dart';
 
 class SupplierState {
   final List<Supplier> suppliers = [];
   List<SupplierCategory> categories = [];
+  CategoryHierarchyIndex<SupplierCategory> categoryHierarchy =
+      CategoryHierarchyIndex.fromItems(
+    <SupplierCategory>[],
+    (category) => category.productCategoryDesc,
+  );
   final Map<int, Organisation> organisations = {};
   Position? currentLocation;
   SupplierFilter filter = const SupplierFilter();
@@ -59,6 +65,10 @@ class SupplierState {
   void reset() {
     suppliers.clear();
     categories.clear();
+    categoryHierarchy = CategoryHierarchyIndex.fromItems(
+      <SupplierCategory>[],
+      (category) => category.productCategoryDesc,
+    );
     organisations.clear();
     currentLocation = null;
     filter = const SupplierFilter();

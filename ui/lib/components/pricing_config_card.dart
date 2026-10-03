@@ -1,6 +1,7 @@
 // lib/ui/components/pricing_config_card.dart
 
 import 'dart:async';
+import 'dart:ui' show FontFeature;
 
 import 'package:app_constants/app_constants.dart';
 import 'package:event/views/pricing_config_view_model.dart';
@@ -116,8 +117,6 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
       _finalPriceController.text = widget.finalPrice.toStringAsFixed(2);
     }
 
-    // Mode switch changes which field is the driver. Re-seed both
-    // paired fields so the newly-derived one shows the fresh value.
     if (widget.mode != oldWidget.mode) {
       _profitController.text = widget.profitMargin.toStringAsFixed(2);
       _finalPriceController.text = widget.finalPrice.toStringAsFixed(2);
@@ -191,6 +190,7 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final loc = AppLocalizations.of(context)!;
 
     // Preview derivations — display only, never stored.
     final taxAmount = widget.basePrice * widget.taxPercentage / 100;
@@ -220,7 +220,7 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Pricing',
+                  loc.pricingSectionTitle,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -245,8 +245,8 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
           ),
           const SizedBox(height: 20),
           _NumericField(
-            label: 'Base price',
-            helper: 'Cost before tax',
+            label: loc.pricingBasePriceLabel,
+            helper: loc.pricingBasePriceHelper,
             controller: _basePriceController,
             focusNode: _basePriceFocus,
             icon: Icons.inventory_2_outlined,
@@ -256,8 +256,8 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
           ),
           const SizedBox(height: 14),
           _NumericField(
-            label: 'Tax',
-            helper: 'Applied on base price',
+            label: loc.pricingTaxLabel,
+            helper: loc.pricingTaxHelper,
             controller: _taxController,
             focusNode: _taxFocus,
             icon: Icons.percent_rounded,
@@ -268,8 +268,8 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
           const SizedBox(height: 14),
           if (widget.mode == PricingMode.byProfit)
             _NumericField(
-              label: 'Profit margin',
-              helper: 'Markup on price after tax',
+              label: loc.pricingProfitLabel,
+              helper: loc.pricingProfitHelper,
               controller: _profitController,
               focusNode: _profitFocus,
               icon: Icons.trending_up_rounded,
@@ -279,8 +279,8 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
             )
           else
             _NumericField(
-              label: 'Final price',
-              helper: 'What the customer pays',
+              label: loc.pricingFinalPriceLabel,
+              helper: loc.pricingFinalPriceHelper,
               controller: _finalPriceController,
               focusNode: _finalPriceFocus,
               icon: Icons.sell_outlined,
@@ -324,6 +324,7 @@ class _AiSuggestionStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final loc = AppLocalizations.of(context)!;
 
     final diff = (currentFinal - aiPrice).abs();
     final applied = !available;
@@ -351,7 +352,9 @@ class _AiSuggestionStrip extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  applied ? 'AI price applied' : 'AI Suggested Price',
+                  applied
+                      ? loc.pricingAiPriceApplied
+                      : loc.pricingAiSuggestedPrice,
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: cs.onSurface,
                     fontWeight: FontWeight.w600,
@@ -371,8 +374,12 @@ class _AiSuggestionStrip extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       higher
-                          ? 'Your price is DZD ${diff.toStringAsFixed(2)} higher'
-                          : 'Your price is DZD ${diff.toStringAsFixed(2)} lower',
+                          ? loc.pricingAiHigherDiff(
+                              diff.toStringAsFixed(2),
+                            )
+                          : loc.pricingAiLowerDiff(
+                              diff.toStringAsFixed(2),
+                            ),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: accent,
                       ),
@@ -397,7 +404,9 @@ class _AiSuggestionStrip extends StatelessWidget {
               onPressed: applied ? onReset : onAccept,
               padding: EdgeInsets.zero,
               splashRadius: 16,
-              tooltip: applied ? 'Reset to AI price' : 'Use AI price',
+              tooltip: applied
+                  ? loc.pricingAiResetTooltip
+                  : loc.pricingAiAcceptTooltip,
             ),
           ),
         ],
@@ -417,6 +426,7 @@ class _ModeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final loc = AppLocalizations.of(context)!;
 
     return Container(
       padding: const EdgeInsets.all(4),
@@ -427,13 +437,13 @@ class _ModeSelector extends StatelessWidget {
       child: Row(
         children: [
           _ModeTab(
-            label: 'By Profit',
+            label: loc.pricingModeByProfit,
             icon: Icons.trending_up_rounded,
             selected: mode == PricingMode.byProfit,
             onTap: () => onChanged(PricingMode.byProfit),
           ),
           _ModeTab(
-            label: 'By Final Price',
+            label: loc.pricingModeByFinalPrice,
             icon: Icons.sell_rounded,
             selected: mode == PricingMode.byFinalPrice,
             onTap: () => onChanged(PricingMode.byFinalPrice),
@@ -493,11 +503,15 @@ class _ModeTab extends StatelessWidget {
                   color: selected ? cs.primary : cs.onSurfaceVariant,
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: selected ? cs.primary : cs.onSurfaceVariant,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: selected ? cs.primary : cs.onSurfaceVariant,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    ),
                   ),
                 ),
               ],
@@ -614,7 +628,7 @@ class _PricePreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final loc = AppLocalizations.of(context);
+    final loc = AppLocalizations.of(context)!;
     final profitPositive = profitAmount >= 0;
 
     return Container(
@@ -635,7 +649,7 @@ class _PricePreview extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'BREAKDOWN',
+            loc.pricingBreakdownLabel,
             style: theme.textTheme.labelSmall?.copyWith(
               color: cs.onSurfaceVariant,
               fontWeight: FontWeight.w700,
@@ -644,23 +658,25 @@ class _PricePreview extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           _PreviewRow(
-            label: 'Base price',
+            label: loc.pricingBasePriceLabel,
             value: _fmt(basePrice, loc),
           ),
           const SizedBox(height: 8),
           _PreviewRow(
-            label: 'Tax',
+            label: loc.pricingTaxLabel,
             value: '+ ${_fmt(taxAmount, loc)}',
           ),
           const SizedBox(height: 8),
           _PreviewRow(
-            label: 'Price after tax',
+            label: loc.pricingPriceAfterTaxLabel,
             value: _fmt(priceAfterTax, loc),
             muted: true,
           ),
           const SizedBox(height: 8),
           _PreviewRow(
-            label: 'Profit (${profitPercentage.toStringAsFixed(2)}%)',
+            label: loc.pricingProfitRowLabel(
+              profitPercentage.toStringAsFixed(2),
+            ),
             value: '${profitPositive ? '+' : ''} ${_fmt(profitAmount, loc)}',
             valueColor: profitPositive ? Colors.green.shade700 : cs.error,
           ),
@@ -673,7 +689,7 @@ class _PricePreview extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Final price',
+                  loc.pricingFinalPriceLabel,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: cs.onSurface,
@@ -728,8 +744,7 @@ class _PricePreview extends StatelessWidget {
     );
   }
 
-  String _fmt(double amount, AppLocalizations? loc) {
-    if (loc == null) return amount.toStringAsFixed(2);
+  String _fmt(double amount, AppLocalizations loc) {
     return loc.price(amount.toStringAsFixed(2));
   }
 }
@@ -755,12 +770,14 @@ class _PreviewRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: muted
-                ? cs.onSurfaceVariant.withOpacity(0.7)
-                : cs.onSurfaceVariant,
+        Expanded(
+          child: Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: muted
+                  ? cs.onSurfaceVariant.withOpacity(0.7)
+                  : cs.onSurfaceVariant,
+            ),
           ),
         ),
         Text(

@@ -1,6 +1,8 @@
 import 'dart:developer';
+
 import 'package:verdelia_core/business/Product.dart';
 import 'package:verdelia_core/business/services/ProductService.dart';
+
 import 'product_cache.dart';
 import 'product_state.dart';
 
@@ -22,48 +24,61 @@ class ProductCrud {
     final isCreate = product.id_product == 0;
 
     Product? result;
+
     if (isCreate) {
       result = await _service.addProduct(product);
       if (result == null) return null;
-    } else {
+
+      // The create path can't upload an image until the product id
+      // exists, so upload after insertion and patch the gallery back.
       if (image != null) {
-        image.setupImage(
-          filepath: image.filepath,
-          filename: image.filename,
-          entityType: 'product',
+        final productId = result.id_product;
+        if (productId == null || productId <= 0) {
+          throw StateError('Created product did not return a valid ID.');
+        }
+
+        final imageUrl = await _uploadFor(
+          image: image,
+          ownerId:
+              '${result.product_owner_id ?? product.product_owner_id ?? 0}',
+          entityId: '$productId',
+        );
+
+        final productWithImage = result.copyWith(
+          product_images: [
+            ...result.product_images,
+            ProductImage(id: 0, url: imageUrl),
+          ],
+        );
+
+        result = await _service.updateProduct(productWithImage);
+        if (result == null) {
+          throw StateError(
+            'Product was created, but its image URL could not be saved.',
+          );
+        }
+      }
+    } else {
+      // Update path: if the caller attached a new VerdeliaImage, upload
+      // it first and append the resulting row to the gallery. The rest
+      // of the gallery (existing images) rides along in `toJson`.
+      if (image != null) {
+        final imageUrl = await _uploadFor(
+          image: image,
           ownerId: '${product.product_owner_id ?? 0}',
           entityId: '${product.id_product}',
         );
-        product.product_image_url = await image.uploadImage();
-      }
-      result = await _service.updateProduct(product);
-      if (result == null) return null;
-    }
 
-    if (isCreate && image != null) {
-      final productId = result.id_product;
-      if (productId == null || productId <= 0) {
-        throw StateError('Created product did not return a valid ID.');
-      }
-      image.setupImage(
-        filepath: image.filepath,
-        filename: image.filename,
-        entityType: 'product',
-        ownerId: '${result.product_owner_id ?? product.product_owner_id ?? 0}',
-        entityId: '$productId',
-      );
-      final imageUrl = await image.uploadImage();
-      if (imageUrl == null || imageUrl.isEmpty) {
-        throw StateError('Image upload did not return an image path.');
-      }
-
-      final productWithImage = result.copyWith(product_image_url: imageUrl);
-      result = await _service.updateProduct(productWithImage);
-      if (result == null) {
-        throw StateError(
-          'Product was created, but its image URL could not be saved.',
+        product = product.copyWith(
+          product_images: [
+            ...product.product_images,
+            ProductImage(id: 0, url: imageUrl),
+          ],
         );
       }
+
+      result = await _service.updateProduct(product);
+      if (result == null) return null;
     }
 
     if (result.id_product != null) {
@@ -96,5 +111,28 @@ class ProductCrud {
     if (index != -1) {
       _state.products[index] = product;
     }
+  }
+
+  /// Configure the [VerdeliaImage] for a given entity and upload it.
+  /// Returns the resolved URL, or throws when the upload pipeline
+  /// returns nothing usable.
+  Future<String> _uploadFor({
+    required dynamic image,
+    required String ownerId,
+    required String entityId,
+  }) async {
+    image.setupImage(
+      filepath: image.filepath,
+      filename: image.filename,
+      entityType: 'product',
+      ownerId: ownerId,
+      entityId: entityId,
+    );
+
+    final imageUrl = await image.uploadImage();
+    if (imageUrl == null || (imageUrl is String && imageUrl.isEmpty)) {
+      throw StateError('Image upload did not return an image path.');
+    }
+    return imageUrl is String ? imageUrl : imageUrl.toString();
   }
 }

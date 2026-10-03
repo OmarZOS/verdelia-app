@@ -6,6 +6,8 @@ import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:verdelia_core/business/Product.dart';
 import 'package:event/product_change_notifier.dart';
 import 'package:provider/provider.dart';
+import 'package:ui/utils/category_hierarchy.dart';
+import 'package:ui/components/image/image_url.dart';
 
 class SupplierProductCard extends StatelessWidget {
   final Product product;
@@ -23,20 +25,12 @@ class SupplierProductCard extends StatelessWidget {
     this.onTap,
   }) : super(key: key);
 
-  bool _isValidImageUrl(String? url) {
-    return url != null && url.isNotEmpty && url.startsWith('http');
-  }
-
-  /// Prefer the seller's own image; fall back to the linked IProduct's
-  /// reference image when the flat URL is missing or malformed.
+  /// Prefer the seller's own image (first entry in the gallery); fall
+  /// back to the linked IProduct's reference image when the gallery is
+  /// empty or its primary URL is malformed.
   String? _resolvedImageUrl() {
-    final flat = product.product_image_url;
-    if (_isValidImageUrl(flat)) return flat;
-
-    final origin = product.product_origin?.iproductImageUrl;
-    if (_isValidImageUrl(origin)) return origin;
-
-    return null;
+    return resolveImageUrl(product.primaryImageUrl) ??
+        resolveImageUrl(product.product_origin?.iproductImageUrl);
   }
 
   @override
@@ -61,14 +55,31 @@ class SupplierProductCard extends StatelessWidget {
         : product.product_name;
 
     final cachedCategoryName = context.select<ProductNotifier, String>(
-      (notifier) => notifier.categoryName(
-        product.product_category_id,
-        languageCode: localeLang,
-      ),
+      (notifier) {
+        final matchingCategories = notifier.productCategories.where(
+          (category) =>
+              category.productCategoryId == product.product_category_id,
+        );
+        if (matchingCategories.isEmpty) {
+          return localizedCategoryHierarchy(
+            categoryPath: product.product_category_name ?? '',
+            localizedLeaf: notifier.categoryName(
+              product.product_category_id,
+              languageCode: localeLang,
+            ),
+            localizations: loc,
+          );
+        }
+        final category = matchingCategories.first;
+        return localizedCategoryHierarchy(
+          categoryPath: category.productCategoryDesc,
+          localizedLeaf: category.nameFor(localeLang),
+          localizations: loc,
+        );
+      },
     );
-    final categoryName = cachedCategoryName.isNotEmpty
-        ? cachedCategoryName
-        : product.product_category_name ?? '';
+    final categoryName =
+        cachedCategoryName.isNotEmpty ? cachedCategoryName : '';
     final isDarkMode = theme.brightness == Brightness.dark;
 
     return GestureDetector(
@@ -228,64 +239,107 @@ class SupplierProductCard extends StatelessWidget {
 
   Widget _buildProductImage(BuildContext context, ThemeData theme) {
     final imageUrl = _resolvedImageUrl();
+    final hasGallery = product.product_images.length > 1;
 
     return Hero(
       tag: 'product-image-${product.id_product}',
-      child: Container(
+      child: SizedBox(
         width: 80,
         height: 80,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: theme.colorScheme.surfaceVariant,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: imageUrl != null
-              ? Image.network(
-                  imageUrl,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Center(
-                      child: CircularProgressIndicator(
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded /
-                                loadingProgress.expectedTotalBytes!
-                            : null,
-                        strokeWidth: 2,
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Center(
-                      child: product.product_category_id != null
-                          ? SvgPicture.asset(
-                              'assets/icons/${product.product_category_id}.svg',
-                              package: "product_catalog",
-                              width: 40,
-                              height: 40,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.5),
-                            )
-                          : Icon(
-                              Icons.shopping_bag,
-                              size: 32,
-                              color: theme.colorScheme.onSurfaceVariant,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: theme.colorScheme.surfaceVariant,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: imageUrl != null
+                    ? Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
+                              strokeWidth: 2,
                             ),
-                    );
-                  },
-                )
-              : Center(
-                  child: Icon(
-                    Icons.shopping_bag,
-                    size: 32,
-                    color: theme.colorScheme.onSurfaceVariant,
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) =>
+                            _buildImageFallback(context, theme),
+                      )
+                    : _buildImageFallback(context, theme),
+              ),
+            ),
+
+            // Gallery badge — small pill in the bottom-right showing
+            // how many images the product has, matching the counter
+            // convention from the details slider.
+            if (hasGallery)
+              Positioned(
+                right: 4,
+                bottom: 4,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.55),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.15),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.collections_outlined,
+                        size: 10,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        '${product.product_images.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          height: 1,
+                          fontFeatures: [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+              ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildImageFallback(BuildContext context, ThemeData theme) {
+    return Center(
+      child: product.product_category_id != null
+          ? SvgPicture.asset(
+              'assets/icons/${product.product_category_id}.svg',
+              package: "product_catalog",
+              width: 40,
+              height: 40,
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
+            )
+          : Icon(
+              Icons.shopping_bag,
+              size: 32,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
     );
   }
 

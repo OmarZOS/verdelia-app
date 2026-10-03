@@ -13,6 +13,9 @@ import '../Product.dart';
 ///     visibility.
 ///   - `updateProductVisibility` is the dedicated path for flipping a
 ///     product between visible and hidden.
+///
+/// Domain / subdomain filtering follows the `domain.subdomain.category`
+/// convention used by product categories. `subdomain` requires `domain`.
 abstract class ProductService extends TraceableService {
   Future<List<ProductCategory>?> getCategories({String? callerKey}) async {
     return null;
@@ -23,9 +26,11 @@ abstract class ProductService extends TraceableService {
     int providerId = 0,
     int category = 0,
     String query = "",
-    int page = 1,
+    int offset = 0,
     int limit = 10,
     bool includeHidden = false,
+    String? domain,
+    String? subdomain,
     String? callerKey,
   }) async {
     return null;
@@ -33,7 +38,7 @@ abstract class ProductService extends TraceableService {
 
   Future<List<Product>?> getProductsByCategory({
     required int categoryId,
-    int page = 1,
+    int offset = 0,
     int limit = 10,
     bool includeHidden = false,
     String? callerKey,

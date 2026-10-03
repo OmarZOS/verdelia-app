@@ -11,6 +11,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:locator/locator.dart';
 import 'package:verdelia_core/business/Organisation.dart';
 import 'package:verdelia_core/business/Supplier.dart';
+import 'package:verdelia_core/business/CategoryHierarchyIndex.dart';
 import 'package:verdelia_core/business/services/SupplierService.dart';
 import 'package:verdelia_core/mediation/StorageService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -90,6 +91,8 @@ class SupplierChangeNotifier extends ChangeNotifier {
 
   List<Supplier> get suppliers => _state.suppliers;
   List<SupplierCategory> get supplierCategories => _state.categories;
+  CategoryHierarchyIndex<SupplierCategory> get categoryHierarchy =>
+      _state.categoryHierarchy;
   List<Supplier> get filteredSuppliers => _state.filteredSuppliers;
   List<Organisation> get organisations => _state.organisations.values.toList();
   Position? get currentLocation => _state.currentLocation;
@@ -106,6 +109,10 @@ class SupplierChangeNotifier extends ChangeNotifier {
       final cached = _cache.getCategories();
       if (cached != null) {
         _state.categories = List.of(cached);
+        _state.categoryHierarchy = CategoryHierarchyIndex.fromItems(
+          cached,
+          (category) => category.productCategoryDesc,
+        );
         notifyListeners();
         return _state.categories;
       }
@@ -130,6 +137,10 @@ class SupplierChangeNotifier extends ChangeNotifier {
       final fetched = await _service.getCategories();
       _cache.cacheCategories(fetched);
       _state.categories = List.of(fetched);
+      _state.categoryHierarchy = CategoryHierarchyIndex.fromItems(
+        fetched,
+        (category) => category.productCategoryDesc,
+      );
       return _state.categories;
     } catch (e) {
       debugPrint('Failed to fetch supplier categories: $e');
@@ -527,6 +538,10 @@ class SupplierChangeNotifier extends ChangeNotifier {
     _cache.clearAll();
     _pendingFetches.clear();
     _state.categories.clear();
+    _state.categoryHierarchy = CategoryHierarchyIndex.fromItems(
+      <SupplierCategory>[],
+      (category) => category.productCategoryDesc,
+    );
     notifyListeners();
   }
 

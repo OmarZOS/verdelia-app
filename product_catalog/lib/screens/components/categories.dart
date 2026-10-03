@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:app_constants/app_constants.dart';
 import 'package:event/product_change_notifier.dart';
 import 'package:provider/provider.dart';
+import 'package:ui/utils/category_hierarchy.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 
 // We need satefull widget for our categories
 
@@ -33,7 +35,7 @@ class _CategoriesState extends State<Categories> {
       padding:
           const EdgeInsets.symmetric(vertical: AppConstants.kDefaultPaddin),
       child: SizedBox(
-        height: 25,
+        height: 48,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
           itemCount: categories.length,
@@ -59,15 +61,18 @@ class _CategoriesState extends State<Categories> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(
-              categories[index].nameFor(
-                Localizations.localeOf(context).languageCode,
-              ),
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: selectedIndex == index
-                    ? AppConstants.kTextColor
-                    : AppConstants.kTextLightColor,
+            SizedBox(
+              width: 180,
+              child: Text(
+                localizedCategoryHierarchy(
+                  categoryPath: categories[index].productCategoryDesc,
+                  localizedLeaf: categories[index].nameFor(
+                    Localizations.localeOf(context).languageCode,
+                  ),
+                  localizations: AppLocalizations.of(context)!,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             Container(

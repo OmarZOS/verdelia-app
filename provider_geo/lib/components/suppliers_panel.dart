@@ -12,6 +12,7 @@ import 'package:ui/components/supplier/supplier_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:event/supplier_change_notifier.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:ui/utils/category_hierarchy.dart';
 
 class PanelContent extends StatefulWidget {
   final List<Supplier> suppliers;
@@ -209,11 +210,22 @@ class _PanelContentState extends State<PanelContent> {
         itemBuilder: (context, index) {
           final supplier = widget.suppliers[index];
           final languageCode = Localizations.localeOf(context).languageCode;
+          final localizations = AppLocalizations.of(context)!;
           return Selector<SupplierChangeNotifier, String>(
-            selector: (_, notifier) => notifier.categoryName(
-              supplier.productProviderTypeId,
-              languageCode: languageCode,
-            ),
+            selector: (_, notifier) {
+              final matchingCategories = notifier.supplierCategories.where(
+                (category) =>
+                    category.productProviderTypeId ==
+                    supplier.productProviderTypeId,
+              );
+              if (matchingCategories.isEmpty) return '';
+              final category = matchingCategories.first;
+              return localizedCategoryHierarchy(
+                categoryPath: category.productCategoryDesc,
+                localizedLeaf: category.nameFor(languageCode),
+                localizations: localizations,
+              );
+            },
             builder: (context, categoryName, _) => _buildSupplierItem(
               supplier,
               theme,

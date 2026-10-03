@@ -6999,4 +6999,86 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get banking => 'Banque';
+
+  @override
+  String get pricingModeByProfit => 'Par marge';
+
+  @override
+  String get pricingModeByFinalPrice => 'Par prix final';
+
+  @override
+  String get pricingAiPriceApplied => 'Prix IA appliqué';
+
+  @override
+  String get pricingAiSuggestedPrice => 'Prix suggéré par l\'IA';
+
+  @override
+  String pricingAiHigherDiff(String amount) {
+    return 'Votre prix est supérieur de $amount DZD';
+  }
+
+  @override
+  String pricingAiLowerDiff(String amount) {
+    return 'Votre prix est inférieur de $amount DZD';
+  }
+
+  @override
+  String get pricingAiAcceptTooltip => 'Utiliser le prix IA';
+
+  @override
+  String get pricingAiResetTooltip => 'Réinitialiser au prix IA';
+
+  @override
+  String get pricingBasePriceLabel => 'Prix de base';
+
+  @override
+  String get pricingBasePriceHelper => 'Coût hors taxe';
+
+  @override
+  String get pricingTaxLabel => 'Taxe';
+
+  @override
+  String get pricingTaxHelper => 'Appliquée sur le prix de base';
+
+  @override
+  String get pricingProfitLabel => 'Marge bénéficiaire';
+
+  @override
+  String get pricingProfitHelper => 'Marge sur le prix après taxe';
+
+  @override
+  String get pricingFinalPriceLabel => 'Prix final';
+
+  @override
+  String get pricingFinalPriceHelper => 'Ce que paie le client';
+
+  @override
+  String get pricingBreakdownLabel => 'DÉTAIL';
+
+  @override
+  String get pricingPriceAfterTaxLabel => 'Prix après taxe';
+
+  @override
+  String pricingProfitRowLabel(String percent) {
+    return 'Bénéfice ($percent%)';
+  }
+
+  @override
+  String get selectProductTitle => 'Sélectionner un produit';
+
+  @override
+  String get searchProductsHint => 'Rechercher des produits…';
+
+  @override
+  String get supplierProductsBadge => 'Produits du fournisseur';
+
+  @override
+  String noProductsFoundForQuery(String query) {
+    return 'No products found for \"$query\"';
+  }
+
+  @override
+  String stockLabel(String count) {
+    return 'Stock : $count';
+  }
 }

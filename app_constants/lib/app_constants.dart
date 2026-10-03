@@ -38,9 +38,9 @@ class AppConstants {
   static Color get backgroundDarkColor => const Color(0xFF186A3B);
 
   static const String apiBaseUrl = 'http://localhost:9000/api/v1';
-  static const String fsBaseUrl = 'http://localhost:9000/fs';
+  static const String fsBaseUrl = 'http://localhost:9099/fs';
 
-  static const String postImageEndpoint = '/fs/upload';
+  static const String postImageEndpoint = '/upload';
 
   // ==================== Authentication Endpoints ====================
   static const String loginEndpoint = '/authentication/token';
@@ -112,7 +112,7 @@ class AppConstants {
   // ==================== Product Endpoints ====================
   static const String addProductEndpoint = '/products';
   static const String deleteProductEndpoint = '/products/delete';
-  static const String getAllProductsEndpoint = '/products';
+  static const getAllProductsEndpoint = '/products';
   static const String productEndpoint = '/products';
   static const String updateProductEndpoint =
       '/products'; // /products/{product_id}
@@ -263,7 +263,7 @@ class AppConstants {
   static const String reactionEndpoint = '/reaction';
 
   // ==================== Search Endpoints ====================
-  static const String productSearchEndpoint = '/products/search';
+  static const productSearchEndpoint = '/search/product';
   static const String recipeSearchEndpoint = '/recipes/search';
   static const String supplierSearchEndpoint = '/suppliers/search';
   static const String multiSearchEndpoint = '/search/multi';

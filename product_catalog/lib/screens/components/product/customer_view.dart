@@ -18,6 +18,9 @@ import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:ui/SupplierProductCard.dart';
+import 'package:ui/components/product/product_image_gallery.dart';
+import 'package:ui/utils/category_hierarchy.dart';
+import 'package:ui/components/image/image_url.dart';
 
 import 'provider_tile.dart';
 import 'shared_widgets.dart';
@@ -65,6 +68,14 @@ class _CustomerProductViewState extends State<CustomerProductView> {
       return widget.product.nameFor(localeLang);
     }
     return widget.product.product_name;
+  }
+
+  /// Prefer the seller's own gallery image; fall back to the linked
+  /// IProduct's reference image when the gallery is empty or its
+  /// primary URL is malformed.
+  String? _resolvedImageUrl() {
+    return resolveImageUrl(widget.product.primaryImageUrl) ??
+        resolveImageUrl(widget.product.product_origin?.iproductImageUrl);
   }
 
   void _updateQuantity(int newValue) {
@@ -126,6 +137,23 @@ class _CustomerProductViewState extends State<CustomerProductView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildProductHeader(context),
+                    // Gallery strip — shown whenever the product has
+                    // more than one image, so the buyer can preview the
+                    // rest of the gallery without leaving the page.
+                    if (widget.product.product_images.length > 1) ...[
+                      const SizedBox(height: 12),
+                      ProductImageThumbnailStrip(
+                        images: widget.product.product_images,
+                        size: 64,
+                        spacing: 10,
+                        onImageRemoved: (image) {
+                          _productNotifier.removeProductImage(
+                            product: widget.product,
+                            image: image,
+                          );
+                        },
+                      ),
+                    ],
                     const SizedBox(height: AppConstants.kDefaultPaddin),
                     Consumer<ProductNotifier>(
                       builder: (context, notifier, _) {
@@ -317,159 +345,82 @@ class _CustomerProductViewState extends State<CustomerProductView> {
   Widget _buildProductHeader(BuildContext context) {
     final theme = Theme.of(context);
     final product = widget.product;
+    final imageUrl = _resolvedImageUrl();
 
-    // Prefer the seller's own image; fall back to the IProduct's
-    // reference image when the flat URL is missing or malformed.
-    final flatImage = product.product_image_url;
-    final originImage = product.product_origin?.iproductImageUrl;
-    final imageUrl = (flatImage != null && flatImage.startsWith('http'))
-        ? flatImage
-        : (originImage != null && originImage.startsWith('http'))
-            ? originImage
-            : null;
-    final hasImage = imageUrl != null;
-
-    return Stack(
+    final textColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        if (hasImage)
-          Positioned(
-            top: 0,
-            right: widget.isRTL ? null : 0,
-            left: widget.isRTL ? 0 : null,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.45,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.only(
-                  topRight:
-                      widget.isRTL ? Radius.zero : const Radius.circular(40),
-                  bottomRight:
-                      widget.isRTL ? Radius.zero : const Radius.circular(40),
-                  topLeft:
-                      widget.isRTL ? const Radius.circular(40) : Radius.zero,
-                  bottomLeft:
-                      widget.isRTL ? const Radius.circular(40) : Radius.zero,
-                ),
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: Hero(
-                    tag: 'product-image-${product.id_product}-card',
-                    child: Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.broken_image, size: 64),
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
-                        return const Center(
-                          child: CircularProgressIndicator(),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
+        if ((product.product_brand ?? '').isNotEmpty) ...[
+          Text(
+            product.product_brand!.toUpperCase(),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.55),
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.7,
             ),
           ),
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: AppConstants.kDefaultPaddin,
+          const SizedBox(height: 4),
+        ],
+        Text(
+          _localizedName,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            height: 1.15,
           ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.55,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if ((product.product_brand ?? '').isNotEmpty)
-                  Text(product.product_brand!),
-                const SizedBox(height: 4),
-                Text(
-                  _localizedName,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                _buildGlutenBadge(context),
-                const SizedBox(height: AppConstants.kDefaultPaddin),
-                Text(
-                  AppLocalizations.of(context)!.priceText,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                Text(
-                  AppLocalizations.of(context)!
-                      .price((product.product_price ?? 0).toString()),
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-              ],
-            ),
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: AppConstants.kDefaultPaddin),
+        Text(
+          AppLocalizations.of(context)!.priceText,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurface.withOpacity(0.7),
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          AppLocalizations.of(context)!
+              .price((product.product_price ?? 0).toString()),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: theme.colorScheme.primary,
+            height: 1.0,
           ),
         ),
       ],
     );
-  }
 
-  /// Dietary badge derived from the linked IProduct's gluten status.
-  /// Renders nothing when there's no origin or the status is unknown.
-  Widget _buildGlutenBadge(BuildContext context) {
-    final origin = widget.product.product_origin;
-    if (origin == null) return const SizedBox.shrink();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final imageSize = (screenWidth * 0.42).clamp(120.0, 220.0);
+    final hasGallery = product.product_images.length > 1;
 
-    final status = origin.iproductGlutenStatus;
-    if (status.isEmpty || status == 'unknown') return const SizedBox.shrink();
-
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final loc = AppLocalizations.of(context)!;
-
-    final (IconData icon, String label, Color color) = switch (status) {
-      'gluten_free' => (
-          Icons.verified_rounded,
-          loc.glutenFreeLabel,
-          const Color(0xFF1E8E5A),
-        ),
-      'contains_gluten' => (
-          Icons.warning_amber_rounded,
-          loc.containsGlutenLabel,
-          cs.error,
-        ),
-      'may_contain_gluten' => (
-          Icons.info_outline_rounded,
-          loc.mayContainGlutenLabel,
-          const Color(0xFFB26A00),
-        ),
-      _ => (Icons.help_outline_rounded, status, cs.onSurfaceVariant),
-    };
-
-    return Container(
-      margin: const EdgeInsets.only(top: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.35)),
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        vertical: AppConstants.kDefaultPaddin,
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.2,
+          Expanded(child: textColumn),
+          const SizedBox(width: AppConstants.kDefaultPaddin),
+          SizedBox(
+            width: imageSize,
+            height: imageSize,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                _buildProductImage(context, imageUrl, product),
+                if (hasGallery)
+                  Positioned(
+                    right: 8,
+                    bottom: 8,
+                    child: _GalleryCountBadge(
+                      count: product.product_images.length,
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
@@ -477,16 +428,88 @@ class _CustomerProductViewState extends State<CustomerProductView> {
     );
   }
 
+  Widget _buildProductImage(
+    BuildContext context,
+    String? imageUrl,
+    Product product,
+  ) {
+    final theme = Theme.of(context);
+    final radius = BorderRadius.circular(20);
+
+    if (imageUrl == null) {
+      return Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: radius,
+        ),
+        alignment: Alignment.center,
+        child: Icon(
+          Icons.image_outlined,
+          size: 40,
+          color: theme.colorScheme.onSurface.withOpacity(0.4),
+        ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: radius,
+      child: Container(
+        color: theme.colorScheme.primary.withOpacity(0.05),
+        child: Hero(
+          tag: 'product-image-${product.id_product}-card',
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              color: theme.colorScheme.surfaceContainerHighest,
+              alignment: Alignment.center,
+              child: Icon(
+                Icons.broken_image_outlined,
+                size: 40,
+                color: theme.colorScheme.onSurface.withOpacity(0.4),
+              ),
+            ),
+            loadingBuilder: (context, child, progress) {
+              if (progress == null) return child;
+              return Center(
+                child: SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: theme.colorScheme.primary.withOpacity(0.6),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSimilarProducts(BuildContext context) {
     final theme = Theme.of(context);
     final localeLang = Localizations.localeOf(context).languageCode;
-    final categoryName = _productNotifier.categoryName(
-      widget.product.product_category_id,
-      languageCode: localeLang,
+    final localizations = AppLocalizations.of(context)!;
+    ProductCategory? productCategory;
+    for (final category in _productNotifier.productCategories) {
+      if (category.productCategoryId == widget.product.product_category_id) {
+        productCategory = category;
+        break;
+      }
+    }
+    final resolvedCategoryName = localizedCategoryHierarchy(
+      categoryPath: productCategory?.productCategoryDesc ??
+          widget.product.product_category_name ??
+          '',
+      localizedLeaf: productCategory?.nameFor(localeLang) ??
+          _productNotifier.categoryName(
+            widget.product.product_category_id,
+            languageCode: localeLang,
+          ),
+      localizations: localizations,
     );
-    final resolvedCategoryName = categoryName.isNotEmpty
-        ? categoryName
-        : widget.product.product_category_name ?? '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -494,8 +517,7 @@ class _CustomerProductViewState extends State<CustomerProductView> {
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Text(
-            AppLocalizations.of(context)!
-                .similarProductsFromCategory(resolvedCategoryName),
+            localizations.similarProductsFromCategory(resolvedCategoryName),
             textAlign: widget.isRTL ? TextAlign.right : TextAlign.left,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
@@ -666,5 +688,49 @@ class _CustomerProductViewState extends State<CustomerProductView> {
       );
       widget.onProductUpdated(refreshed);
     }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Gallery count badge — floats over the header image
+// ══════════════════════════════════════════════════════════════════
+
+class _GalleryCountBadge extends StatelessWidget {
+  final int count;
+
+  const _GalleryCountBadge({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.55),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white.withOpacity(0.15)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.collections_outlined,
+            size: 12,
+            color: Colors.white,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$count',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              height: 1.0,
+              letterSpacing: 0.2,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

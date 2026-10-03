@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:event/supplier_change_notifier.dart';
+import 'package:provider/provider.dart';
+import 'package:ui/components/hierarchical_category_picker.dart';
+import 'package:ui/utils/category_hierarchy.dart';
 
 /// 供应商UI提供者 - 基于实际供应商分类，仅使用ColorScheme颜色
 class SupplierUIProvider {
@@ -139,6 +142,7 @@ class SupplierUIProvider {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final l10n = AppLocalizations.of(context)!;
+    final languageCode = Localizations.localeOf(context).languageCode;
     final config = getCategoryConfig(categoryId);
 
     // 确定显示的文本
@@ -187,14 +191,31 @@ class SupplierUIProvider {
                   if (showLabel) const SizedBox(width: 8),
                 ],
                 if (showLabel) ...[
-                  Text(
-                    displayText,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color:
-                          isSelected ? colorScheme.onPrimary : unselectedText,
-                      fontWeight: FontWeight.w600,
-                      fontSize: compact ? 12 : 14,
-                      letterSpacing: -0.1,
+                  Selector<SupplierChangeNotifier, String>(
+                    selector: (_, notifier) {
+                      if (showEnglishName || categoryId == 0) return '';
+                      final matchingCategories =
+                          notifier.supplierCategories.where(
+                        (category) =>
+                            category.productProviderTypeId == categoryId,
+                      );
+                      if (matchingCategories.isEmpty) return '';
+                      final category = matchingCategories.first;
+                      return localizedCategoryHierarchy(
+                        categoryPath: category.productCategoryDesc,
+                        localizedLeaf: category.nameFor(languageCode),
+                        localizations: l10n,
+                      );
+                    },
+                    builder: (context, categoryLabel, _) => Text(
+                      categoryLabel.isNotEmpty ? categoryLabel : displayText,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color:
+                            isSelected ? colorScheme.onPrimary : unselectedText,
+                        fontWeight: FontWeight.w600,
+                        fontSize: compact ? 12 : 14,
+                        letterSpacing: 0,
+                      ),
                     ),
                   ),
                 ],
@@ -266,54 +287,49 @@ class SupplierUIProvider {
     required BuildContext context,
     required List<int> availableCategoryIds,
     required int? selectedCategoryId,
-    required ValueChanged<int?> onCategoryChanged,
+    required ValueChanged<CategorySelection> onCategoryChanged,
+    String? selectedDomain,
+    String? selectedSubdomain,
     bool showAllOption = true,
     bool scrollable = true,
     ScrollController? scrollController,
     bool showEnglishNames = false,
   }) {
-    // 使用实际存在的分类ID，或者可用的分类ID
     final categoryIdsToShow = availableCategoryIds.isNotEmpty
         ? availableCategoryIds
         : getExistingCategoryIds();
 
-    final categories = <int>[];
+    final supplierCategories = context
+        .watch<SupplierChangeNotifier>()
+        .supplierCategories
+        .where((category) =>
+            categoryIdsToShow.contains(category.productProviderTypeId))
+        .toList();
 
-    // 添加"全部"选项
-    if (showAllOption) {
-      categories.add(0);
-    }
+    final languageCode = Localizations.localeOf(context).languageCode;
+    final localizations = AppLocalizations.of(context)!;
 
-    // 添加分类
-    categories.addAll(categoryIdsToShow.where((id) => id > 0));
-
-    final widget = ListView.separated(
-      controller: scrollController,
-      scrollDirection: Axis.horizontal,
-      physics: scrollable
-          ? const BouncingScrollPhysics()
-          : const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      itemCount: categories.length,
-      separatorBuilder: (_, __) => const SizedBox(width: 8),
-      itemBuilder: (context, index) {
-        final categoryId = categories[index];
-        final isSelected = selectedCategoryId == categoryId;
-
-        return buildCategoryChip(
-          context: context,
-          categoryId: categoryId,
-          isSelected: isSelected,
-          onTap: () {
-            onCategoryChanged(isSelected ? null : categoryId);
-          },
-          compact: true,
-          showEnglishName: showEnglishNames,
-        );
-      },
+    return HierarchicalCategoryPicker(
+      label: localizations.categoryText,
+      options: supplierCategories
+          .map(
+            (category) => HierarchicalCategoryOption(
+              id: category.productProviderTypeId,
+              path: category.productCategoryDesc,
+              leafLabel: category.nameFor(
+                showEnglishNames ? 'en' : languageCode,
+              ),
+            ),
+          )
+          .toList(),
+      selectedId: selectedCategoryId ?? 0,
+      selectedDomain: selectedDomain,
+      selectedSubdomain: selectedSubdomain,
+      allowAllOption: showAllOption,
+      allLabel: localizations.allText,
+      onChanged: onCategoryChanged,
+      showLabel: false,
     );
-
-    return scrollable ? SizedBox(height: 44, child: widget) : widget;
   }
 
   /// 生成搜索栏组件

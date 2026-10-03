@@ -12,6 +12,56 @@ import 'iProduct.dart';
 /// coercers (`_asInt`, `_asDouble`, `_asString`) tolerate the shapes the
 /// backend occasionally emits (numeric strings, `1.0` for `1`, null for
 /// absent values) so parsing never throws.
+
+/// One row of `product_image` as it arrives in a product payload.
+///
+/// Separate from [VerdeliaImage]: that class is the *upload* side
+/// (local file → multipart). This is the *read* side (JSON row →
+/// typed value), so a gallery can be iterated without re-parsing the
+/// raw map at every call site.
+class ProductImage {
+  final int id;
+  final String? url;
+  final int? productRefId;
+
+  const ProductImage({
+    required this.id,
+    required this.url,
+    this.productRefId,
+  });
+
+  static const empty = ProductImage(id: 0, url: null);
+
+  bool get hasUrl => url != null && url!.isNotEmpty;
+
+  factory ProductImage.fromJson(Map<String, dynamic> json) {
+    return ProductImage(
+      id: _asIntOrNull(json['id_product_image']) ?? 0,
+      url: _asString(json['product_image_url']),
+      productRefId: _asIntOrNull(json['product_ref_id']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id_product_image': id,
+        'product_image_url': url ?? '',
+        if (productRefId != null) 'product_ref_id': productRefId,
+      };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ProductImage &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id;
+
+  @override
+  String toString() => 'ProductImage(id: $id, url: $url)';
+}
+
 class Product {
   // ==================== Identity ====================
 
@@ -19,7 +69,6 @@ class Product {
   final int? product_provider_id;
   final int? product_category_id;
   final int? id_product_category;
-  final int? id_product_image;
   final int? product_ref_id;
   final int? product_owner_id;
   final int? product_origin_id;
@@ -54,8 +103,13 @@ class Product {
 
   // ==================== Media ====================
 
-  String? product_image_url;
   VerdeliaImage? productImage;
+
+  /// Full gallery, in payload order. Empty when the payload has no
+  /// images. This is the single source of truth for the product's
+  /// image URLs — order it, index it, take the first, whatever the
+  /// caller needs.
+  final List<ProductImage> product_images;
 
   // ==================== Nested snapshots ====================
 
@@ -76,14 +130,12 @@ class Product {
     required this.product_provider_id,
     required this.product_category_id,
     required this.id_product_category,
-    required this.id_product_image,
     required this.product_ref_id,
     required this.product_nameRaw,
     required this.product_brand,
     required this.product_quantifier,
     required this.product_barcode,
     required this.product_category_name,
-    required this.product_image_url,
     required this.product_price,
     required this.product_quantity,
     required this.product_description,
@@ -97,6 +149,7 @@ class Product {
     this.product_category,
     this.product_provider,
     this.product_origin,
+    this.product_images = const [],
   });
 
   // ==================== Name access ====================
@@ -133,6 +186,27 @@ class Product {
     return (product_nameRaw ?? '').trim();
   }
 
+  // ==================== Image access ====================
+
+  /// First image, or null when the gallery is empty.
+  ProductImage? get primaryImage =>
+      product_images.isNotEmpty ? product_images.first : null;
+
+  /// Convenience: URL of the first image, or null when there is none.
+  /// Replaces the old flat `product_image_url` field.
+  String? get primaryImageUrl => primaryImage?.url;
+
+  /// True when there is more than one image.
+  bool get hasGallery => product_images.length > 1;
+
+  /// Every usable URL, in payload order. Malformed entries are filtered
+  /// out at parse time, so this is safe to hand straight to a
+  /// `PageView` or a carousel.
+  List<String> get imageUrls => product_images
+      .where((img) => img.hasUrl)
+      .map((img) => img.url!)
+      .toList(growable: false);
+
   // ==================== Factories ====================
 
   factory Product.empty() {
@@ -141,14 +215,12 @@ class Product {
       product_provider_id: null,
       product_category_id: null,
       id_product_category: null,
-      id_product_image: null,
       product_ref_id: null,
       product_nameRaw: '',
       product_brand: '',
       product_quantifier: '',
       product_barcode: '',
       product_category_name: '',
-      product_image_url: null,
       product_price: 0.0,
       product_quantity: 0,
       product_description: '',
@@ -162,6 +234,7 @@ class Product {
       product_category: null,
       product_provider: null,
       product_origin: null,
+      product_images: const [],
     );
   }
 
@@ -169,10 +242,25 @@ class Product {
     final map = _asMap(json);
     if (map.isEmpty) return Product.empty();
 
-    final image = _parseLastImage(map['product_image']);
+    // Seller gallery first.
+    final sellerImages = _parseProductImages(map['product_image']);
+
     final categoryMap = _asMapOrNull(map['product_category']);
     final providerMap = _asMapOrNull(map['product_provider']);
     final originMap = _asMapOrNull(map['product_origin']);
+
+    // Parse the origin once — we need its image URL for the gallery.
+    final origin = originMap == null ? null : IProduct.fromJson(originMap);
+
+    // Compose the final gallery: the origin's reference image (if any)
+    // goes first, followed by the seller's own images.
+    //
+    // Deduplicate so the same URL isn't shown twice when the seller
+    // happened to attach the reference image alongside their own.
+    final images = _composeGallery(
+      originImageUrl: origin?.iproductImageUrl,
+      sellerImages: sellerImages,
+    );
 
     final categoryName = _asString(categoryMap?['product_category_name']) ??
         _asString(map['product_category_name']) ??
@@ -187,14 +275,13 @@ class Product {
       product_provider_id: providerId,
       product_category_id: _asIntOrNull(map['product_category_id']),
       id_product_category: _asIntOrNull(map['product_category_id']),
-      id_product_image: image.id,
       product_ref_id: _asIntOrNull(map['product_ref_id']),
       product_nameRaw: _asString(map['product_name']) ?? '',
       product_brand: _asString(map['product_brand']) ?? '',
       product_barcode: _asString(map['product_barcode']) ?? '',
       product_quantifier: _asString(map['product_quantifier']) ?? '',
       product_category_name: categoryName,
-      product_image_url: image.url ?? '',
+      product_images: images,
       product_price: _asDoubleOrNull(map['product_price']),
       product_quantity: _asIntOrNull(map['product_quantity']),
       product_description: _asString(map['product_description']) ?? '',
@@ -207,9 +294,7 @@ class Product {
       product_origin_id: _asIntOrNull(map['product_origin_id']),
       product_category: categoryMap,
       product_provider: providerMap,
-      // Parse the origin once, typed. `IProduct.fromJson` is already the
-      // canonical parser for that shape.
-      product_origin: originMap == null ? null : IProduct.fromJson(originMap),
+      product_origin: origin,
     );
   }
 
@@ -225,7 +310,6 @@ class Product {
     int? product_provider_id,
     int? product_category_id,
     int? id_product_category,
-    int? id_product_image,
     int? product_ref_id,
     int? product_owner_id,
     int? product_origin_id,
@@ -235,7 +319,6 @@ class Product {
     String? product_quantifier,
     String? product_description,
     String? product_category_name,
-    String? product_image_url,
     double? product_price,
     double? product_base_price,
     int? product_quantity,
@@ -246,13 +329,13 @@ class Product {
     Map<String, dynamic>? product_category,
     Map<String, dynamic>? product_provider,
     IProduct? product_origin,
+    List<ProductImage>? product_images,
   }) {
     return Product(
       id_product: id_product ?? this.id_product,
       product_provider_id: product_provider_id ?? this.product_provider_id,
       product_category_id: product_category_id ?? this.product_category_id,
       id_product_category: id_product_category ?? this.id_product_category,
-      id_product_image: id_product_image ?? this.id_product_image,
       product_ref_id: product_ref_id ?? this.product_ref_id,
       product_owner_id: product_owner_id ?? this.product_owner_id,
       product_origin_id: product_origin_id ?? this.product_origin_id,
@@ -263,7 +346,6 @@ class Product {
       product_description: product_description ?? this.product_description,
       product_category_name:
           product_category_name ?? this.product_category_name,
-      product_image_url: product_image_url ?? this.product_image_url,
       product_price: product_price ?? this.product_price,
       product_base_price: product_base_price ?? this.product_base_price,
       product_quantity: product_quantity ?? this.product_quantity,
@@ -275,6 +357,7 @@ class Product {
       product_category: product_category ?? this.product_category,
       product_provider: product_provider ?? this.product_provider,
       product_origin: product_origin ?? this.product_origin,
+      product_images: product_images ?? this.product_images,
     );
   }
 
@@ -282,17 +365,40 @@ class Product {
 
   Map<String, dynamic> toJson() {
     final originJson = product_origin?.toJson();
+
+    // The write path sends ONE image per call. The server owns the rest
+    // of the gallery; it's only told about the specific row that
+    // changed — either a new upload (id 0) or an in-place update of an
+    // existing row.
+    //
+    // Selection rule:
+    //   1. Any entry with `id == 0` → a freshly-uploaded image that
+    //      hasn't been persisted yet. Send it.
+    //   2. Otherwise → the first gallery entry (the primary image).
+    //      Sending it unchanged is a harmless no-op on the server.
+    //
+    // This keeps the client-side gallery complete for rendering while
+    // respecting the API's single-image-per-write contract.
+    final newImage = product_images
+        .cast<ProductImage?>()
+        .firstWhere((img) => img?.id == 0, orElse: () => null);
+
+    final imageToSend = newImage ?? primaryImage;
+
+    final imageJson = imageToSend == null
+        ? null
+        : {
+            'id_product_image': imageToSend.id,
+            'product_image_url': imageToSend.url ?? '',
+            'product_ref_id': imageToSend.productRefId ?? id_product ?? 0,
+          };
+
     return {
       'product': {
         'id_product': id_product ?? 0,
         'product_provider_id': product_provider_id ?? 0,
         'product_category_id': product_category_id ?? 0,
         'id_product_category': product_category_id ?? 0,
-        'id_product_image': id_product_image ?? 0,
-        // Write the raw flat name, not the resolved one. Writing the
-        // resolved name would overwrite `naming.en` with a translated
-        // string on the server whenever the caller set a preferred
-        // language. The write path sends the seller's canonical name.
         'product_name': product_nameRaw ?? '',
         'product_brand': product_brand ?? '',
         'product_barcode': product_barcode ?? '',
@@ -307,13 +413,7 @@ class Product {
         'product_owner': product_owner_id ?? 0,
         if (product_origin_id != null) 'product_origin_id': product_origin_id,
       },
-      'image': {
-        'id_product_image': id_product_image ?? 0,
-        'product_image_url': product_image_url ?? '',
-        'product_ref_id': product_ref_id ?? 0,
-      },
-      // Only include the origin when it exists. An empty origin on a
-      // create would be noise; on an update it would strip the link.
+      if (imageJson != null) 'image': imageJson,
       if (originJson != null) 'product_origin': originJson,
     };
   }
@@ -418,17 +518,84 @@ DateTime? _parseDate(dynamic v) {
   return null;
 }
 
-/// Extract the id and url of the last entry in a `product_image` list.
-/// Returns zero/null when the list is missing or malformed.
-({int id, String? url}) _parseLastImage(dynamic raw) {
-  if (raw is! List || raw.isEmpty) return (id: 0, url: null);
-  final last = raw.last;
-  if (last is! Map) return (id: 0, url: null);
-  final map = Map<String, dynamic>.from(last);
-  return (
-    id: _asIntOrNull(map['id_product_image']) ?? 0,
-    url: _asString(map['product_image_url']),
-  );
+/// Parse every entry in a `product_image` list. Malformed entries are
+/// skipped rather than aborting the whole list.
+List<ProductImage> _parseProductImages(dynamic raw) {
+  if (raw is! List) return const [];
+  final out = <ProductImage>[];
+  for (final entry in raw) {
+    if (entry is! Map) continue;
+    final map = Map<String, dynamic>.from(entry);
+    final id = _asIntOrNull(map['id_product_image']) ?? 0;
+    final url = _asString(map['product_image_url']);
+    if (id == 0 && (url == null || url.isEmpty)) continue;
+    out.add(ProductImage(
+      id: id,
+      url: url,
+      productRefId: _asIntOrNull(map['product_ref_id']),
+    ));
+  }
+  return List.unmodifiable(out);
+}
+
+/// Compose the final gallery from the origin's reference image plus
+/// the seller's own images.
+///
+/// The origin's image — when present — is always first, so the
+/// product's primary image is the reference image rather than whatever
+/// the seller attached. Duplicates (same URL) are collapsed, keeping
+/// the origin's entry and dropping the matching seller entry.
+///
+/// The origin image is given a synthetic id of 0 so it never gets
+/// confused with a real `product_image` row on the write path.
+List<ProductImage> _composeGallery({
+  required String? originImageUrl,
+  required List<ProductImage> sellerImages,
+}) {
+  final out = <ProductImage>[];
+  final seen = <String>{};
+
+  // 1. Origin reference image first.
+  final originUrl = _cleanUrlForGallery(originImageUrl);
+  if (originUrl != null) {
+    out.add(ProductImage(id: 0, url: originUrl));
+    seen.add(originUrl);
+  }
+
+  // 2. Seller images, skipping any whose URL already appears.
+  for (final img in sellerImages) {
+    final url = _cleanUrlForGallery(img.url);
+    if (url == null) continue;
+    if (seen.contains(url)) continue;
+
+    out.add(ProductImage(
+      id: img.id,
+      url: url,
+      productRefId: img.productRefId,
+    ));
+    seen.add(url);
+  }
+
+  return List.unmodifiable(out);
+}
+
+/// Trim + drop placeholder strings. Kept local because the model
+/// doesn't resolve URLs to full http(s) form — that's the
+/// presentation layer's job. This only guards against empty / literal
+/// "null" values reaching the gallery.
+String? _cleanUrlForGallery(String? raw) {
+  if (raw == null) return null;
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) return null;
+  final lower = trimmed.toLowerCase();
+  if (lower == 'null' ||
+      lower == 'undefined' ||
+      lower == 'none' ||
+      lower == '-' ||
+      lower == 'n/a') {
+    return null;
+  }
+  return trimmed;
 }
 
 // ==================== ProductCategory ====================

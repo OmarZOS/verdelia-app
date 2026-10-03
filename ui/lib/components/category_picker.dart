@@ -26,7 +26,7 @@ class CategoryPicker extends StatefulWidget {
 
 class _CategoryPickerState extends State<CategoryPicker> {
   late int _selectedCategoryIndex;
-  final double _itemHeight = 50.0;
+  final double _itemHeight = 58.0;
   final double _pickerHeight = 200.0;
 
   @override
@@ -92,6 +92,8 @@ class _CategoryPickerState extends State<CategoryPicker> {
                   ),
                   Text(
                     widget.categories[_selectedCategoryIndex],
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: theme.textTheme.bodyLarge!.fontSize,
                       fontWeight: FontWeight.w700,
@@ -166,7 +168,6 @@ class _CategoryPickerState extends State<CategoryPicker> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
                           SvgPicture.asset(
                             widget.pathFunction(_categoryIdAt(index)),
@@ -178,12 +179,16 @@ class _CategoryPickerState extends State<CategoryPicker> {
                             // "product_catalog"
                           ),
                           const SizedBox(width: 12),
-                          Text(
-                            widget.categories[index],
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              fontWeight: _selectedCategoryIndex == index
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
+                          Flexible(
+                            child: Text(
+                              widget.categories[index],
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                fontWeight: _selectedCategoryIndex == index
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
                             ),
                           ),
                         ],

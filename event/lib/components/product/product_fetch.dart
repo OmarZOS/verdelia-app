@@ -81,6 +81,10 @@ class ProductFetch {
   /// products. It defaults to `false` (buyer catalog) and is part of
   /// the cache key, so a buyer fetch and an editor fetch never collide
   /// in the list cache.
+  ///
+  /// [domain] and [subdomain] filter by the category hierarchy
+  /// (`domain.subdomain.category`). [subdomain] without [domain] is
+  /// dropped with a warning.
   Future<void> fetchProducts({
     int categoryId = 0,
     int userId = 0,
@@ -88,11 +92,26 @@ class ProductFetch {
     String query = "",
     bool reset = false,
     bool includeHidden = false,
+    String? domain,
+    String? subdomain,
   }) async {
+    // Normalise the incoming filter pair.
+    final cleanDomain = _cleanSegment(domain);
+    var cleanSubdomain = _cleanSegment(subdomain);
+
+    if (cleanSubdomain != null && cleanDomain == null) {
+      log(
+        'ProductFetch.fetchProducts: subdomain "$cleanSubdomain" '
+        'ignored because domain is not set',
+      );
+      cleanSubdomain = null;
+    }
+
     log(
       'ProductFetch.fetchProducts called: '
       'providerId=$providerId reset=$reset query="$query" '
-      'includeHidden=$includeHidden '
+      'includeHidden=$includeHidden domain=$cleanDomain '
+      'subdomain=$cleanSubdomain '
       'currentProviderId=${_state.currentProviderId}',
     );
 
@@ -103,7 +122,9 @@ class ProductFetch {
         _state.currentUserId != userId ||
         _state.currentProviderId != providerId ||
         _state.currentSearchQuery != query ||
-        _state.includeHidden != includeHidden;
+        _state.includeHidden != includeHidden ||
+        _state.currentDomain != cleanDomain ||
+        _state.currentSubdomain != cleanSubdomain;
 
     if (paramsChanged) {
       _state.currentCategory = categoryId;
@@ -111,6 +132,8 @@ class ProductFetch {
       _state.currentProviderId = providerId;
       _state.currentSearchQuery = query;
       _state.includeHidden = includeHidden;
+      _state.currentDomain = cleanDomain;
+      _state.currentSubdomain = cleanSubdomain;
       _state.resetPagination();
       if (reset) _cache.clearListCache();
     }
@@ -127,6 +150,8 @@ class ProductFetch {
         providerId: providerId,
         query: query,
         includeHidden: includeHidden,
+        domain: cleanDomain,
+        subdomain: cleanSubdomain,
       );
       final cached = _cache.getList(cacheKey);
       if (cached != null && cached.isNotEmpty) {
@@ -144,9 +169,11 @@ class ProductFetch {
         category: _state.currentCategory,
         providerId: _state.currentProviderId,
         query: _state.currentSearchQuery,
-        page: _state.currentPage * _state.itemsPerPage,
+        offset: _state.currentPage * _state.itemsPerPage,
         limit: _state.itemsPerPage,
         includeHidden: includeHidden,
+        domain: cleanDomain,
+        subdomain: cleanSubdomain,
       );
 
       if (fetched != null && fetched.isNotEmpty) {
@@ -157,6 +184,8 @@ class ProductFetch {
             providerId: providerId,
             query: query,
             includeHidden: includeHidden,
+            domain: cleanDomain,
+            subdomain: cleanSubdomain,
           );
           _cache.cacheList(cacheKey, fetched);
         }
@@ -176,7 +205,8 @@ class ProductFetch {
         'fetched=${fetched?.length ?? 0} '
         'total=${_state.products.length} '
         'hasMore=${_state.hasMoreProducts} '
-        'includeHidden=$includeHidden',
+        'includeHidden=$includeHidden '
+        'domain=$cleanDomain subdomain=$cleanSubdomain',
       );
     } catch (e) {
       log("Failed to fetch products: $e");
@@ -197,14 +227,14 @@ class ProductFetch {
   /// cache (category pages are usually small and short-lived).
   Future<List<Product>> fetchByCategory({
     required int categoryId,
-    int page = 1,
+    int offset = 0, // ← was: int page = 1
     int limit = 10,
     bool includeHidden = false,
   }) async {
     try {
       final fetched = await _service.getProductsByCategory(
         categoryId: categoryId,
-        page: page,
+        offset: offset,
         limit: limit,
         includeHidden: includeHidden,
       );
@@ -239,16 +269,32 @@ class ProductFetch {
   // Internal
   // ================================================================
 
-  /// Cache key for the list cache. `includeHidden` is part of the key
-  /// so buyer and editor fetches are stored under different entries.
+  /// Cache key for the list cache.
+  ///
+  /// `includeHidden`, `domain`, and `subdomain` are part of the key so
+  /// buyer fetches, editor fetches, and different hierarchy branches
+  /// are all stored under distinct entries.
   String _listCacheKey({
     required int categoryId,
     required int userId,
     required int providerId,
     required String query,
     required bool includeHidden,
+    String? domain,
+    String? subdomain,
   }) {
     final visibility = includeHidden ? 'all' : 'public';
-    return 'p_${categoryId}_${userId}_${providerId}_${visibility}_$query';
+    final domainSegment = domain ?? '_';
+    final subdomainSegment = subdomain ?? '_';
+    return 'p_${categoryId}_${userId}_${providerId}_'
+        '${visibility}_${domainSegment}_${subdomainSegment}_$query';
+  }
+
+  /// Trim + lowercase a domain / subdomain segment. Returns null when
+  /// the input is null or blank, so downstream calls skip the filter.
+  String? _cleanSegment(String? value) {
+    if (value == null) return null;
+    final cleaned = value.trim().toLowerCase();
+    return cleaned.isEmpty ? null : cleaned;
   }
 }

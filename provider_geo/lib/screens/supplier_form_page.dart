@@ -8,7 +8,7 @@ import 'package:verdelia_core/business/Supplier.dart';
 import 'package:event/supplier_change_notifier.dart';
 import 'package:event/user_change_notifier.dart';
 import 'package:ui/components/ImagePickerSection.dart';
-import 'package:ui/components/category_picker.dart';
+import 'package:ui/components/hierarchical_category_picker.dart';
 import 'package:ui/components/map_picker.dart';
 import 'package:ui/components/organisation_picker.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -251,9 +251,9 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
     });
   }
 
-  void _onCategoryChanged(int identifier) {
+  void _onCategoryChanged(CategorySelection identifier) {
     setState(() {
-      _product_provider_type_id = identifier;
+      _product_provider_type_id = identifier.leafId;
     });
   }
 
@@ -535,15 +535,22 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
     }
 
     final languageCode = Localizations.localeOf(context).languageCode;
-    return CategoryPicker(
-      categories:
-          categories.map((category) => category.nameFor(languageCode)).toList(),
-      categoryIds:
-          categories.map((category) => category.productProviderTypeId).toList(),
-      onCategoryChanged: _onCategoryChanged,
-      pathFunction: (int id) => "assets/icons/${id}.svg",
-      category_id:
+    return HierarchicalCategoryPicker(
+      label: localizations.categoryText,
+      options: categories
+          .map(
+            (category) => HierarchicalCategoryOption(
+              id: category.productProviderTypeId,
+              path: category.productCategoryDesc,
+              leafLabel: category.nameFor(languageCode),
+            ),
+          )
+          .toList(),
+      selectedId:
           _product_provider_type_id ?? categories.first.productProviderTypeId,
+      onChanged: _onCategoryChanged,
+      iconAsset:
+          'assets/icons/${_product_provider_type_id ?? categories.first.productProviderTypeId}.svg',
       package: 'provider_geo',
     );
   }

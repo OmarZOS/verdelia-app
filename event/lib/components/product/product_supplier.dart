@@ -77,7 +77,7 @@ class ProductSupplier {
     try {
       final products = await _service.getAllProducts(
         providerId: supplierId,
-        page: 0,
+        offset: 0,
         limit: 100,
         includeHidden: includeHidden,
       );

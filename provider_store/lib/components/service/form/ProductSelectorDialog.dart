@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:verdelia_core/business/Product.dart';
 import 'package:event/product_change_notifier.dart';
 import 'package:provider/provider.dart';
+import 'package:ui/components/image/image_url.dart';
 
 class ProductSelectorDialog extends StatelessWidget {
   final int? supplierId;
@@ -88,6 +90,15 @@ class _ProductSelectorDialogContentState
     super.dispose();
   }
 
+  /// Locale-aware product name — mirrors the resolution the cards use.
+  String _nameFor(Product product, String lang) {
+    if (lang == 'ar' || lang == 'fr') {
+      final localized = product.nameFor(lang);
+      if (localized.trim().isNotEmpty) return localized;
+    }
+    return product.product_name;
+  }
+
   Future<void> _loadProducts({bool reset = false}) async {
     if (_isLoading || (!_hasMore && !reset)) return;
 
@@ -130,14 +141,19 @@ class _ProductSelectorDialogContentState
         _itemsPerPage = productNotifier.itemsPerPage;
       }
 
+      final lang = Localizations.localeOf(context).languageCode;
       var filtered = products ?? [];
       if (_searchQuery.isNotEmpty && widget.supplierId != null) {
         filtered = filtered
-            .where((p) =>
-                p.product_name
-                    ?.toLowerCase()
-                    .contains(_searchQuery.toLowerCase()) ??
-                false)
+            .where(
+              (p) =>
+                  _nameFor(p, lang)
+                      .toLowerCase()
+                      .contains(_searchQuery.toLowerCase()) ||
+                  (p.product_brand ?? '')
+                      .toLowerCase()
+                      .contains(_searchQuery.toLowerCase()),
+            )
             .toList();
       }
 
@@ -154,8 +170,9 @@ class _ProductSelectorDialogContentState
       });
     } catch (e) {
       setState(() => _isLoading = false);
+      final loc = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading products: $e')),
+        SnackBar(content: Text(loc.errorOccurred)),
       );
     }
   }
@@ -192,6 +209,7 @@ class _ProductSelectorDialogContentState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final loc = AppLocalizations.of(context)!;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -205,7 +223,7 @@ class _ProductSelectorDialogContentState
               children: [
                 Expanded(
                   child: Text(
-                    'Select Product',
+                    loc.selectProductTitle,
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -233,7 +251,7 @@ class _ProductSelectorDialogContentState
                     child: TextField(
                       controller: _searchController,
                       decoration: InputDecoration(
-                        hintText: 'Search products...',
+                        hintText: loc.searchProductsHint,
                         hintStyle: theme.textTheme.bodyMedium?.copyWith(
                           color: colors.onSurfaceVariant.withOpacity(0.6),
                         ),
@@ -268,7 +286,7 @@ class _ProductSelectorDialogContentState
                     Icon(Icons.store, size: 16, color: colors.primary),
                     const SizedBox(width: 4),
                     Text(
-                      'Supplier Products',
+                      loc.supplierProductsBadge,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colors.primary,
                         fontWeight: FontWeight.w500,
@@ -292,16 +310,17 @@ class _ProductSelectorDialogContentState
                           const SizedBox(height: 12),
                           Text(
                             _searchQuery.isNotEmpty
-                                ? 'No products found for "$_searchQuery"'
-                                : 'No products available',
+                                ? loc.noProductsFoundForQuery(_searchQuery)
+                                : loc.noProductsAvailable,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: colors.onSurfaceVariant,
                             ),
+                            textAlign: TextAlign.center,
                           ),
                           if (_searchQuery.isNotEmpty)
                             TextButton(
                               onPressed: _clearSearch,
-                              child: const Text('Clear search'),
+                              child: Text(loc.clearSearch),
                             ),
                         ],
                       ),
@@ -347,7 +366,7 @@ class _ProductSelectorDialogContentState
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: Text(loc.cancel),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
@@ -362,7 +381,7 @@ class _ProductSelectorDialogContentState
                     backgroundColor: colors.primary,
                     foregroundColor: colors.onPrimary,
                   ),
-                  child: const Text('Select'),
+                  child: Text(loc.confirm),
                 ),
               ],
             ),
@@ -375,6 +394,16 @@ class _ProductSelectorDialogContentState
   Widget _buildProductTile(Product product, bool isSelected) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final lang = Localizations.localeOf(context).languageCode;
+    final displayName = _nameFor(product, lang);
+
+    // Prefer the seller's own gallery image; fall back to the origin
+    // reference image when the gallery is empty or malformed.
+    final imageUrl = resolveImageUrl(product.primaryImageUrl) ??
+        resolveImageUrl(product.product_origin?.iproductImageUrl);
+
+    final stock = product.product_quantity ?? 0;
+    final hasGallery = product.product_images.length > 1;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -401,28 +430,63 @@ class _ProductSelectorDialogContentState
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                Container(
+                // ─── Thumbnail with gallery count overlay ─────
+                SizedBox(
                   width: 48,
                   height: 48,
-                  decoration: BoxDecoration(
-                    color: colors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(8),
-                    image: product.product_image_url != null &&
-                            product.product_image_url!.isNotEmpty
-                        ? DecorationImage(
-                            image: NetworkImage(product.product_image_url!),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: colors.surfaceVariant,
+                          borderRadius: BorderRadius.circular(8),
+                          image: imageUrl != null
+                              ? DecorationImage(
+                                  image: NetworkImage(imageUrl),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                        ),
+                        child: imageUrl == null
+                            ? Icon(
+                                Icons.inventory_2,
+                                color: colors.onSurfaceVariant.withOpacity(0.4),
+                                size: 24,
+                              )
+                            : null,
+                      ),
+                      if (hasGallery)
+                        Positioned(
+                          right: -2,
+                          bottom: -2,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${product.product_images.length}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                height: 1.0,
+                                fontFeatures: [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                  child: product.product_image_url == null ||
-                          product.product_image_url!.isEmpty
-                      ? Icon(
-                          Icons.inventory_2,
-                          color: colors.onSurfaceVariant.withOpacity(0.4),
-                          size: 24,
-                        )
-                      : null,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -430,7 +494,9 @@ class _ProductSelectorDialogContentState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        product.product_name ?? 'Unnamed Product',
+                        displayName.isNotEmpty
+                            ? displayName
+                            : AppLocalizations.of(context)!.unnamedProduct,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight:
                               isSelected ? FontWeight.w600 : FontWeight.w400,
@@ -439,10 +505,9 @@ class _ProductSelectorDialogContentState
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (product.product_description != null &&
-                          product.product_description!.isNotEmpty)
+                      if ((product.product_brand ?? '').isNotEmpty)
                         Text(
-                          product.product_description!,
+                          product.product_brand!,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colors.onSurfaceVariant,
                           ),
@@ -452,34 +517,35 @@ class _ProductSelectorDialogContentState
                       Row(
                         children: [
                           Text(
-                            'DZD ${product.product_price?.toStringAsFixed(2) ?? '0.00'}',
+                            AppLocalizations.of(context)!.price(
+                              product.product_price?.toStringAsFixed(2) ??
+                                  '0.00',
+                            ),
                             style: theme.textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.w600,
                               color: colors.primary,
                             ),
                           ),
                           const SizedBox(width: 8),
-                          if (product.product_quantity != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: (product.product_quantity ?? 0) > 0
-                                    ? Colors.green.withOpacity(0.1)
-                                    : Colors.red.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                'Stock: ${product.product_quantity}',
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: (product.product_quantity ?? 0) > 0
-                                      ? Colors.green
-                                      : Colors.red,
-                                ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: stock > 0
+                                  ? Colors.green.withOpacity(0.1)
+                                  : Colors.red.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              AppLocalizations.of(context)!
+                                  .stockLabel(stock.toString()),
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: stock > 0 ? Colors.green : Colors.red,
                               ),
                             ),
+                          ),
                         ],
                       ),
                     ],
