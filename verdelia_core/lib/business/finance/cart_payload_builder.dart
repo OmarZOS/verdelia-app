@@ -1,10 +1,10 @@
 // lib/business/finance/cart_payload_builder.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:verdelia_core/app/AppUser.dart';
-import 'package:verdelia_core/app/Person.dart';
-import 'package:verdelia_core/business/Delivery.dart';
-import 'package:verdelia_core/business/finance/Cart.dart';
+
+import '../../app/AppUser.dart';
+import '../../app/Person.dart';
+import 'Cart.dart';
 
 // ── Enums ──
 enum DocType { receipt, invoice, invoiceReceipt, none }
@@ -285,7 +285,7 @@ class CartPayloadBuilder {
         'person_first_name': customer!.personFirstName ?? '',
         'person_last_name': customer!.personLastName ?? '',
         'person_birth_date': _dateOnly(_parseOrNow(customer!.personBirthDate)),
-        'person_gender': (customer!.personGender ?? 'male').toLowerCase(),
+        'person_gender': customer!.personGender.wireValue,
         'person_country_code': customer!.personCountryCode ?? 'DZ',
         'blood_type': 'Unknown',
       };
@@ -302,7 +302,7 @@ class CartPayloadBuilder {
         'person_birth_date': _dateOnly(
           details.person_birth_date ?? DateTime.now(),
         ),
-        'person_gender': (details.person_gender ?? 'male').toLowerCase(),
+        'person_gender': details.person_gender.wireValue,
         'person_country_code': details.person_nationality ?? 'DZ',
         'blood_type': 'Unknown',
       };

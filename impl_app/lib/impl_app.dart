@@ -68,8 +68,8 @@ class AppUserServiceImpl extends AppUserService {
         _getCallerKey('updateAppUser', id: appUser.idAppUser.toString());
     try {
       final result = await _storageService.update(
-        '${AppConstants.apiBaseUrl}${AppConstants.updateAppUserEndpoint}/${appUser.idAppUser}',
-        appUser.idAppUser.toString(),
+        '${AppConstants.apiBaseUrl}${AppConstants.updateAppUserEndpoint}',
+        "",
         {},
         appUser.toJson(),
         callerKey: key,

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider_store/components/inventory/category_tile.dart';
 import 'package:verdelia_core/business/Product.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:verdelia_core/business/privileges/Privileges.dart';
 import 'package:event/product_change_notifier.dart';
 import 'package:product_catalog/screens/components/ProductCard.dart';
+import 'package:ui/components/utils/responsive_grid.dart';
 import 'package:provider/provider.dart';
 
-class ProductList extends StatelessWidget {
+class ProductList extends StatefulWidget {
   final int selectedSupplierId;
   final String searchQuery;
   final ValueChanged<int> onProductTap;
@@ -14,11 +16,6 @@ class ProductList extends StatelessWidget {
   final bool isLoading;
   final VoidCallback onAddFirstProduct;
   final VoidCallback onManageSuppliers;
-
-  /// When true, hidden products are filtered out of the grid even if the
-  /// notifier is holding them. Defaults to false so editors see the full
-  /// catalog; buyers should pass true (or, better, fetch with
-  /// `includeHidden: false` so hidden products never arrive).
   final bool hideHiddenProducts;
 
   const ProductList({
@@ -33,58 +30,106 @@ class ProductList extends StatelessWidget {
     this.hideHiddenProducts = false,
   });
 
-  bool get _canManage => privilegeLevel == PrivilegeLevel.manage;
-  bool get _canView => privilegeLevel == PrivilegeLevel.view;
+  @override
+  State<ProductList> createState() => _ProductListState();
+}
+
+class _ProductListState extends State<ProductList> {
+  /// Currently selected category id, or 0 for "All".
+  ///
+  /// Reset whenever the supplier changes — a category that exists for
+  /// supplier A may not exist for supplier B, and keeping the selection
+  /// would filter the grid down to nothing.
+  int _selectedCategoryId = 0;
+
+  @override
+  void didUpdateWidget(ProductList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedSupplierId != widget.selectedSupplierId) {
+      _selectedCategoryId = 0;
+    }
+  }
+
+  bool get _canManage => widget.privilegeLevel == PrivilegeLevel.manage;
+  bool get _canView => widget.privilegeLevel == PrivilegeLevel.view;
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    if (isLoading) {
+    if (widget.isLoading) {
       return _buildLoadingState(context);
     }
 
     return Consumer<ProductNotifier>(
       builder: (context, notifier, _) {
-        // Prefer the notifier's list, but fall back to the empty state
-        // while it's still loading so the screen never renders a stale
-        // spinner after data has arrived.
         final source = notifier.products;
 
-        final filtered = _filterProducts(source);
+        // Products matching the supplier (before category filter).
+        final supplierProducts = widget.selectedSupplierId > 0
+            ? source
+                .where(
+                    (p) => p.product_provider_id == widget.selectedSupplierId)
+                .toList(growable: false)
+            : source;
 
-        if (filtered.isEmpty) {
-          return _buildEmptyState(
-            context,
-            localizations,
-            searchQuery.isNotEmpty,
-          );
-        }
+        // Categories that actually exist for this supplier's products.
+        final presence = CategoryPresence.fromProducts(
+          products: supplierProducts,
+          allCategories: notifier.productCategories,
+        );
 
-        return _buildProductGrid(context, filtered);
+        // Apply the category filter on top of the supplier set.
+        final filtered = _filterProducts(supplierProducts);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Category strip — collapses to nothing when there's only
+            // one category or none.
+            CategoryTile(
+              categories: presence.categories,
+              selectedCategoryId: _selectedCategoryId,
+              productCounts: presence.counts,
+              onCategorySelected: (id) {
+                setState(() => _selectedCategoryId = id);
+              },
+            ),
+            const SizedBox(height: 4),
+            Expanded(
+              child: filtered.isEmpty
+                  ? _buildEmptyState(
+                      context,
+                      localizations,
+                      widget.searchQuery.isNotEmpty,
+                      source.isNotEmpty && widget.hideHiddenProducts,
+                    )
+                  : _buildProductGrid(context, filtered),
+            ),
+          ],
+        );
       },
     );
   }
 
-  /// Apply search + visibility + supplier filters.
-  ///
-  /// Order matters: visibility filter is cheapest and removes the most
-  /// items in the buyer view, so it runs first.
   List<Product> _filterProducts(List<Product> source) {
     Iterable<Product> result = source;
 
-    if (hideHiddenProducts) {
+    if (widget.hideHiddenProducts) {
       result = result.where((p) => p.isVisible);
     }
 
-    if (selectedSupplierId > 0) {
+    // Category filter — applied before search so the empty-state copy
+    // can distinguish "no products in this category" from "no search
+    // results".
+    if (_selectedCategoryId > 0) {
       result = result.where(
-        (p) => p.product_provider_id == selectedSupplierId,
+        (p) => p.product_category_id == _selectedCategoryId,
       );
     }
 
-    if (searchQuery.isNotEmpty) {
-      final query = searchQuery.toLowerCase();
+    if (widget.searchQuery.isNotEmpty) {
+      final query = widget.searchQuery.toLowerCase();
       result = result.where((product) {
         return product.product_name?.toLowerCase().contains(query) == true ||
             product.product_brand?.toLowerCase().contains(query) == true ||
@@ -101,42 +146,37 @@ class ProductList extends StatelessWidget {
   ) {
     final hiddenLabel = AppLocalizations.of(context)!.productHiddenLabel;
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.7,
-      ),
-      itemCount: filteredProducts.length,
-      itemBuilder: (context, index) {
-        // Keyed by product id so Flutter preserves scroll state and
-        // widget identity across list rebuilds when items are
-        // added/removed/reordered.
-        final product = filteredProducts[index];
-        return Stack(
-          key: ValueKey(product.id_product),
-          children: [
-            ProductCard(
-              mode: ProductDetailsMode.editor,
-              product: product,
-            ),
-            if (!product.isVisible)
-              Positioned(
-                top: 8,
-                right: 8,
-                child: _HiddenBadge(label: hiddenLabel),
+    return LayoutBuilder(builder: (context, constraints) {
+      return GridView.builder(
+        padding: const EdgeInsets.all(12),
+        gridDelegate: responsiveGridDelegate(
+          availableWidth: constraints.maxWidth,
+        ),
+        itemCount: filteredProducts.length,
+        itemBuilder: (context, index) {
+          // Keyed by product id so Flutter preserves scroll state and
+          // widget identity across list rebuilds when items are
+          // added/removed/reordered.
+          final product = filteredProducts[index];
+          return Stack(
+            key: ValueKey(product.id_product),
+            children: [
+              ProductCard(
+                mode: ProductDetailsMode.editor,
+                product: product,
+                // onTap: () => _handleProductTap(product),
               ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _handleProductTap(Product product) {
-    if (!_canView) return;
-    onProductTap(product.id_product ?? 0);
+              if (!product.isVisible)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: _HiddenBadge(label: hiddenLabel),
+                ),
+            ],
+          );
+        },
+      );
+    });
   }
 
   Widget _buildLoadingState(BuildContext context) {
@@ -167,9 +207,32 @@ class ProductList extends StatelessWidget {
     BuildContext context,
     AppLocalizations localizations,
     bool isSearching,
+    bool hiddenByVisibilityFilter,
   ) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+
+    // If the only reason the grid is empty is that every product is
+    // hidden, say so instead of showing the "no products yet" copy.
+    final isHiddenOnly = hiddenByVisibilityFilter && !isSearching;
+
+    final IconData icon;
+    final String title;
+    final String subtitle;
+
+    if (isSearching) {
+      icon = Icons.search_off_rounded;
+      title = localizations.noProductsFoundText;
+      subtitle = localizations.tryDifferentSearchText;
+    } else if (isHiddenOnly) {
+      icon = Icons.visibility_off_outlined;
+      title = localizations.noVisibleProductsText;
+      subtitle = localizations.noVisibleProductsText;
+    } else {
+      icon = Icons.inventory_2_outlined;
+      title = localizations.noProductsText;
+      subtitle = localizations.addFirstProductText;
+    }
 
     return Center(
       child: Padding(
@@ -178,17 +241,13 @@ class ProductList extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              isSearching
-                  ? Icons.search_off_rounded
-                  : Icons.inventory_2_outlined,
+              icon,
               size: 64,
               color: colorScheme.onSurfaceVariant.withOpacity(0.3),
             ),
             const SizedBox(height: 16),
             Text(
-              isSearching
-                  ? localizations.noProductsFoundText
-                  : localizations.noProductsText,
+              title,
               style: theme.textTheme.titleMedium?.copyWith(
                 color: colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
@@ -196,31 +255,21 @@ class ProductList extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              isSearching
-                  ? localizations.tryDifferentSearchText
-                  : localizations.addFirstProductText,
+              subtitle,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
-            if (_canManage && !isSearching) ...[
-              const SizedBox(height: 20),
-              FilledButton.icon(
-                onPressed: onAddFirstProduct,
-                icon: const Icon(Icons.add_rounded),
-                label: Text(localizations.addFirstProduct),
-                style: FilledButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                ),
-              ),
-            ],
           ],
         ),
       ),
     );
   }
+
+  // _buildProductGrid, _buildLoadingState, _buildEmptyState — unchanged
+  // from your current version, but the empty-state helper now also
+  // takes whether a category filter is active.
 }
 
 class _HiddenBadge extends StatelessWidget {
@@ -266,5 +315,40 @@ class _HiddenBadge extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// In ProductList (or a shared helper file)
+class CategoryPresence {
+  final List<ProductCategory> categories;
+  final Map<int, int> counts;
+
+  const CategoryPresence({required this.categories, required this.counts});
+
+  static const empty = CategoryPresence(categories: [], counts: {});
+
+  /// Build the presence map for a supplier's product set.
+  ///
+  /// Only categories that appear on at least one product are returned.
+  /// Ordering follows the notifier's category order so the strip is
+  /// stable across rebuilds.
+  static CategoryPresence fromProducts({
+    required List<Product> products,
+    required List<ProductCategory> allCategories,
+  }) {
+    final counts = <int, int>{};
+    for (final product in products) {
+      final id = product.product_category_id;
+      if (id == null || id <= 0) continue;
+      counts[id] = (counts[id] ?? 0) + 1;
+    }
+
+    // Preserve the notifier's order so the strip doesn't reshuffle
+    // when the user changes supplier or search.
+    final present = allCategories
+        .where((c) => counts.containsKey(c.productCategoryId))
+        .toList(growable: false);
+
+    return CategoryPresence(categories: present, counts: counts);
   }
 }

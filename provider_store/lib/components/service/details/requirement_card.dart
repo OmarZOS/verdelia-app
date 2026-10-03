@@ -19,18 +19,47 @@ class RequirementCard extends StatelessWidget {
     required this.color,
   });
 
+  static String _localizeResourceType(String type, AppLocalizations loc) {
+    switch (type.trim().toLowerCase()) {
+      case 'consumable':
+        return loc.resourceTypeConsumable;
+      case 'non_consumable':
+      case 'non-consumable':
+      case 'reusable':
+        return loc.resourceTypeNonConsumable;
+      case 'raw_material':
+      case 'raw-material':
+        return loc.resourceTypeRawMaterial;
+      case 'equipment':
+        return loc.resourceTypeEquipment;
+      case 'tool':
+        return loc.resourceTypeTool;
+      case 'supply':
+        return loc.resourceTypeSupply;
+      default:
+        return type;
+    }
+  }
+
   factory RequirementCard.resource({
+    required AppLocalizations loc,
     required String name,
     required double quantity,
-    required double unitCost,
-    required double totalCost,
     required String type,
     required bool isConsumable,
+    required double totalCost,
     String? notes,
   }) {
+    final unitLabel =
+        isConsumable ? loc.resourceUnitsLabel : loc.resourceItemsLabel;
+
+    // Localize the backend `type` token. Unknown values fall through to
+    // the raw string so a new backend enum doesn't blank out the card.
+    final typeLabel = _localizeResourceType(type, loc);
+
     return RequirementCard(
       title: name,
-      subtitle: '$quantity ${isConsumable ? 'units' : 'items'} • $type',
+      subtitle: '$quantity $unitLabel • $typeLabel',
       cost: totalCost,
       details: notes,
       icon: isConsumable ? Icons.inventory : Icons.build,
@@ -39,6 +68,7 @@ class RequirementCard extends StatelessWidget {
   }
 
   factory RequirementCard.staff({
+    required AppLocalizations loc,
     required String role,
     required int minCount,
     required int maxCount,
@@ -47,9 +77,24 @@ class RequirementCard extends StatelessWidget {
     required double averageCost,
     String? notes,
   }) {
+    // Count label: "2" when min == max, "1-3" otherwise.
+    final range = minCount == maxCount ? '$minCount' : '$minCount-$maxCount';
+    final staffLabel = loc.staffCountLabel(range);
+
+    // Hours label — drops the decimal when it's a whole number.
+    final hoursValue = allocatedHours == allocatedHours.roundToDouble()
+        ? allocatedHours.toStringAsFixed(0)
+        : allocatedHours.toStringAsFixed(1);
+    final hoursLabel = loc.staffHoursEachLabel(hoursValue);
+
+    // Hourly rate, formatted with the locale's currency helper.
+    final rateLabel = loc.staffHourlyRateLabel(
+      loc.price(hourlyRate.toStringAsFixed(2)),
+    );
+
     return RequirementCard(
       title: role,
-      subtitle: '$minCount-${maxCount} staff • ${allocatedHours}h each',
+      subtitle: '$staffLabel • $hoursLabel • $rateLabel',
       cost: averageCost,
       details: notes,
       icon: Icons.person,
@@ -60,7 +105,7 @@ class RequirementCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    AppLocalizations loc = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context)!;
 
     return Container(
       padding: const EdgeInsets.all(16),

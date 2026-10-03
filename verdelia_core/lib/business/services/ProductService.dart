@@ -17,7 +17,10 @@ import '../Product.dart';
 /// Domain / subdomain filtering follows the `domain.subdomain.category`
 /// convention used by product categories. `subdomain` requires `domain`.
 abstract class ProductService extends TraceableService {
-  Future<List<ProductCategory>?> getCategories({String? callerKey}) async {
+  Future<List<ProductCategory>?> getCategories({
+    bool forceRefresh = false,
+    String? callerKey,
+  }) async {
     return null;
   }
 

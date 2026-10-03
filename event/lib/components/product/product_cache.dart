@@ -42,7 +42,9 @@ class ProductCache {
 
   List<ProductCategory>? getCategories() {
     if (!_enabled) return null;
-    return _categoriesCache;
+    final categories = _categoriesCache;
+    if (categories == null || categories.isEmpty) return null;
+    return categories;
   }
 
   // ==================== Product cache ====================

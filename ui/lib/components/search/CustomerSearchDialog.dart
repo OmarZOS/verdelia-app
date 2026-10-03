@@ -5,6 +5,7 @@ import 'package:verdelia_core/app/Person.dart';
 import 'package:event/personnel_notifier.dart';
 import 'package:event/user_change_notifier.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:ui/components/gender/gender_widgets.dart';
 import 'package:ui/components/search/new_customer_dialog.dart';
 import 'package:provider/provider.dart';
 
@@ -78,10 +79,8 @@ class _CustomerSearchDialogState extends State<CustomerSearchDialog> {
 
     _debounceTimer = Timer(const Duration(milliseconds: 350), () {
       if (query.length >= 2) {
-        final userId = _userNotifier.appUser?.idAppUser ?? 0;
         _personnelNotifier.searchPersonnel(
           query,
-          // userId,
           supplierId: widget.supplierId ?? 0,
         );
       }
@@ -89,51 +88,24 @@ class _CustomerSearchDialogState extends State<CustomerSearchDialog> {
     });
   }
 
-  // In _CustomerSearchDialogState class
   void _selectAppUser(AppUser customer) {
-    // If showPersonsAsUsers is true, we should convert person to AppUser
     if (widget.showPersonsAsUsers) {
       widget.onCustomerSelected(customer);
     } else {
-      // Call both callbacks if available
       widget.onCustomerSelected(customer);
-      // widget.onPersonSelected?.call(null); // Clear person selection
     }
     Navigator.pop(context);
   }
 
   void _selectPerson(Person person) {
     if (widget.showPersonsAsUsers) {
-      // Convert Person to AppUser for backward compatibility
-      // final appUser = _convertPersonToAppUser(person);
-      // widget.onCustomerSelected(appUser);
-      widget.onPersonSelected?.call(person); // Person is converted to AppUser
+      widget.onPersonSelected?.call(person);
     } else {
-      // Call the person callback directly
-      widget.onCustomerSelected(null); // Clear AppUser selection
+      widget.onCustomerSelected(null);
       widget.onPersonSelected?.call(person);
     }
     Navigator.pop(context);
   }
-
-  // AppUser _convertPersonToAppUser(Person person) {
-  //   return AppUser(
-  //     id_app_user: person.id_person,
-  //     appUserName:
-  //         person.person_details.person_email ?? 'person_${person.id_person}',
-  //     appUserImageUrl: null,
-  //     personFirstName: person.person_details.person_first_name,
-  //     personLastName: person.person_details.person_last_name,
-  //     // personEmail: person.person_details.person_email,
-  //     // personPhone: person.person_details.person_phone,
-  //     personGender: person.person_details.person_gender,
-  //     personNationality: person.person_details.person_nationality,
-  //     personBirthDate: person.person_details.person_birth_date,
-  //     app_user_type_desc: 'Customer',
-  //     // is_person: true,
-  //     // personId: person.id_person,
-  //   );
-  // }
 
   void _clearSelection() {
     widget.onCustomerSelected(null);
@@ -141,12 +113,12 @@ class _CustomerSearchDialogState extends State<CustomerSearchDialog> {
   }
 
   Future<void> _createNewCustomer() async {
-    final result = await showDialog<Person?>(
+    await showDialog<Person?>(
       context: context,
       builder: (context) => NewCustomerDialog(
         onCustomerCreated: (Person p) {
           widget.onCustomerSelected(null);
-          widget.onPersonSelected!(p);
+          widget.onPersonSelected?.call(p);
         },
       ),
     );
@@ -778,7 +750,7 @@ class _CustomerSearchDialogState extends State<CustomerSearchDialog> {
                               ),
                               child: Row(
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.person_outline,
                                     size: 10,
                                     color: Colors.orange,
@@ -822,62 +794,6 @@ class _CustomerSearchDialogState extends State<CustomerSearchDialog> {
                             ),
                           ],
                         ),
-                      const SizedBox(height: 4),
-                      // if (customer.personEmail != null &&
-                      //     customer.personEmail!.isNotEmpty)
-                      //   Row(
-                      //     children: [
-                      //       Icon(
-                      //         Icons.email,
-                      //         size: 12,
-                      //         color: isSelected
-                      //             ? colorScheme.primary.withOpacity(0.6)
-                      //             : colorScheme.onSurfaceVariant
-                      //                 .withOpacity(0.7),
-                      //       ),
-                      //       const SizedBox(width: 4),
-                      //       Text(
-                      //         customer.personEmail!,
-                      //         style: textTheme.bodySmall?.copyWith(
-                      //           color: isSelected
-                      //               ? colorScheme.primary.withOpacity(0.6)
-                      //               : colorScheme.onSurfaceVariant
-                      //                   .withOpacity(0.7),
-                      //         ),
-                      //         maxLines: 1,
-                      //         overflow: TextOverflow.ellipsis,
-                      //       ),
-                      //     ],
-                      //   ),
-                      // if (customer.personPhone != null &&
-                      //     customer.personPhone!.isNotEmpty)
-                      //   Padding(
-                      //     padding: const EdgeInsets.only(top: 2),
-                      //     child: Row(
-                      //       children: [
-                      //         Icon(
-                      //           Icons.phone,
-                      //           size: 12,
-                      //           color: isSelected
-                      //               ? colorScheme.primary.withOpacity(0.6)
-                      //               : colorScheme.onSurfaceVariant
-                      //                   .withOpacity(0.7),
-                      //         ),
-                      //         const SizedBox(width: 4),
-                      //         Text(
-                      //           customer.personPhone!,
-                      //           style: textTheme.bodySmall?.copyWith(
-                      //             color: isSelected
-                      //                 ? colorScheme.primary.withOpacity(0.6)
-                      //                 : colorScheme.onSurfaceVariant
-                      //                     .withOpacity(0.7),
-                      //           ),
-                      //           maxLines: 1,
-                      //           overflow: TextOverflow.ellipsis,
-                      //         ),
-                      //       ],
-                      //     ),
-                      //   ),
                     ],
                   ),
                 ),
@@ -894,6 +810,12 @@ class _CustomerSearchDialogState extends State<CustomerSearchDialog> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final details = person.person_details;
+    final gender = details.person_gender;
+    final nationality = details.person_nationality;
+
+    // Show the identity line only when at least one field has content.
+    final showGender = gender.isKnown;
+    final showNationality = (nationality ?? '').isNotEmpty;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -964,35 +886,33 @@ class _CustomerSearchDialogState extends State<CustomerSearchDialog> {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      if (details.person_gender.isNotEmpty ||
-                          details.person_nationality != "")
+                      if (showGender || showNationality)
                         Row(
                           children: [
-                            if (details.person_gender.isNotEmpty)
+                            if (showGender)
                               Row(
                                 children: [
-                                  Icon(
-                                    details.person_gender.toLowerCase() ==
-                                            'male'
-                                        ? Icons.male
-                                        : details.person_gender.toLowerCase() ==
-                                                'female'
-                                            ? Icons.female
-                                            : Icons.transgender,
-                                    size: 12,
-                                    color: colorScheme.onSurfaceVariant,
+                                  Text(
+                                    gender.icon,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: colorScheme.onSurfaceVariant,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    details.person_gender,
+                                    localizedGenderLabel(
+                                      AppLocalizations.of(context)!,
+                                      gender,
+                                    ),
                                     style: textTheme.bodySmall?.copyWith(
                                       color: colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ],
                               ),
-                            if (details.person_gender.isNotEmpty &&
-                                details.person_nationality != "")
+                            if (showGender && showNationality)
                               Padding(
                                 padding:
                                     const EdgeInsets.symmetric(horizontal: 8),
@@ -1006,7 +926,7 @@ class _CustomerSearchDialogState extends State<CustomerSearchDialog> {
                                   ),
                                 ),
                               ),
-                            if (details.person_nationality != "")
+                            if (showNationality)
                               Row(
                                 children: [
                                   Icon(
@@ -1016,7 +936,7 @@ class _CustomerSearchDialogState extends State<CustomerSearchDialog> {
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    details.person_nationality ?? "",
+                                    nationality!,
                                     style: textTheme.bodySmall?.copyWith(
                                       color: colorScheme.onSurfaceVariant,
                                     ),
@@ -1173,7 +1093,7 @@ class _CustomerSearchDialogState extends State<CustomerSearchDialog> {
                   width: 2,
                 ),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.person,
                 size: 12,
                 color: Colors.white,
@@ -1208,14 +1128,6 @@ class _CustomerSearchDialogState extends State<CustomerSearchDialog> {
 
   Widget _buildPersonAvatar(Person person) {
     final colorScheme = Theme.of(context).colorScheme;
-    final colors = [
-      Colors.orange,
-      Colors.deepOrange,
-      Colors.amber,
-      Colors.orangeAccent,
-      Colors.deepOrangeAccent,
-    ];
-    final color = colors[person.id_person % colors.length];
     final initials = person.initials;
 
     return Container(
@@ -1239,7 +1151,7 @@ class _CustomerSearchDialogState extends State<CustomerSearchDialog> {
       child: Center(
         child: Text(
           initials,
-          style: TextStyle(
+          style: const TextStyle(
             color: Colors.orange,
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -1260,8 +1172,9 @@ class _CustomerSearchDialogState extends State<CustomerSearchDialog> {
       Colors.purple,
       Colors.teal,
     ];
-    final color =
-        isPerson ? Colors.orange : colors[customer.idAppUser! % colors.length];
+    final color = isPerson
+        ? Colors.orange
+        : colors[(customer.idAppUser ?? 0) % colors.length];
     final initials = _getCustomerInitials(customer);
 
     return Container(

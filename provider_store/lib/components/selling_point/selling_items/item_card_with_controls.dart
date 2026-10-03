@@ -1,10 +1,13 @@
 // lib/provider_store/components/selling_point/selling_items/item_card_with_controls.dart
 
+import 'package:event/service_change_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 import 'package:verdelia_core/business/Product.dart';
 import 'package:verdelia_core/business/finance/ProvidedService.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:ui/components/image/fallback_network_image.dart';
 
 class ItemCardWithConfiguration extends StatelessWidget {
   final dynamic item;
@@ -112,18 +115,8 @@ class _CardBody extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
-        // Force the non-positioned child to fill the tile's bounds so
-        // the inner Column has a bounded height. Without this, the
-        // Column is measured against an unbounded height constraint and
-        // Flexible/Spacer inside it don't allocate space correctly —
-        // the card overflows the tile no matter how its internals are
-        // sized.
         fit: StackFit.expand,
         children: [
-          // Card content — column with image at top, flexible info in
-          // the middle, quantity bar (when present) pinned at the
-          // bottom. All layout is done by the column now; the stack
-          // only overlays the two buttons.
           Material(
             color: Colors.transparent,
             child: InkWell(
@@ -265,10 +258,6 @@ class _ItemContent extends StatelessWidget {
   final double padding;
   final double tileHeight;
 
-  // Controls live inside the content column now. These are the
-  // dimensions the column uses to lay out the bottom bar. No
-  // "reserved space" is needed — the bar takes exactly the space
-  // it needs and the flexible content above it shrinks to fit.
   final double controlsInset;
   final double controlsHeight;
   final double controlsRadius;
@@ -303,24 +292,20 @@ class _ItemContent extends StatelessWidget {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      // Shrink-wrap vertically when the parent has no bounded height
+      // (e.g. inside a ListView on the services tab). When the parent
+      // *does* provide a bounded tile, this still respects the parent's
+      // height because the children have fixed heights + MainAxisSize.min
+      // collapses to their sum.
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // Fixed-height image header.
-        Flexible(
-          child: _buildImageSection(context: context),
-        ),
-        // Flexible content. This is the section that shrinks when
-        // the tile is short. Wrapped in Flexible so the column can
-        // allocate less space to it when the quantity bar is present.
+        _buildImageSection(context: context),
         Padding(
-          padding: EdgeInsets.fromLTRB(padding, padding, padding, padding),
+          padding: EdgeInsets.all(padding),
           child: isProduct
               ? _buildProductInfo(context)
               : _buildServiceInfo(context),
         ),
-
-        // Quantity bar — participates in layout. When present, it
-        // takes its natural height (controlsHeight plus inset above
-        // and below) at the bottom of the column.
         if (hasQuantity)
           Padding(
             padding: EdgeInsets.fromLTRB(
@@ -346,13 +331,24 @@ class _ItemContent extends StatelessWidget {
 
   Widget _buildImageSection({required BuildContext context}) {
     final colorScheme = Theme.of(context).colorScheme;
-    final icon = isProduct ? Icons.inventory_2_rounded : Icons.handyman_rounded;
 
-    // Consistent with the grid delegate: image is 45% of tile width,
-    // bounded so tiny tiles still get a visible header and huge tiles
-    // don't let the image dominate.
     final imageHeight = (tileHeight * 0.35).clamp(64.0, 110.0);
     final iconSize = (imageHeight * 0.50).clamp(24.0, 48.0);
+
+    final Widget content = isProduct && item is Product
+        ? _buildProductImage(
+            context: context,
+            product: item as Product,
+            fallbackIcon: Icons.inventory_2_rounded,
+            fallbackIconSize: iconSize,
+          )
+        : Center(
+            child: Icon(
+              Icons.handyman_rounded,
+              size: iconSize,
+              color: colorScheme.primary,
+            ),
+          );
 
     return SizedBox(
       height: imageHeight,
@@ -364,8 +360,54 @@ class _ItemContent extends StatelessWidget {
             topRight: Radius.circular(radius),
           ),
         ),
-        child: Center(
-          child: Icon(icon, size: iconSize, color: colorScheme.primary),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(radius),
+            topRight: Radius.circular(radius),
+          ),
+          child: content,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProductImage({
+    required BuildContext context,
+    required Product product,
+    required IconData fallbackIcon,
+    required double fallbackIconSize,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final candidates = <String?>[
+      product.primaryImageUrl,
+      ...product.imageUrls,
+      product.product_origin?.iproductImageUrl,
+    ];
+
+    final hasAnyCandidate = candidates.any(
+      (c) => c != null && c.isNotEmpty,
+    );
+    if (!hasAnyCandidate) {
+      return Center(
+        child: Icon(
+          fallbackIcon,
+          size: fallbackIconSize,
+          color: colorScheme.primary,
+        ),
+      );
+    }
+
+    return FallbackNetworkImage(
+      candidates: candidates,
+      fit: BoxFit.cover,
+      placeholderBuilder: (context) => Container(
+        color: colorScheme.primary.withOpacity(0.1),
+        alignment: Alignment.center,
+        child: Icon(
+          fallbackIcon,
+          size: fallbackIconSize,
+          color: colorScheme.primary,
         ),
       ),
     );
@@ -389,22 +431,17 @@ class _ItemContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Title — capped at 2 lines. On short tiles the ellipsis
-        // truncates; the layout above guarantees there's room for at
-        // least one line.
-        Flexible(
-          child: Text(
-            product.product_name ?? 'Unnamed Product',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              fontSize: titleSize,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+        Text(
+          product.product_name ?? 'Unnamed Product',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            fontSize: titleSize,
           ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 2),
-        if ((product.product_brand ?? '').isNotEmpty)
+        if ((product.product_brand ?? '').isNotEmpty) ...[
+          const SizedBox(height: 2),
           Text(
             product.product_brand!,
             style: theme.textTheme.labelSmall?.copyWith(
@@ -414,7 +451,8 @@ class _ItemContent extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-        const Spacer(),
+        ],
+        const SizedBox(height: 6),
         Text(
           '${price.toStringAsFixed(2)} ${loc.currencySymbol ?? 'DA'}',
           style: theme.textTheme.titleSmall?.copyWith(
@@ -464,6 +502,8 @@ class _ItemContent extends StatelessWidget {
     final metaSize = (10 * scale).clamp(9.0, 12.0);
     final priceSize = (13 * scale).clamp(11.0, 17.0);
 
+    final subtitle = _serviceSubtitle(context, service);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -477,18 +517,21 @@ class _ItemContent extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 2),
-        if (service.description.isNotEmpty)
+        if (subtitle.isNotEmpty) ...[
+          const SizedBox(height: 2),
           Text(
-            service.description,
+            subtitle,
             style: theme.textTheme.labelSmall?.copyWith(
               color: colorScheme.onSurfaceVariant,
               fontSize: metaSize,
             ),
-            maxLines: 2,
+            // Exactly one line. Anything that doesn't fit is ellipsised.
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            softWrap: false,
           ),
-        const Spacer(),
+        ],
+        const SizedBox(height: 6),
         Text(
           '${service.finalPrice.toStringAsFixed(2)} ${loc.currencySymbol ?? 'DA'}',
           style: theme.textTheme.titleSmall?.copyWith(
@@ -515,12 +558,54 @@ class _ItemContent extends StatelessWidget {
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                softWrap: false,
               ),
             ),
           ],
         ),
       ],
     );
+  }
+
+  /// Picks the best one-line subtitle for a service.
+  ///
+  /// Order of preference:
+  ///   1. Category label resolved through [ServiceNotifier] by id —
+  ///      picks up the trilingual naming contribution so
+  ///      `health.diagnostics.diagnostic_imaging` becomes
+  ///      "Diagnostic Imaging" (or its localized equivalent).
+  ///   2. Nested category's own `nameFor`, in case the notifier hasn't
+  ///      loaded yet but the service payload carried the category
+  ///      inline.
+  ///   3. Free-form description as a last resort.
+  ///   4. Empty string — no subtitle row rendered at all.
+  String _serviceSubtitle(
+    BuildContext context,
+    ProvidedService service,
+  ) {
+    final localeLang = Localizations.localeOf(context).languageCode;
+
+    // Resolve the category through the notifier by id. Wrapped in a
+    // try/catch because the card can be rendered outside the
+    // ServiceNotifier scope (previews, tests). In that case we fall
+    // through to the inline category.
+    try {
+      final categoryName = context.read<ServiceNotifier>().categoryName(
+            service.categoryId,
+            languageCode: localeLang,
+          );
+      if (categoryName.isNotEmpty) return categoryName;
+    } catch (_) {
+      // ServiceNotifier not in scope — fall through.
+    }
+
+    final fromService = service.category?.nameFor(localeLang).trim() ?? '';
+    if (fromService.isNotEmpty) return fromService;
+
+    final description = service.description.trim();
+    if (description.isNotEmpty) return description;
+
+    return '';
   }
 }
 
@@ -581,9 +666,6 @@ class _QuantityControls extends StatelessWidget {
                 size: buttonSize,
                 iconSize: iconSize,
               ),
-              // The quantity label is the flexible part. Give it a min
-              // width of two digits so single-digit quantities look
-              // right and don't collapse the row.
               Container(
                 constraints: BoxConstraints(minWidth: buttonSize * 1.2),
                 alignment: Alignment.center,

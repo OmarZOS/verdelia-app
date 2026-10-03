@@ -386,9 +386,6 @@ class _LoginScreenState extends State<LoginScreen>
             child: SvgPicture.asset(
               'assets/images/logo.svg',
               package: "login",
-              color: isDarkMode
-                  ? AppConstants.backgroundDarkColor
-                  : AppConstants.backgroundColor,
               width: 120,
               height: 120,
             ),

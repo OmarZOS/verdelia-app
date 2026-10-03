@@ -57,7 +57,7 @@ class AppConstants {
   static const String getAllAppUsersEndpoint = '/app_user';
   static const String appUserEndpoint = '/app_user';
   static const String updateAppUserImageEndpoint = '/app_user/update_image_url';
-  static const String updateAppUserEndpoint = '/app_user/update';
+  static const String updateAppUserEndpoint = '/app_user';
   static const String updateAppUserPasswordEndpoint =
       '/app_user/update_password';
   static const String searchAppUserEndpoint = '/search/personnel';
@@ -116,7 +116,7 @@ class AppConstants {
   static const String productEndpoint = '/products';
   static const String updateProductEndpoint =
       '/products'; // /products/{product_id}
-  static const String getProductCategoriesEndpoint = '/products/category/all';
+  static const String getProductCategoriesEndpoint = '/products/categories';
   static const String getAllProductsByCategoryEndpoint = '/products/category';
   static const String getProductImageEndpoint = '/products/image';
   static const String getProductFeedEndpoint = '/products/observer';

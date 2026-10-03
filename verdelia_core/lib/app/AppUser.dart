@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:verdelia_core/app/ManagementRule.dart';
 import 'package:verdelia_core/app/Person.dart';
 
+import 'Person.dart';
+
 enum AppUserType {
   provider,
   customer,
@@ -57,7 +59,12 @@ class AppUser {
   final String? personFirstName;
   final String? personLastName;
   final String? personBirthDate;
-  final String? personGender;
+
+  /// Typed gender. Serialized as lowercase via [Gender.wireValue].
+  /// Defaults to [Gender.unspecified] when the payload didn't carry a
+  /// value.
+  final Gender personGender;
+
   final String? personCountryCode;
   final String? bloodType;
   final String? personPhone;
@@ -94,7 +101,7 @@ class AppUser {
     this.personFirstName,
     this.personLastName,
     this.personBirthDate,
-    this.personGender,
+    this.personGender = Gender.unspecified,
     this.personCountryCode,
     this.bloodType,
     this.personPhone,
@@ -163,7 +170,8 @@ class AppUser {
       personFirstName: personDetails['person_first_name'],
       personLastName: personDetails['person_last_name'],
       personBirthDate: personDetails['person_birth_date'],
-      personGender: personDetails['person_gender'],
+      personGender:
+          Gender.fromString(personDetails['person_gender'] as String?),
       personCountryCode: personDetails['person_country_code'],
       bloodType: appUserPerson['person_blood_type'],
       personPhone: personDetails['person_phone'],
@@ -256,7 +264,8 @@ class AppUser {
       personFirstName: personDetails['person_first_name'],
       personLastName: personDetails['person_last_name'],
       personBirthDate: personDetails['person_birth_date'],
-      personGender: personDetails['person_gender'],
+      personGender:
+          Gender.fromString(personDetails['person_gender'] as String?),
       personCountryCode: personDetails['person_country_code'],
       bloodType: json['person_blood_type'],
       personPhone: personDetails['person_phone'],
@@ -308,7 +317,7 @@ class AppUser {
       personFirstName: personData['person_first_name'],
       personLastName: personData['person_last_name'],
       personBirthDate: personData['person_birth_date'],
-      personGender: personData['person_gender'],
+      personGender: Gender.fromString(personData['person_gender'] as String?),
       personCountryCode: personData['person_country_code'],
       bloodType: personData['blood_type'],
       personPhone: personData['person_phone'],
@@ -370,6 +379,9 @@ class AppUser {
       appUserType: appUserType,
       personFirstName: personFirstName,
       personLastName: personLastName,
+      // Google sign-in doesn't carry a gender claim here; keep it as
+      // unspecified until the user fills it in on the profile screen.
+      personGender: Gender.unspecified,
     );
   }
 
@@ -384,6 +396,7 @@ class AppUser {
       appUserEmail: '',
       appUserImageUrl: '',
       appUserType: AppUserType.guest,
+      personGender: Gender.unspecified,
     );
   }
 
@@ -419,7 +432,8 @@ class AppUser {
         "person_first_name": personFirstName,
         "person_last_name": personLastName,
         "person_birth_date": personBirthDate,
-        "person_gender": personGender,
+        // Wire format is lowercase — matches the backend enum.
+        "person_gender": personGender.wireValue,
         "person_country_code": personCountryCode,
         "blood_type": bloodType,
         "person_phone": personPhone,
@@ -470,7 +484,7 @@ class AppUser {
     String? personFirstName,
     String? personLastName,
     String? personBirthDate,
-    String? personGender,
+    Gender? personGender,
     String? personCountryCode,
     String? bloodType,
     String? personPhone,
@@ -571,7 +585,8 @@ class AppUser {
 
   @override
   String toString() {
-    return 'AppUser(id: $idAppUser, name: $displayName, type: ${appUserType?.value})';
+    return 'AppUser(id: $idAppUser, name: $displayName, '
+        'type: ${appUserType?.value}, gender: ${personGender.wireValue})';
   }
 }
 

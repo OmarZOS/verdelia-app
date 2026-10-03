@@ -297,6 +297,7 @@ class _ProductFormFieldsState extends State<ProductFormFields> {
   Widget _buildVisibilityToggle(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     final current = (formData.visibility ?? 'VISIBLE').toUpperCase();
     final isVisible = current == 'VISIBLE';
@@ -323,15 +324,15 @@ class _ProductFormFieldsState extends State<ProductFormFields> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Visibility',
+                  l10n.productVisibilityLabel,
                   style: theme.textTheme.bodyLarge?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   isVisible
-                      ? 'Buyers can see this product'
-                      : 'Hidden from the catalog',
+                      ? l10n.productVisibilityVisibleHint
+                      : l10n.productVisibilityHiddenHint,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: cs.onSurfaceVariant,
                   ),

@@ -1,6 +1,8 @@
+import 'package:event/service_change_notifier.dart';
 import 'package:flutter/material.dart';
-import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 import 'package:verdelia_core/business/finance/ProvidedService.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:provider_store/components/service/details/requirement_card.dart';
 import 'package:provider_store/components/service/details/section_container.dart';
 
@@ -13,6 +15,7 @@ class ServiceRequirementsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
+    final localeLang = Localizations.localeOf(context).languageCode;
 
     return Column(
       children: [
@@ -20,8 +23,7 @@ class ServiceRequirementsSection extends StatelessWidget {
         if (service.resourceRequirements.isNotEmpty)
           SectionContainer(
             icon: Icons.inventory_2_outlined,
-            title:
-                localizations?.resourceRequirements ?? 'Resource Requirements',
+            title: localizations.resourceRequirements,
             color: colorScheme.tertiary,
             child: Column(
               children: [
@@ -29,9 +31,9 @@ class ServiceRequirementsSection extends StatelessWidget {
                   (resource) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: RequirementCard.resource(
+                      loc: localizations,
                       name: resource.name,
                       quantity: resource.quantity,
-                      unitCost: resource.costPerUnit,
                       totalCost: resource.totalCost,
                       type: resource.type,
                       isConsumable: resource.isConsumable,
@@ -50,15 +52,15 @@ class ServiceRequirementsSection extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        localizations?.totalResourceCost ??
-                            'Total Resource Cost:',
+                        localizations.totalResourceCost,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
                       ),
                       Text(
                         localizations.price(
-                            service.totalResourceCost.toStringAsFixed(2)),
+                          service.totalResourceCost.toStringAsFixed(2),
+                        ),
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w700,
@@ -77,15 +79,28 @@ class ServiceRequirementsSection extends StatelessWidget {
           const SizedBox(height: 24),
           SectionContainer(
             icon: Icons.people_outline,
-            title: localizations?.staffRequirements ?? 'Staff Requirements',
+            title: localizations.staffRequirements,
             color: Colors.purple,
             child: Column(
               children: [
-                ...service.staffRequirements.map(
-                  (staff) => Padding(
+                ...service.staffRequirements.map((staff) {
+                  // Three-tier resolution:
+                  //   1. Inline role from the service payload.
+                  //   2. Notifier's cached role list (by id).
+                  //   3. Raw id as a last resort.
+                  final inline = staff.roleNameFor(localeLang);
+                  final cached = context
+                      .read<ServiceNotifier>()
+                      .staffRoleName(staff.role, languageCode: localeLang);
+                  final roleName = inline.isNotEmpty
+                      ? inline
+                      : (cached.isNotEmpty ? cached : '${staff.role}');
+
+                  return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: RequirementCard.staff(
-                      role: staff.role.toString(),
+                      loc: localizations,
+                      role: roleName,
                       minCount: staff.minCount,
                       maxCount: staff.maxCount,
                       allocatedHours: staff.allocatedHours,
@@ -93,8 +108,8 @@ class ServiceRequirementsSection extends StatelessWidget {
                       averageCost: staff.averageCost,
                       notes: staff.notes,
                     ),
-                  ),
-                ),
+                  );
+                }),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -106,14 +121,15 @@ class ServiceRequirementsSection extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        localizations?.totalStaffCost ?? 'Total Staff Cost:',
+                        localizations.totalStaffCost,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
                       ),
                       Text(
-                        localizations
-                            .price(service.totalStaffCost.toStringAsFixed(2)),
+                        localizations.price(
+                          service.totalStaffCost.toStringAsFixed(2),
+                        ),
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w700,
@@ -132,20 +148,20 @@ class ServiceRequirementsSection extends StatelessWidget {
         const SizedBox(height: 24),
         SectionContainer(
           icon: Icons.summarize_outlined,
-          title: localizations?.costSummary ?? 'Cost Summary',
+          title: localizations.costSummary,
           color: Colors.orange,
           child: Column(
             children: [
               _buildSummaryRow(
                 context,
-                localizations?.resourceCost ?? 'Resource Cost',
+                localizations.resourceCost,
                 service.totalResourceCost,
                 colorScheme.onSurfaceVariant,
               ),
               const SizedBox(height: 8),
               _buildSummaryRow(
                 context,
-                localizations?.staffCost ?? 'Staff Cost',
+                localizations.staffCost,
                 service.totalStaffCost,
                 colorScheme.onSurfaceVariant,
               ),
@@ -154,7 +170,7 @@ class ServiceRequirementsSection extends StatelessWidget {
               const SizedBox(height: 12),
               _buildSummaryRow(
                 context,
-                localizations?.totalServiceCost ?? 'Total Service Cost',
+                localizations.totalServiceCost,
                 service.totalCost,
                 colorScheme.primary,
                 isBold: true,
@@ -162,7 +178,7 @@ class ServiceRequirementsSection extends StatelessWidget {
               const SizedBox(height: 8),
               _buildSummaryRow(
                 context,
-                localizations?.servicePrice ?? 'Service Price',
+                localizations.servicePrice,
                 service.finalPrice,
                 colorScheme.secondary,
                 isBold: true,
@@ -193,7 +209,7 @@ class ServiceRequirementsSection extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      '${localizations?.profitMargin ?? 'Profit Margin'}: ',
+                      '${localizations.profitMargin}: ',
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                     Text(
@@ -223,7 +239,7 @@ class ServiceRequirementsSection extends StatelessWidget {
     Color color, {
     bool isBold = false,
   }) {
-    AppLocalizations loc = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context)!;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

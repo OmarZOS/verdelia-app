@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ui/components/gender/gender_widgets.dart';
 import 'package:verdelia_core/app/Person.dart';
 
 class NewCustomerDialog extends StatefulWidget {
@@ -24,10 +25,9 @@ class _NewCustomerDialogState extends State<NewCustomerDialog> {
   final TextEditingController _countryController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
 
-  String? _selectedGender;
+  Gender? _selectedGender;
   String? _selectedNationality;
 
-  final List<String> _genderOptions = ['Male', 'Female', 'Other'];
   final List<String> _nationalityOptions = ['Algerian', 'Other'];
 
   bool _isCreating = false;
@@ -63,7 +63,7 @@ class _NewCustomerDialogState extends State<NewCustomerDialog> {
         person_last_name: _lastNameController.text.trim(),
         person_first_name: _firstNameController.text.trim(),
         person_birth_date: _selectedDate,
-        person_gender: _selectedGender ?? '',
+        person_gender: _selectedGender ?? Gender.unspecified,
         person_country_code: _selectedNationality ?? '',
         person_email: _emailController.text.trim().isNotEmpty
             ? _emailController.text.trim()
@@ -228,28 +228,17 @@ class _NewCustomerDialogState extends State<NewCustomerDialog> {
                       Row(
                         children: [
                           Expanded(
-                            child: DropdownButtonFormField<String>(
+                            child: GenderDropdownField(
                               value: _selectedGender,
-                              decoration: InputDecoration(
-                                labelText: 'Gender',
-                                prefixIcon: const Icon(Icons.transgender),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              items: _genderOptions.map((gender) {
-                                return DropdownMenuItem(
-                                  value: gender,
-                                  child: Text(gender),
-                                );
-                              }).toList(),
+                              labelText: 'Gender',
                               onChanged: (value) {
                                 setState(() {
                                   _selectedGender = value;
                                 });
                               },
                               validator: (value) {
-                                if (value == null || value.isEmpty) {
+                                if (value == null ||
+                                    value == Gender.unspecified) {
                                   return 'Please select gender';
                                 }
                                 return null;

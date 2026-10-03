@@ -7081,4 +7081,70 @@ class AppLocalizationsEn extends AppLocalizations {
   String stockLabel(String count) {
     return 'Stock: $count';
   }
+
+  @override
+  String get genderMale => 'Male';
+
+  @override
+  String get genderFemale => 'Female';
+
+  @override
+  String get genderOther => 'Other';
+
+  @override
+  String get genderUnspecified => 'Unspecified';
+
+  @override
+  String get productVisibilityLabel => 'Visibility';
+
+  @override
+  String get productVisibilityVisibleHint => 'Buyers can see this product';
+
+  @override
+  String get productVisibilityHiddenHint => 'Hidden from the catalog';
+
+  @override
+  String get noVisibleProductsText => 'No visible products';
+
+  @override
+  String get noVisibleProductsSubtitle => 'All products for this supplier are currently hidden';
+
+  @override
+  String get resourceUnitsLabel => 'units';
+
+  @override
+  String get resourceItemsLabel => 'items';
+
+  @override
+  String staffCountLabel(String range) {
+    return '$range staff';
+  }
+
+  @override
+  String staffHoursEachLabel(String hours) {
+    return '${hours}h each';
+  }
+
+  @override
+  String get resourceTypeConsumable => 'consumable';
+
+  @override
+  String get resourceTypeNonConsumable => 'reusable';
+
+  @override
+  String get resourceTypeRawMaterial => 'raw material';
+
+  @override
+  String get resourceTypeEquipment => 'equipment';
+
+  @override
+  String get resourceTypeTool => 'tool';
+
+  @override
+  String get resourceTypeSupply => 'supply';
+
+  @override
+  String staffHourlyRateLabel(Object rate) {
+    return '$rate/h';
+  }
 }

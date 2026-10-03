@@ -15,6 +15,7 @@ import 'package:product_catalog/screens/components/ProductCard.dart';
 import 'package:ui/components/floating_buttons.dart';
 import 'package:ui/components/hierarchical_category_picker.dart';
 import 'package:product_catalog/screens/iproduct_details_screen.dart';
+import 'package:ui/components/utils/responsive_grid.dart';
 import 'package:provider/provider.dart';
 
 class ProductCatalogScreen extends StatefulWidget {
@@ -414,27 +415,28 @@ class ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.70,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-        ),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            if (index >= products.length) return null;
-            final product = products[index];
-            return _FadeSlideIn(
-              delay: Duration(milliseconds: (index % 10) * 30),
-              child: ProductCard(
-                product: product,
-                key: ValueKey(product.id_product),
-              ),
-            );
-          },
-          childCount: products.length,
-        ),
+      sliver: SliverLayoutBuilder(
+        builder: (context, constraints) {
+          return SliverGrid(
+            gridDelegate: responsiveGridDelegate(
+              availableWidth: constraints.crossAxisExtent,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                if (index >= products.length) return null;
+                final product = products[index];
+                return _FadeSlideIn(
+                  delay: Duration(milliseconds: (index % 10) * 30),
+                  child: ProductCard(
+                    product: product,
+                    key: ValueKey(product.id_product),
+                  ),
+                );
+              },
+              childCount: products.length,
+            ),
+          );
+        },
       ),
     );
   }

@@ -3,6 +3,7 @@
 import 'package:app_constants/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:product_catalog/screens/components/product/editor_widgets.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:verdelia_core/business/Product.dart';
 import 'package:event/product_change_notifier.dart';
@@ -31,8 +32,19 @@ class ProductCard extends StatelessWidget {
   /// the linked IProduct's reference image when the gallery is empty or
   /// its primary URL is malformed.
   String? _resolvedImageUrl() {
-    return resolveImageUrl(product.primaryImageUrl) ??
-        resolveImageUrl(product.product_origin?.iproductImageUrl);
+    final candidates = <String?>[
+      product.primaryImageUrl,
+      ...product.imageUrls,
+      product.product_origin?.iproductImageUrl,
+    ];
+
+    for (final candidate in candidates) {
+      final resolved = resolveImageUrl(candidate);
+      if (resolved != null && resolved.isNotEmpty) {
+        return resolved;
+      }
+    }
+    return null;
   }
 
   @override
@@ -78,7 +90,6 @@ class ProductCard extends StatelessWidget {
       },
     );
 
-    final imageUrl = _resolvedImageUrl();
     final hasGallery = product.product_images.length > 1;
 
     return Card(
@@ -117,39 +128,19 @@ class ProductCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Container(
-                    color: colors.primary.withOpacity(0.05),
-                    alignment: Alignment.center,
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 500),
-                      child: imageUrl != null
-                          ? Hero(
-                              tag: 'product-image-${product.id_product}-card',
-                              child: Image.network(
-                                imageUrl,
-                                key: ValueKey(product.primaryImage?.id),
-                                fit: BoxFit.cover,
-                                loadingBuilder:
-                                    (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return Center(
-                                    child: SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2.5,
-                                        color: colors.primary.withOpacity(0.6),
-                                      ),
-                                    ),
-                                  );
-                                },
-                                errorBuilder: (_, __, ___) =>
-                                    _buildFallbackImage(context, categoryId),
-                              ),
-                            )
-                          : _buildPlaceholder(context),
-                    ),
+                  // Walks the candidate list and renders the first URL
+                  // that actually loads. Malformed URLs are skipped at
+                  // resolution time; load failures advance to the next.
+                  FallbackNetworkImage(
+                    candidates: <String?>[
+                      product.primaryImageUrl,
+                      ...product.imageUrls,
+                      product.product_origin?.iproductImageUrl,
+                    ],
+                    fit: BoxFit.cover,
+                    placeholderBuilder: (context) => _buildPlaceholder(context),
                   ),
+
                   // Subtle top-to-bottom scrim so the badge reads on any image
                   Positioned(
                     left: 0,
@@ -171,6 +162,7 @@ class ProductCard extends StatelessWidget {
                       ),
                     ),
                   ),
+
                   // Category badge, top-left
                   if (categoryHierarchy.caption.isNotEmpty)
                     Positioned(
@@ -183,8 +175,7 @@ class ProductCard extends StatelessWidget {
                       ),
                     ),
 
-                  // Gallery count badge, bottom-right — only when the
-                  // product actually has more than one image.
+                  // Gallery count badge, bottom-right
                   if (hasGallery)
                     Positioned(
                       right: 8,
@@ -206,7 +197,6 @@ class ProductCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Brand (small, muted, above the name)
                     if (brand.isNotEmpty)
                       Text(
                         brand.toUpperCase(),
@@ -219,8 +209,6 @@ class ProductCard extends StatelessWidget {
                         ),
                       ),
                     if (brand.isNotEmpty) const SizedBox(height: 2),
-
-                    // Product name — the star of the card
                     Expanded(
                       child: Text(
                         productName.isNotEmpty ? productName : '—',
@@ -233,10 +221,7 @@ class ProductCard extends StatelessWidget {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 6),
-
-                    // Price row
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [

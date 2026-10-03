@@ -1,7 +1,10 @@
 // lib/event/components/product/product_notifier.dart
 
+import 'dart:async';
+
 import 'package:event/components/product/product_cache.dart';
 import 'package:event/components/product/product_cart.dart';
+import 'package:event/components/product/product_category_persistence.dart';
 import 'package:event/components/product/product_crud.dart';
 import 'package:event/components/product/product_fetch.dart';
 import 'package:event/components/product/product_polling.dart';
@@ -15,6 +18,10 @@ import 'package:locator/locator.dart';
 
 class ProductNotifier extends ChangeNotifier {
   final ProductService _service = AppLocator.get<ProductService>();
+  final ProductCategoryPersistence _categoryPersistence =
+      ProductCategoryPersistence();
+  late final Future<void> _categoryBootstrap;
+  Future<List<ProductCategory>>? _categoriesInFlight;
 
   // Components
   late final ProductState _state;
@@ -27,6 +34,10 @@ class ProductNotifier extends ChangeNotifier {
 
   ProductNotifier() {
     _initComponents();
+    // Bootstrap: restore persisted categories, and if that yields
+    // nothing, immediately hit the network so the notifier is never
+    // left with an empty category list.
+    _categoryBootstrap = _bootstrapCategories();
   }
 
   // ============ STATE GETTERS ============
@@ -46,7 +57,18 @@ class ProductNotifier extends ChangeNotifier {
   bool get isCartLoading => _cart.isLoading;
   bool get hasMoreProducts => _state.hasMoreProducts;
   List<String> get categories => categoriesFor();
-  List<ProductCategory> get productCategories => _state.categories;
+
+  /// Categories, always non-empty after bootstrap when the backend has
+  /// any. Reading this getter kicks off a fetch if the list is still
+  /// empty and no request is in flight.
+  List<ProductCategory> get productCategories {
+    if (_state.categories.isEmpty && _categoriesInFlight == null) {
+      // Fire-and-forget; listeners will be notified when it completes.
+      unawaited(fetchCategories());
+    }
+    return _state.categories;
+  }
+
   bool get supportsSupplierFilter => _state.supportsSupplierFilter;
   bool get isCacheEnabled => _cache.isEnabled;
   bool get includeHidden => _state.includeHidden;
@@ -61,25 +83,128 @@ class ProductNotifier extends ChangeNotifier {
 
   // ============ CATEGORIES ============
 
+  /// Ensures categories are loaded. Safe to call from `initState`,
+  /// `build`, or anywhere else — it de-dupes concurrent requests and
+  /// returns the cached list when already populated.
+  Future<List<ProductCategory>> ensureCategoriesLoaded({
+    bool forceRefresh = false,
+    String? callerKey,
+  }) =>
+      fetchCategories(forceRefresh: forceRefresh, callerKey: callerKey);
+
   Future<List<ProductCategory>> fetchCategories({
     bool forceRefresh = false,
     String? callerKey,
   }) async {
+    await _categoryBootstrap;
+
+    // Return what we have unless a refresh was explicitly requested.
+    if (!forceRefresh && _state.categories.isNotEmpty) {
+      return _state.categories;
+    }
+
+    // Only trust a non-empty cache; an empty cached list means we
+    // never actually loaded categories.
     if (!forceRefresh) {
       final cached = _cache.getCategories();
-      if (cached != null) {
-        _state.categories = List.of(cached);
-        _state.categoryHierarchy = CategoryHierarchyIndex.fromItems(
-          cached,
-          (category) => category.productCategoryDesc,
-        );
-        _notify();
+      if (cached != null && cached.isNotEmpty) {
+        _setCategories(cached);
         return _state.categories;
       }
     }
 
-    final fetched = await _service.getCategories(callerKey: callerKey);
-    final categories = fetched ?? <ProductCategory>[];
+    // Coalesce concurrent callers onto a single in-flight request.
+    final pending = _categoriesInFlight;
+    if (pending != null) {
+      if (!forceRefresh) return pending;
+      try {
+        await pending;
+      } catch (_) {
+        // Forced refresh still gets a chance after a failed request.
+      }
+    }
+
+    final request = _fetchAndPersistCategories(
+      callerKey: callerKey,
+      forceRefresh: forceRefresh,
+    );
+    _categoriesInFlight = request;
+    try {
+      return await request;
+    } finally {
+      if (identical(_categoriesInFlight, request)) {
+        _categoriesInFlight = null;
+      }
+    }
+  }
+
+  /// Restore persisted categories; if there are none, fetch them.
+  Future<void> _bootstrapCategories() async {
+    await _restorePersistedCategories();
+
+    // If persistence gave us nothing, fetch from the network.
+    if (_state.categories.isEmpty) {
+      try {
+        await fetchCategories();
+      } catch (error, stackTrace) {
+        debugPrint(
+          '[ProductNotifier] Category bootstrap fetch failed: '
+          '$error\n$stackTrace',
+        );
+      }
+    }
+  }
+
+  Future<void> _restorePersistedCategories() async {
+    try {
+      final persisted = await _categoryPersistence.load();
+      if (persisted == null || persisted.isEmpty) {
+        // Clear any stale in-memory state so the bootstrap fetch runs.
+        _state.categories = const [];
+        return;
+      }
+      _setCategories(persisted);
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[ProductNotifier] Failed to restore product categories: '
+        '$error\n$stackTrace',
+      );
+    }
+  }
+
+  Future<List<ProductCategory>> _fetchAndPersistCategories({
+    String? callerKey,
+    required bool forceRefresh,
+  }) async {
+    final fetched = await _service.getCategories(
+      forceRefresh: forceRefresh,
+      callerKey: callerKey,
+    );
+
+    // A successful-but-empty response should not be cached or treated
+    // as authoritative — leave state empty so the next call retries.
+    final categories = fetched ?? const <ProductCategory>[];
+    if (categories.isEmpty) {
+      debugPrint(
+        '[ProductNotifier] getCategories returned an empty list '
+        '(forceRefresh=$forceRefresh, callerKey=$callerKey)',
+      );
+      return _state.categories;
+    }
+
+    _setCategories(categories);
+    try {
+      await _categoryPersistence.save(categories);
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[ProductNotifier] Failed to persist product categories: '
+        '$error\n$stackTrace',
+      );
+    }
+    return _state.categories;
+  }
+
+  void _setCategories(List<ProductCategory> categories) {
     _cache.cacheCategories(categories);
     _state.categories = List.of(categories);
     _state.categoryHierarchy = CategoryHierarchyIndex.fromItems(
@@ -87,7 +212,6 @@ class ProductNotifier extends ChangeNotifier {
       (category) => category.productCategoryDesc,
     );
     _notify();
-    return _state.categories;
   }
 
   CategoryHierarchyIndex<ProductCategory> get categoryHierarchy =>

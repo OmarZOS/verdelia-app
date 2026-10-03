@@ -1,26 +1,45 @@
+// lib/business/finance/ProvidedService.dart
+
 import 'dart:convert';
 
 import '../NamingContribution.dart';
 
+// ==================================================================
+// ProvidedServiceCategory
+// ==================================================================
+
 class ProvidedServiceCategory {
-  /// FK to `provided_service_category.id_provided_service_category`.
+  /// FK to `provided_service_category.id`.
   final int id;
 
-  /// Flat English label from `provided_service_category_name`.
-  /// Kept for backward compatibility — prefer [nameFor] or [naming].
+  /// Canonical dotted key, e.g. `health.diagnostics.diagnostic_imaging`.
+  /// Kept as `name` for backward compatibility with the existing model.
   final String name;
 
-  /// Icon URL from the category row (nullable in your JSON).
+  /// Free-form category description.
+  final String description;
+
+  /// Icon URL from `provided_service_category_icon_url`, nullable.
   final String? iconUrl;
 
+  /// FK to the trilingual naming contribution row.
+  final int? namingRef;
+
+  /// Average duration in minutes, when the payload carries it.
+  final int? avgDuration;
+
   /// Trilingual naming block (fr / ar / en + status + icon).
-  /// Null when the backend returned only the flat shape.
+  /// Null when the payload only carried the flat shape or the
+  /// contribution hasn't been hydrated yet.
   final NamingContribution? naming;
 
   const ProvidedServiceCategory({
     required this.id,
     required this.name,
+    this.description = '',
     this.iconUrl,
+    this.namingRef,
+    this.avgDuration,
     this.naming,
   });
 
@@ -29,106 +48,56 @@ class ProvidedServiceCategory {
         name: '',
       );
 
-  ProvidedServiceCategory copyWith({
-    int? id,
-    String? name,
-    String? iconUrl,
-    NamingContribution? naming,
-  }) {
+  factory ProvidedServiceCategory.fromJson(Map<String, dynamic> json) {
+    NamingContribution? naming;
+    final namingJson = json['naming_contribution'];
+    if (namingJson is Map) {
+      naming = NamingContribution.fromJson(
+        Map<String, dynamic>.from(namingJson),
+      );
+    }
+
     return ProvidedServiceCategory(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      iconUrl: iconUrl ?? this.iconUrl,
-      naming: naming ?? this.naming,
+      id: _asInt(json['provided_service_category_id']),
+      name: _asString(json['provided_service_category_name']),
+      description: _asString(json['provided_service_category_description']),
+      iconUrl: _asStringOrNull(json['provided_service_category_icon_url']),
+      namingRef: _asIntOrNull(json['provided_service_category_naming_ref']),
+      avgDuration: _asIntOrNull(json['provided_service_category_avg_duration']),
+      naming: naming,
     );
   }
 
-  /// Parse a single category row. Supports both shapes:
-  ///
-  /// New shape (as returned by the service-category endpoint):
-  /// ```json
-  /// {
-  ///   "provided_service_category_id": 1,
-  ///   "provided_service_category_name": "Baked Goods",
-  ///   "provided_service_category_icon": null,
-  ///   "naming_contribution": {
-  ///     "naming_contribution_fr": "…",
-  ///     "naming_contribution_ar": "…",
-  ///     "naming_contribution_en": "…",
-  ///     "naming_contribution_status": "APP_TRANSLATED",
-  ///     "naming_contribution_icon_url": null
-  ///   }
-  /// }
-  /// ```
-  ///
-  /// Legacy shape:
-  /// ```json
-  /// {
-  ///   "provided_service_category_id": 1,
-  ///   "provided_service_category_name": "Baked Goods"
-  /// }
-  /// ```
-  factory ProvidedServiceCategory.fromJson(Map<String, dynamic> json) {
-    try {
-      final rawId = json['provided_service_category_id'] ??
-          json['id_provided_service_category'];
-      final id = _parseInt(rawId);
-
-      final flatName = _getString(
-        json['provided_service_category_name'] ??
-            json['provided_service_category_desc'],
-      );
-
-      final icon = _getString(
-        json['provided_service_category_icon'] ??
-            json['provided_service_category_icon_url'],
-      );
-
-      NamingContribution? naming;
-      final namingJson = json['naming_contribution'];
-      if (namingJson != null && namingJson is Map<String, dynamic>) {
-        naming = NamingContribution.fromJson(namingJson);
-      }
-
-      return ProvidedServiceCategory(
-        id: id,
-        name: flatName,
-        iconUrl: icon.isNotEmpty ? icon : null,
-        naming: naming,
-      );
-    } catch (_) {
-      return ProvidedServiceCategory.empty();
-    }
-  }
-
-  /// Parse a full list returned by the service-category endpoint.
   static List<ProvidedServiceCategory> listFromJson(dynamic json) {
     if (json is! List) return const [];
     return json
-        .whereType<Map<String, dynamic>>()
-        .map(ProvidedServiceCategory.fromJson)
+        .whereType<Map>()
+        .map((e) =>
+            ProvidedServiceCategory.fromJson(Map<String, dynamic>.from(e)))
         .toList(growable: false);
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'provided_service_category_id': id,
-      'provided_service_category_name': name,
-      if (iconUrl != null) 'provided_service_category_icon': iconUrl,
-      if (naming != null) 'naming_contribution': naming!.toJson(),
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        'provided_service_category_id': id,
+        'provided_service_category_name': name,
+        'provided_service_category_description': description,
+        if (iconUrl != null) 'provided_service_category_icon_url': iconUrl,
+        if (namingRef != null)
+          'provided_service_category_naming_ref': namingRef,
+        if (avgDuration != null)
+          'provided_service_category_avg_duration': avgDuration,
+        if (naming != null) 'naming_contribution': naming!.toJson(),
+      };
 
   // ==================== Naming accessors ====================
 
   /// Return the category name in [lang]. Prefers the trilingual
-  /// naming contribution; falls back to [name].
-  ///
-  /// [lang] accepts the usual BCP-47 short codes: `'en'`, `'fr'`, `'ar'`.
+  /// naming contribution; falls back to humanizing the canonical
+  /// dotted key, then to the raw [name].
   String nameFor(String lang) {
     final resolved = naming?.nameFor(lang) ?? '';
     if (resolved.isNotEmpty) return resolved;
-    return name;
+    return humanizeCanonicalKey(name);
   }
 
   /// Icon URL preferring the naming block, falling back to the flat
@@ -139,10 +108,18 @@ class ProvidedServiceCategory {
     return iconUrl;
   }
 
-  /// English-preferring display name. Kept for backward compatibility.
-  String get displayName {
-    if (naming?.en.isNotEmpty == true) return naming!.en;
-    return name;
+  /// Attach a naming contribution after parse. Used to hydrate a
+  /// category that arrived with only a `naming_ref`.
+  ProvidedServiceCategory withNaming(NamingContribution? value) {
+    return ProvidedServiceCategory(
+      id: id,
+      name: name,
+      description: description,
+      iconUrl: iconUrl,
+      namingRef: namingRef,
+      avgDuration: avgDuration,
+      naming: value ?? naming,
+    );
   }
 
   @override
@@ -158,30 +135,71 @@ class ProvidedServiceCategory {
   @override
   String toString() => 'ProvidedServiceCategory(id: $id, name: $name, '
       'naming: ${naming != null})';
-
-  // ==================== Helpers ====================
-
-  static int _parseInt(dynamic value) {
-    if (value == null) return 0;
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value) ?? 0;
-    if (value is num) return value.toInt();
-    return 0;
-  }
-
-  static String _getString(dynamic value) {
-    if (value == null) return '';
-    if (value is String) return value.trim();
-    return value.toString().trim();
-  }
 }
 
+/// Turn `health.diagnostics.diagnostic_imaging` into
+/// `Diagnostic Imaging`. Last-resort fallback when no naming
+/// contribution is available.
+String humanizeCanonicalKey(String key) {
+  if (key.isEmpty) return '';
+  final leaf = key.split('.').last;
+  return leaf
+      .split(RegExp(r'[_\s]+'))
+      .where((s) => s.isNotEmpty)
+      .map((s) => s[0].toUpperCase() + s.substring(1))
+      .join(' ');
+}
+
+// ==================== Parse helpers ====================
+
+int _asInt(dynamic v) => _asIntOrNull(v) ?? 0;
+
+int? _asIntOrNull(dynamic v) {
+  if (v == null) return null;
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  if (v is String) return int.tryParse(v);
+  return null;
+}
+
+String _asString(dynamic v) {
+  if (v == null) return '';
+  if (v is String) return v.trim();
+  return v.toString().trim();
+}
+
+String? _asStringOrNull(dynamic v) {
+  final s = _asString(v);
+  return s.isEmpty ? null : s;
+}
+
+// ==================================================================
+// StaffRole
+// ==================================================================
+
 class StaffRole {
+  /// FK to `id_staff_role`.
   final int id;
+
+  /// FK to the service category this role belongs to.
   final int categoryId;
+
+  /// Flat English label from `staff_role_name`.
+  /// Kept for backward compatibility — prefer [nameFor] or [naming].
   final String name;
+
+  /// Icon URL from `staff_role_icon_url`.
   final String? iconUrl;
+
+  /// Free-form description, when present.
   final String? description;
+
+  /// FK to the trilingual naming contribution row.
+  final int? namingRef;
+
+  /// Trilingual naming block (fr / ar / en + status + icon).
+  /// Null when the payload only carried the flat shape.
+  final NamingContribution? naming;
 
   const StaffRole({
     required this.id,
@@ -189,18 +207,96 @@ class StaffRole {
     required this.name,
     this.iconUrl,
     this.description,
+    this.namingRef,
+    this.naming,
   });
 
+  factory StaffRole.empty() => const StaffRole(
+        id: 0,
+        categoryId: 0,
+        name: '',
+      );
+
   factory StaffRole.fromJson(Map<String, dynamic> json) {
+    NamingContribution? naming;
+    final namingJson = json['naming_contribution'];
+    if (namingJson is Map) {
+      naming = NamingContribution.fromJson(
+        Map<String, dynamic>.from(namingJson),
+      );
+    }
+
     return StaffRole(
-      id: (json['id_staff_role'] as num).toInt(),
-      categoryId: (json['staff_role_service_category_ref'] as num).toInt(),
-      name: json['staff_role_name'] as String,
-      iconUrl: json['staff_role_icon_url'] as String?,
-      description: json['staff_role_description'] as String?,
+      id: _asInt(json['id_staff_role']),
+      categoryId: _asInt(json['staff_role_service_category_ref']),
+      name: _asString(json['staff_role_name']),
+      iconUrl: _asStringOrNull(json['staff_role_icon_url']),
+      description: _asStringOrNull(json['staff_role_description']),
+      namingRef: _asIntOrNull(json['staff_role_naming_ref']),
+      naming: naming,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id_staff_role': id,
+        'staff_role_service_category_ref': categoryId,
+        'staff_role_name': name,
+        if (iconUrl != null) 'staff_role_icon_url': iconUrl,
+        if (description != null) 'staff_role_description': description,
+        if (namingRef != null) 'staff_role_naming_ref': namingRef,
+        if (naming != null) 'naming_contribution': naming!.toJson(),
+      };
+
+  // ==================== Naming accessors ====================
+
+  /// Resolve the display name for [lang].
+  ///
+  /// Falls back through: naming contribution → flat [name] → empty.
+  /// Mirrors [ProvidedServiceCategory.nameFor] so call sites behave the
+  /// same regardless of which entity they're reading.
+  String nameFor(String lang) {
+    final resolved = naming?.nameFor(lang) ?? '';
+    if (resolved.isNotEmpty) return resolved;
+    return name;
+  }
+
+  /// Icon URL preferring the naming block, falling back to the flat
+  /// top-level icon.
+  String? get resolvedIconUrl {
+    final fromNaming = naming?.iconUrl;
+    if (fromNaming != null && fromNaming.isNotEmpty) return fromNaming;
+    return iconUrl;
+  }
+
+  /// Attach a naming contribution after parse.
+  StaffRole withNaming(NamingContribution? value) {
+    return StaffRole(
+      id: id,
+      categoryId: categoryId,
+      name: name,
+      iconUrl: iconUrl,
+      description: description,
+      namingRef: namingRef,
+      naming: value ?? naming,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StaffRole && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id;
+
+  @override
+  String toString() =>
+      'StaffRole(id: $id, name: $name, naming: ${naming != null})';
 }
+
+// ==================================================================
+// ProvidedService
+// ==================================================================
 
 class ProvidedService {
   final int id;
@@ -219,6 +315,14 @@ class ProvidedService {
   final List<ServiceResourceRequirement> resourceRequirements;
   final List<ServiceStaffRequirement> staffRequirements;
 
+  /// Nested category snapshot, when the payload inlines it.
+  ///
+  /// The canonical source of truth for the *resolved* display name is
+  /// still [ServiceNotifier.categoryName], which holds the hydrated
+  /// list. This field exists so a service rendered outside the
+  /// notifier scope (previews, tests, export) can still show a label.
+  final ProvidedServiceCategory? category;
+
   ProvidedService({
     required this.id,
     required this.name,
@@ -235,15 +339,16 @@ class ProvidedService {
     this.deletedAt,
     this.resourceRequirements = const [],
     this.staffRequirements = const [],
+    this.category,
   });
 
-  // Get discount percentage
+  // ==================== Computed getters ====================
+
   double get discountPercentage {
     if (basePrice == 0) return 0;
     return ((basePrice - finalPrice) / basePrice * 100);
   }
 
-  // Duration in hours:minutes format
   String get durationFormatted {
     final hours = actualDuration ~/ 60;
     final minutes = actualDuration % 60;
@@ -251,7 +356,6 @@ class ProvidedService {
     return '${hours}h ${minutes}min';
   }
 
-  // Calculate total resource cost
   double get totalResourceCost {
     return resourceRequirements.fold(
       0.0,
@@ -260,7 +364,6 @@ class ProvidedService {
     );
   }
 
-  // Calculate total staff cost
   double get totalStaffCost {
     return staffRequirements.fold(
       0.0,
@@ -269,35 +372,49 @@ class ProvidedService {
     );
   }
 
-  // Calculate total cost (resources + staff)
-  double get totalCost {
-    return totalResourceCost + totalStaffCost;
-  }
+  double get totalCost => totalResourceCost + totalStaffCost;
 
-  // Calculate profit margin
   double get profitMargin {
     if (finalPrice == 0) return 0;
     return ((finalPrice - totalCost) / finalPrice * 100);
   }
 
+  // ==================== Category accessors ====================
+
+  /// Resolved name for the nested category in [lang].
+  ///
+  /// Falls back through the category's own naming chain. Returns empty
+  /// when the payload didn't carry the category inline — callers that
+  /// need a label in that case should resolve it via the notifier's
+  /// `categoryName(service.categoryId)` instead.
+  String categoryNameFor(String lang) => category?.nameFor(lang) ?? '';
+
+  /// Canonical dotted key of the nested category, or empty.
+  String get categoryKey => category?.name ?? '';
+
+  /// Resolved icon URL for the nested category, or null.
+  String? get categoryIconUrl => category?.resolvedIconUrl;
+
+  // ==================== Factories ====================
+
   factory ProvidedService.empty() {
     return ProvidedService(
-        id: 0,
-        name: '',
-        description: '',
-        categoryId: 1,
-        productProviderId: 1,
-        basePrice: 0.0,
-        finalPrice: 0.0,
-        actualDuration: 0,
-        pricingConfig: ProvidedServicePricingConfig(),
-        isActive: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now());
+      id: 0,
+      name: '',
+      description: '',
+      categoryId: 1,
+      productProviderId: 1,
+      basePrice: 0.0,
+      finalPrice: 0.0,
+      actualDuration: 0,
+      pricingConfig: ProvidedServicePricingConfig(),
+      isActive: false,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
   }
 
   factory ProvidedService.fromJson(Map<String, dynamic> json) {
-    // Parse the flat JSON structure from API
     final int id = (json['provided_service_id'] as num).toInt();
     final String name = json['provided_service_name'] as String;
     final String description = json['provided_service_description'] as String;
@@ -385,7 +502,6 @@ class ProvidedService {
         ),
       );
     }
-    // Also check for the old field name
     if (json['service_resource_requirement'] != null) {
       final resourcesJson = json['service_resource_requirement'] as List;
       resourceRequirements.addAll(
@@ -405,7 +521,6 @@ class ProvidedService {
         ),
       );
     }
-    // Also check for the old field name
     if (json['service_staff_requirement'] != null) {
       final staffJson = json['service_staff_requirement'] as List;
       staffRequirements.addAll(
@@ -414,6 +529,14 @@ class ProvidedService {
         ),
       );
     }
+
+    // Parse nested category when inlined in the payload.
+    final categoryRaw = json['provided_service_category'];
+    final ProvidedServiceCategory? category = categoryRaw is Map
+        ? ProvidedServiceCategory.fromJson(
+            Map<String, dynamic>.from(categoryRaw),
+          )
+        : null;
 
     return ProvidedService(
       id: id,
@@ -431,8 +554,11 @@ class ProvidedService {
       deletedAt: deletedAt,
       resourceRequirements: resourceRequirements,
       staffRequirements: staffRequirements,
+      category: category,
     );
   }
+
+  // ==================== Serialisation ====================
 
   Map<String, dynamic> toJson() {
     return {
@@ -457,6 +583,8 @@ class ProvidedService {
     };
   }
 
+  // ==================== copyWith ====================
+
   ProvidedService copyWith({
     int? id,
     String? name,
@@ -473,6 +601,7 @@ class ProvidedService {
     DateTime? deletedAt,
     List<ServiceResourceRequirement>? resourceRequirements,
     List<ServiceStaffRequirement>? staffRequirements,
+    ProvidedServiceCategory? category,
   }) {
     return ProvidedService(
       id: id ?? this.id,
@@ -490,23 +619,35 @@ class ProvidedService {
       deletedAt: deletedAt ?? this.deletedAt,
       resourceRequirements: resourceRequirements ?? this.resourceRequirements,
       staffRequirements: staffRequirements ?? this.staffRequirements,
+      category: category ?? this.category,
     );
   }
 
+  /// Attach a category after parse. Used to hydrate a service whose
+  /// payload only carried the id and whose category details live in
+  /// the notifier.
+  ProvidedService withCategory(ProvidedServiceCategory? value) =>
+      copyWith(category: value ?? category);
+
   @override
   String toString() {
-    return 'ProvidedService(id: $id, name: $name, category: $categoryId, price: DZD$finalPrice, resources: ${resourceRequirements.length}, staff: ${staffRequirements.length})';
+    return 'ProvidedService(id: $id, name: $name, category: $categoryId, '
+        'price: DZD$finalPrice, resources: ${resourceRequirements.length}, '
+        'staff: ${staffRequirements.length})';
   }
 }
 
-// Resource Requirement Model
+// ==================================================================
+// ServiceResourceRequirement
+// ==================================================================
+
 class ServiceResourceRequirement {
   final int id;
   final String name;
   final String type;
   final double quantity;
   final bool isConsumable;
-  final int? productRef; // Reference to product ID if exists
+  final int? productRef;
   final int serviceId;
   final double costPerUnit;
   final String? notes;
@@ -527,7 +668,6 @@ class ServiceResourceRequirement {
     required this.updatedAt,
   });
 
-  // Calculate total cost for this requirement
   double get totalCost => costPerUnit * quantity;
 
   factory ServiceResourceRequirement.fromJson(Map<String, dynamic> json) {
@@ -567,7 +707,10 @@ class ServiceResourceRequirement {
   }
 }
 
-// Staff Requirement Model
+// ==================================================================
+// ServiceStaffRequirement
+// ==================================================================
+
 class ServiceStaffRequirement {
   final int id;
   final int serviceId;
@@ -580,6 +723,13 @@ class ServiceStaffRequirement {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// Nested staff role snapshot, when the payload inlines it.
+  ///
+  /// Carries the trilingual naming contribution. Use [roleNameFor] to
+  /// get a resolved label; fall back to the notifier's role list when
+  /// the payload only sent the `role` id.
+  final StaffRole? staffRole;
+
   ServiceStaffRequirement({
     required this.id,
     required this.serviceId,
@@ -591,34 +741,80 @@ class ServiceStaffRequirement {
     this.notes,
     required this.createdAt,
     required this.updatedAt,
+    this.staffRole,
   });
 
-  // Calculate cost for minimum staff count
-  double get minCost => hourlyRate * allocatedHours * minCount;
+  // ==================== Cost getters ====================
 
-  // Calculate cost for maximum staff count
+  double get minCost => hourlyRate * allocatedHours * minCount;
   double get maxCost => hourlyRate * allocatedHours * maxCount;
 
-  // Calculate average cost
   double get averageCost {
     final avgCount = (minCount + maxCount) / 2;
     return hourlyRate * allocatedHours * avgCount;
   }
 
-  factory ServiceStaffRequirement.fromJson(Map<String, dynamic> json) {
+  // ==================== Role accessors ====================
+
+  /// Resolved role name for [lang], or empty when the payload didn't
+  /// inline the role.
+  ///
+  /// Prefers the nested role's naming contribution, falling back to
+  /// the flat `staff_role_name`. Callers that need a label when this
+  /// returns empty should resolve it via the notifier's role cache by
+  /// [role] id.
+  String roleNameFor(String lang) => staffRole?.nameFor(lang) ?? '';
+
+  /// Resolved icon URL for the role, or null.
+  String? get roleIconUrl => staffRole?.resolvedIconUrl;
+
+  /// Attach a role after parse. Used to hydrate a requirement whose
+  /// payload only carried the `role` id and whose role details live in
+  /// the notifier.
+  ServiceStaffRequirement withRole(StaffRole? value) {
     return ServiceStaffRequirement(
-      id: json['service_staff_requirement_id'] as int,
-      serviceId: json['service_staff_requirement_service_id'] as int,
-      minCount: json['service_staff_requirement_min_count'] as int,
-      maxCount: json['service_staff_requirement_max_count'] as int,
-      role: (json['service_staff_requirement_role'] as num).toInt(),
-      allocatedHours:
-          (json['service_staff_requirement_allocated_hours'] as num).toDouble(),
-      hourlyRate:
-          (json['service_staff_requirement_hourly_rate'] as num).toDouble(),
-      notes: json['service_staff_requirement_notes'] as String?,
-      createdAt: DateTime.parse(json['service_staff_requirement_created_at']),
-      updatedAt: DateTime.parse(json['service_staff_requirement_updated_at']),
+      id: id,
+      serviceId: serviceId,
+      minCount: minCount,
+      maxCount: maxCount,
+      role: role,
+      allocatedHours: allocatedHours,
+      hourlyRate: hourlyRate,
+      notes: notes,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      staffRole: value ?? staffRole,
+    );
+  }
+
+  // ==================== Factories ====================
+
+  factory ServiceStaffRequirement.fromJson(Map<String, dynamic> json) {
+    final roleRaw = json['staff_role'];
+    final StaffRole? staffRole = roleRaw is Map
+        ? StaffRole.fromJson(Map<String, dynamic>.from(roleRaw))
+        : null;
+
+    return ServiceStaffRequirement(
+      id: _asInt(json['service_staff_requirement_id']),
+      serviceId: _asInt(json['service_staff_requirement_service_id']),
+      minCount: _asInt(json['service_staff_requirement_min_count']),
+      maxCount: _asInt(json['service_staff_requirement_max_count']),
+      role: _asInt(json['service_staff_requirement_role']),
+      allocatedHours: _asDouble(
+        json['service_staff_requirement_allocated_hours'],
+      ),
+      hourlyRate: _asDouble(
+        json['service_staff_requirement_hourly_rate'],
+      ),
+      notes: _asStringOrNull(json['service_staff_requirement_notes']),
+      createdAt: _parseDate(
+        json['service_staff_requirement_created_at'],
+      ),
+      updatedAt: _parseDate(
+        json['service_staff_requirement_updated_at'],
+      ),
+      staffRole: staffRole,
     );
   }
 
@@ -634,11 +830,15 @@ class ServiceStaffRequirement {
       'service_staff_requirement_notes': notes,
       'service_staff_requirement_created_at': createdAt.toIso8601String(),
       'service_staff_requirement_updated_at': updatedAt.toIso8601String(),
+      if (staffRole != null) 'staff_role': staffRole!.toJson(),
     };
   }
 }
 
-// Pricing Config remains the same as your original
+// ==================================================================
+// ProvidedServicePricingConfig
+// ==================================================================
+
 class ProvidedServicePricingConfig {
   final String? recommendedAge;
   final String? recommendedFrequency;
@@ -718,4 +918,27 @@ class ProvidedServicePricingConfig {
   String toString() {
     return 'PricingConfig(${toJson().toString()})';
   }
+}
+
+double _asDouble(dynamic v) => _asDoubleOrNull(v) ?? 0;
+
+double? _asDoubleOrNull(dynamic v) {
+  if (v == null) return null;
+  if (v is double) return v;
+  if (v is num) return v.toDouble();
+  if (v is String) return double.tryParse(v);
+  return null;
+}
+
+DateTime _parseDate(dynamic v) {
+  if (v == null) return DateTime.now();
+  if (v is DateTime) return v;
+  if (v is String) {
+    try {
+      return DateTime.parse(v);
+    } catch (_) {
+      return DateTime.now();
+    }
+  }
+  return DateTime.now();
 }

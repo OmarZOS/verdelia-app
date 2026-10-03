@@ -398,9 +398,13 @@ class ProductServiceImpl extends ProductService {
   // ==================== Categories ====================
 
   @override
-  Future<List<ProductCategory>?> getCategories({String? callerKey}) async {
+  Future<List<ProductCategory>?> getCategories({
+    bool forceRefresh = false,
+    String? callerKey,
+  }) async {
     final key = callerKey ?? _getCallerKey('getCategories');
-    if (_categories.isNotEmpty) {
+    if (forceRefresh) _categories.clear();
+    if (!forceRefresh && _categories.isNotEmpty) {
       _storeSuccess(key, _categories, responseCode: 'CACHED');
       return _categories;
     }
@@ -513,8 +517,7 @@ class ProductServiceImpl extends ProductService {
   }
 
   Future<List<ProductCategory>> refreshCategories({String? callerKey}) async {
-    _categories.clear();
-    return await getCategories(callerKey: callerKey) ?? [];
+    return await getCategories(forceRefresh: true, callerKey: callerKey) ?? [];
   }
 
   // ==================== Private helpers ====================

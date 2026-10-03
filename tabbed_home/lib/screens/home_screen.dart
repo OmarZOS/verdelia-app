@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:ui/components/image/image_url.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:verdelia_core/app/AppUser.dart';
 import 'package:event/supplier_change_notifier.dart';
@@ -169,18 +170,23 @@ class _ProfileAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final url = user?.appUserImageUrl;
     final isGuest = (user?.idAppUser ?? 0) == 0;
-    final hasImage = !isGuest && url != null && url.isNotEmpty;
 
-    if (!hasImage) return _fallbackIcon(scheme);
+    // Resolve the raw URL at render time. `resolveImageUrl` handles
+    // null, empty, placeholder strings, and relative paths — it
+    // prefixes relative paths with `AppConstants.fsBaseUrl` and passes
+    // absolute http(s) URLs through unchanged. Returns null when the
+    // value can't be rendered.
+    final resolvedUrl = isGuest ? null : resolveImageUrl(user?.appUserImageUrl);
+
+    if (resolvedUrl == null) return _fallbackIcon(scheme);
 
     return SizedBox(
       width: _size,
       height: _size,
       child: ClipOval(
         child: Image.network(
-          url,
+          resolvedUrl,
           fit: BoxFit.cover,
           loadingBuilder: (_, child, progress) {
             if (progress == null) return child;

@@ -13566,6 +13566,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stock: {count}'**
   String stockLabel(String count);
+
+  /// No description provided for @genderMale.
+  ///
+  /// In en, this message translates to:
+  /// **'Male'**
+  String get genderMale;
+
+  /// No description provided for @genderFemale.
+  ///
+  /// In en, this message translates to:
+  /// **'Female'**
+  String get genderFemale;
+
+  /// No description provided for @genderOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get genderOther;
+
+  /// No description provided for @genderUnspecified.
+  ///
+  /// In en, this message translates to:
+  /// **'Unspecified'**
+  String get genderUnspecified;
+
+  /// Label for the product visibility toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Visibility'**
+  String get productVisibilityLabel;
+
+  /// Hint shown when the product is visible to buyers
+  ///
+  /// In en, this message translates to:
+  /// **'Buyers can see this product'**
+  String get productVisibilityVisibleHint;
+
+  /// Hint shown when the product is hidden from buyers
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden from the catalog'**
+  String get productVisibilityHiddenHint;
+
+  /// Shown when all products in the grid are hidden from buyers
+  ///
+  /// In en, this message translates to:
+  /// **'No visible products'**
+  String get noVisibleProductsText;
+
+  /// Subtitle for the hidden-only empty state
+  ///
+  /// In en, this message translates to:
+  /// **'All products for this supplier are currently hidden'**
+  String get noVisibleProductsSubtitle;
+
+  /// Unit label for consumable resource requirements
+  ///
+  /// In en, this message translates to:
+  /// **'units'**
+  String get resourceUnitsLabel;
+
+  /// Unit label for non-consumable resource requirements
+  ///
+  /// In en, this message translates to:
+  /// **'items'**
+  String get resourceItemsLabel;
+
+  /// Staff count, e.g. '2 staff' or '1-3 staff'
+  ///
+  /// In en, this message translates to:
+  /// **'{range} staff'**
+  String staffCountLabel(String range);
+
+  /// Allocated hours per staff member
+  ///
+  /// In en, this message translates to:
+  /// **'{hours}h each'**
+  String staffHoursEachLabel(String hours);
+
+  /// Resource type: consumable (used up per service)
+  ///
+  /// In en, this message translates to:
+  /// **'consumable'**
+  String get resourceTypeConsumable;
+
+  /// Resource type: non-consumable / reusable
+  ///
+  /// In en, this message translates to:
+  /// **'reusable'**
+  String get resourceTypeNonConsumable;
+
+  /// Resource type: raw material
+  ///
+  /// In en, this message translates to:
+  /// **'raw material'**
+  String get resourceTypeRawMaterial;
+
+  /// Resource type: equipment
+  ///
+  /// In en, this message translates to:
+  /// **'equipment'**
+  String get resourceTypeEquipment;
+
+  /// Resource type: tool
+  ///
+  /// In en, this message translates to:
+  /// **'tool'**
+  String get resourceTypeTool;
+
+  /// Resource type: supply
+  ///
+  /// In en, this message translates to:
+  /// **'supply'**
+  String get resourceTypeSupply;
+
+  /// No description provided for @staffHourlyRateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{rate}/h'**
+  String staffHourlyRateLabel(Object rate);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

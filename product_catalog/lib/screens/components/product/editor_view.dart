@@ -8,6 +8,7 @@ import 'package:verdelia_core/business/Product.dart';
 import 'package:event/product_change_notifier.dart';
 import 'package:product_catalog/screens/components/description.dart';
 import 'package:provider/provider.dart';
+import 'package:ui/components/product/product_image_gallery.dart';
 
 import 'editor_widgets.dart';
 import 'provider_tile.dart';
@@ -44,24 +45,30 @@ class _EditorProductViewState extends State<EditorProductView> {
   /// complete than the flat Product row. Falls back to the Product's
   /// own resolved name when there's no origin or the origin is empty.
   ///
-  /// Resolution order:
-  ///   1. `origin.nameFor(locale)` — the naming contribution for the
-  ///      ambient locale, or English, or the flat iproduct name.
-  ///   2. `product.nameFor(locale)` — the same for the Product's own
-  ///      naming block.
-  ///   3. `product.product_name` — the flat product name.
+  /// This is passed to [EditorHero] as `displayName` so the hero does
+  /// not have to re-resolve the name itself.
   String get _localizedName {
     final origin = widget.product.product_origin;
     final localeLang = Localizations.localeOf(context).languageCode;
 
+    // 1. Origin's trilingual naming contribution.
     if (origin != null) {
       final fromOrigin = origin.nameFor(localeLang);
       if (fromOrigin.isNotEmpty) return fromOrigin;
     }
 
-    return (localeLang == 'ar' || localeLang == 'fr')
+    // 2. The Product's own name for the current locale.
+    final localized = (localeLang == 'ar' || localeLang == 'fr')
         ? widget.product.nameFor(localeLang)
         : widget.product.product_name;
+    if (localized.isNotEmpty) return localized;
+
+    // 3. Raw flat name from the backend.
+    final raw = (widget.product.product_nameRaw ?? '').trim();
+    if (raw.isNotEmpty) return raw;
+
+    // 4. Nothing usable — let the caller decide the placeholder.
+    return '';
   }
 
   Future<void> _toggleVisibility() async {
@@ -80,7 +87,6 @@ class _EditorProductViewState extends State<EditorProductView> {
     if (!mounted) return;
 
     if (status == 200) {
-      // Refresh the local product so the view reflects the new value.
       final refreshed = _productNotifier.products.firstWhere(
         (p) => p.id_product == productId,
         orElse: () => widget.product.copyWith(
@@ -181,6 +187,7 @@ class _EditorProductViewState extends State<EditorProductView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final product = widget.product;
+    final hasGallery = product.product_images.length > 1;
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -200,6 +207,23 @@ class _EditorProductViewState extends State<EditorProductView> {
               displayName: _localizedName,
             ),
           ),
+
+          // Gallery strip — same surface the customer view uses, so
+          // editors can see the full gallery and open it in the
+          // full-screen slider. Only rendered when there's more than
+          // one image; the hero already shows the first.
+          if (hasGallery)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                child: ProductImageThumbnailStrip(
+                  images: product.product_images,
+                  size: 64,
+                  spacing: 10,
+                ),
+              ),
+            ),
+
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
             sliver: SliverList(

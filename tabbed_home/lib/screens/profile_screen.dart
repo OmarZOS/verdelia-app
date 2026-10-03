@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
-import 'package:app_constants/app_constants.dart';
 import 'package:verdelia_core/app/AppUser.dart';
 import 'package:event/user_change_notifier.dart';
 import 'package:tabbed_home/screens/components/flipping_avatar.dart';
-import 'package:provider/provider.dart';
+import 'package:ui/components/gender/gender_widgets.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -18,41 +18,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: _buildFloatingActionButton(context),
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: Consumer<AppUserNotifier>(
-              builder: (context, notifier, _) {
-                final user = notifier.appUser;
-                if (user is! AppUser) {
-                  return const Padding(
-                    padding: EdgeInsets.only(top: 120),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                return _buildProfileContent(context, user);
-              },
+      body: SafeArea(
+        top: true,
+        bottom: true,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Consumer<AppUserNotifier>(
+                builder: (context, notifier, _) {
+                  final user = notifier.appUser;
+                  if (user is! AppUser) {
+                    return const Padding(
+                      padding: EdgeInsets.only(top: 120),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                  return _buildProfileContent(context, user);
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    );
-  }
-
-  // ---------------------------------------------------------------- FAB
-
-  Widget _buildFloatingActionButton(BuildContext context) {
-    final theme = Theme.of(context);
-    return FloatingActionButton.extended(
-      heroTag: 'profile-info-fab',
-      backgroundColor: theme.colorScheme.primaryContainer,
-      foregroundColor: theme.colorScheme.onPrimaryContainer,
-      elevation: 2,
-      onPressed: () => showIllnessInfoPopup(context),
-      icon: const Icon(Icons.info_outline),
-      label: Text(AppLocalizations.of(context)!.illnessOverviewTitle),
     );
   }
 
@@ -61,6 +49,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildProfileContent(BuildContext context, AppUser user) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
+
+    final genderLabel = user.personGender.isKnown
+        ? localizedGenderLabel(l10n, user.personGender)
+        : null;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 96),
@@ -74,13 +66,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             title: l10n.userInfoText,
             theme: theme,
             children: [
-              _buildInfoTile(Icons.person_outline, l10n.usernameText,
-                  user.appUserName, theme),
               _buildInfoTile(
-                  Icons.verified_user_outlined,
-                  l10n.userTypeText,
-                  _formatUserType(l10n, user.appUserType ?? AppUserType.guest),
-                  theme),
+                icon: Icons.person_outline,
+                label: l10n.usernameText,
+                value: user.appUserName,
+                theme: theme,
+              ),
+              _buildInfoTile(
+                icon: Icons.verified_user_outlined,
+                label: l10n.userTypeText,
+                value: _formatUserType(
+                    l10n, user.appUserType ?? AppUserType.guest),
+                theme: theme,
+              ),
             ],
           ),
           _buildProfileSection(
@@ -88,14 +86,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
             title: l10n.personalInfoText,
             theme: theme,
             children: [
-              _buildInfoTile(Icons.badge_outlined, l10n.firstNameText,
-                  user.personFirstName, theme),
-              _buildInfoTile(Icons.badge_outlined, l10n.lastNameText,
-                  user.personLastName, theme),
-              _buildInfoTile(Icons.cake_outlined, l10n.birthdayText,
-                  user.personBirthDate, theme),
               _buildInfoTile(
-                  Icons.wc_outlined, l10n.genderText, user.personGender, theme),
+                icon: Icons.badge_outlined,
+                label: l10n.firstNameText,
+                value: user.personFirstName,
+                theme: theme,
+              ),
+              _buildInfoTile(
+                icon: Icons.badge_outlined,
+                label: l10n.lastNameText,
+                value: user.personLastName,
+                theme: theme,
+              ),
+              _buildInfoTile(
+                icon: Icons.cake_outlined,
+                label: l10n.birthdayText,
+                value: user.personBirthDate,
+                theme: theme,
+              ),
+              _buildInfoTile(
+                icon: Icons.wc_outlined,
+                label: l10n.genderText,
+                value: genderLabel,
+                theme: theme,
+              ),
             ],
           ),
           _buildProfileSection(
@@ -103,10 +117,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             title: l10n.locationInfoText,
             theme: theme,
             children: [
-              _buildInfoTile(Icons.location_city_outlined, l10n.cityText,
-                  user.addressCity, theme),
-              _buildInfoTile(Icons.public_outlined, l10n.countryText,
-                  user.addressCountry, theme),
+              _buildInfoTile(
+                icon: Icons.location_city_outlined,
+                label: l10n.cityText,
+                value: user.addressCity,
+                theme: theme,
+              ),
+              _buildInfoTile(
+                icon: Icons.public_outlined,
+                label: l10n.countryText,
+                value: user.addressCountry,
+                theme: theme,
+              ),
             ],
           ),
         ],
@@ -122,8 +144,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return l10n.customer;
       case AppUserType.guest:
         return l10n.guest;
-      // case AppUserType.patient:
-      //   return l10n.patient;
       case AppUserType.provider:
         return l10n.provider;
       default:
@@ -172,7 +192,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     backgroundColor: theme.colorScheme.surfaceVariant,
                   ),
                 ),
-                // Status indicator (placeholder — wire to real status if available)
                 Positioned(
                   right: 6,
                   bottom: 6,
@@ -217,31 +236,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // ------------------------------------------------------ Section card
 
+  /// Renders a section as a single-column card on narrow screens, and
+  /// as a responsive grid of title+subtitle cards when there's enough
+  /// horizontal room.
   Widget _buildProfileSection({
     required IconData icon,
     required String title,
     required List<Widget> children,
     required ThemeData theme,
   }) {
-    // Interleave dividers between children.
-    final spaced = <Widget>[];
-    for (var i = 0; i < children.length; i++) {
-      spaced.add(children[i]);
-      if (i != children.length - 1) {
-        spaced.add(Divider(
-          height: 1,
-          thickness: 1,
-          color: theme.colorScheme.outlineVariant.withOpacity(0.4),
-        ));
-      }
-    }
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header row with accent bar
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 10),
             child: Row(
@@ -267,36 +275,117 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
           ),
-          Card(
-            margin: EdgeInsets.zero,
-            elevation: 0,
-            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.35),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-              side: BorderSide(
-                color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Column(children: spaced),
-            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = _columnsForWidth(
+                constraints.maxWidth,
+                itemMinWidth: 220,
+                spacing: 10,
+              );
+
+              // Single column — stacked list, no inner card chrome.
+              if (columns <= 1 || children.length <= 1) {
+                return _buildStackedCard(children, theme);
+              }
+
+              // Multi-column — grid of title+subtitle cards, no outer
+              // card. Each tile is its own card, matching the visual
+              // language of the stacked list items.
+              return _buildGridOfCards(
+                constraints: constraints,
+                children: children,
+                columns: columns,
+                theme: theme,
+              );
+            },
           ),
         ],
       ),
     );
   }
 
+  int _columnsForWidth(
+    double width, {
+    required double itemMinWidth,
+    double spacing = 10,
+  }) {
+    if (!width.isFinite || width <= 0) return 1;
+    final count = ((width + spacing) / (itemMinWidth + spacing)).floor();
+    return count.clamp(1, 4);
+  }
+
+  /// Classic stacked layout: one outer card, all tiles full-width,
+  /// separated by hairline dividers. No per-tile chrome.
+  Widget _buildStackedCard(List<Widget> children, ThemeData theme) {
+    final spaced = <Widget>[];
+    for (var i = 0; i < children.length; i++) {
+      spaced.add(children[i]);
+      if (i != children.length - 1) {
+        spaced.add(Divider(
+          height: 1,
+          thickness: 1,
+          color: theme.colorScheme.outlineVariant.withOpacity(0.4),
+        ));
+      }
+    }
+
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.35),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(children: spaced),
+      ),
+    );
+  }
+
+  /// Multi-column layout: each tile is its own titled card. No outer
+  /// card, no dividers — the per-tile chrome does the separation.
+  Widget _buildGridOfCards({
+    required BoxConstraints constraints,
+    required List<Widget> children,
+    required int columns,
+    required ThemeData theme,
+  }) {
+    const spacing = 10.0;
+    final totalSpacing = spacing * (columns - 1);
+    final tileWidth = (constraints.maxWidth - totalSpacing) / columns;
+
+    return Wrap(
+      spacing: spacing,
+      runSpacing: spacing,
+      children: children
+          .map(
+            (child) => SizedBox(
+              width: tileWidth,
+              child: _TitledCard(child: child),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+
   // -------------------------------------------------------- Info tile
 
-  Widget _buildInfoTile(
-    IconData icon,
-    String label,
-    String? value,
-    ThemeData theme,
-  ) {
+  /// A tile with an icon, a title (the label), and a subtitle (the
+  /// value). Used in both the stacked and grid layouts — the layout
+  /// changes around it, the tile itself doesn't.
+  Widget _buildInfoTile({
+    required IconData icon,
+    required String label,
+    required String? value,
+    required ThemeData theme,
+  }) {
     final hasValue = value?.isNotEmpty ?? false;
     final display = hasValue ? value! : '—';
+    final cs = theme.colorScheme;
 
     return InkWell(
       borderRadius: BorderRadius.circular(14),
@@ -318,33 +407,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
           : null,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 18, color: theme.colorScheme.onSurfaceVariant),
-            const SizedBox(width: 14),
-            Expanded(
-              flex: 2,
-              child: Text(
-                label,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+            // ─── Title row: icon + label ─────────────────────────
+            Row(
+              children: [
+                Icon(icon, size: 16, color: cs.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              flex: 3,
-              child: Text(
-                display,
-                textAlign: TextAlign.end,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: hasValue
-                      ? theme.colorScheme.onSurface
-                      : theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
-                  fontStyle: hasValue ? FontStyle.normal : FontStyle.italic,
-                ),
+            const SizedBox(height: 6),
+            // ─── Subtitle: the value ─────────────────────────────
+            Text(
+              display,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: hasValue ? FontWeight.w700 : FontWeight.w500,
+                color: hasValue
+                    ? cs.onSurface
+                    : cs.onSurfaceVariant.withOpacity(0.6),
+                fontStyle: hasValue ? FontStyle.normal : FontStyle.italic,
+                height: 1.2,
               ),
             ),
           ],
@@ -354,139 +452,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ------------------------------------------------------ Bottom sheet
-
-  void showIllnessInfoPopup(BuildContext context) {
-    final theme = Theme.of(context);
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: theme.colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.85,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (_, controller) => Column(
-          children: [
-            // Grab handle
-            Padding(
-              padding: const EdgeInsets.only(top: 10, bottom: 4),
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                controller: controller,
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-                child: _buildIllnessInfoTab(context),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIllnessInfoTab(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader(l10n.illnessOverviewTitle),
-        _buildSectionText(l10n.illnessOverviewContent),
-        const SizedBox(height: 24),
-        _buildSectionHeader(l10n.symptomsTitle),
-        _buildSymptomItem(l10n.symptom1),
-        _buildSymptomItem(l10n.symptom2),
-        _buildSymptomItem(l10n.symptom3),
-        const SizedBox(height: 24),
-        _buildSectionHeader(l10n.treatmentTitle),
-        _buildSectionText(l10n.treatmentContent),
-        const SizedBox(height: 24),
-        _buildSectionHeader(l10n.resourcesTitle),
-        _buildResourceLink(context, l10n.resource1),
-        _buildResourceLink(context, l10n.resource2),
-      ],
-    );
-  }
-
-  Widget _buildSymptomItem(String text) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 7),
-            child: Icon(
-              Icons.fiber_manual_record,
-              size: 8,
-              color: theme.colorScheme.error,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: theme.textTheme.bodyLarge?.copyWith(height: 1.4),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResourceLink(BuildContext context, String text) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                content: Text('Opening: $text'),
-                behavior: SnackBarBehavior.floating,
-                duration: const Duration(milliseconds: 1200),
-              ),
-            );
-          // TODO: launch URL
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-          child: Row(
-            children: [
-              Icon(Icons.open_in_new,
-                  size: 16, color: theme.colorScheme.primary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  text,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.primary,
-                    decoration: TextDecoration.underline,
-                    decorationColor: theme.colorScheme.primary.withOpacity(0.5),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildSectionHeader(String text) {
     final theme = Theme.of(context);
@@ -507,6 +472,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Text(
       text,
       style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Card chrome for the grid layout
+// ══════════════════════════════════════════════════════════════════
+
+/// A titled card that wraps a single info tile.
+///
+/// Only used in the grid layout — the stacked layout relies on the
+/// section card's outer surface and dividers instead.
+class _TitledCard extends StatelessWidget {
+  final Widget child;
+
+  const _TitledCard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Material(
+      color: cs.surfaceContainerHighest.withOpacity(0.35),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: cs.outlineVariant.withOpacity(0.5),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: child,
     );
   }
 }

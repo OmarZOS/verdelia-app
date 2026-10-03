@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:ui/components/image/image_url.dart';
 
 /// A circular avatar that flips to reveal a QR code.
 ///
@@ -151,18 +152,19 @@ class _FlippingAvatarState extends State<FlippingAvatar>
   }
 
   Widget _buildAvatarContent(BuildContext context, ColorScheme scheme) {
-    final url = widget.imageUrl;
-    if (url == null || url.isEmpty) {
-      return Icon(
-        Icons.person_rounded,
-        size: widget.size * 0.9,
-        color: scheme.onSurfaceVariant,
-      );
+    // Route the raw URL through the shared resolver so relative paths
+    // coming from the API (`/uploads/avatar.png`) get joined with the
+    // FS base, and placeholders / empty strings fall through to the
+    // icon instead of trying to load a broken image.
+    final resolved = resolveImageUrl(widget.imageUrl);
+
+    if (resolved == null) {
+      return _buildFallbackIcon(scheme);
     }
 
     return ClipOval(
       child: Image.network(
-        url,
+        resolved,
         width: widget.size * 2,
         height: widget.size * 2,
         fit: BoxFit.cover,
@@ -182,12 +184,16 @@ class _FlippingAvatarState extends State<FlippingAvatar>
             ),
           );
         },
-        errorBuilder: (_, __, ___) => Icon(
-          Icons.person_rounded,
-          size: widget.size * 0.9,
-          color: scheme.onSurfaceVariant,
-        ),
+        errorBuilder: (_, __, ___) => _buildFallbackIcon(scheme),
       ),
+    );
+  }
+
+  Widget _buildFallbackIcon(ColorScheme scheme) {
+    return Icon(
+      Icons.person_rounded,
+      size: widget.size * 0.9,
+      color: scheme.onSurfaceVariant,
     );
   }
 }

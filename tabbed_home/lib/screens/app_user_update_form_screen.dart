@@ -5,20 +5,18 @@ import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:app_constants/app_constants.dart';
 import 'package:app_constants/app_response_codes.dart';
 import 'package:verdelia_core/app/AppUser.dart';
+import 'package:verdelia_core/app/Person.dart';
 import 'package:verdelia_core/app/VerdeliaException.dart';
 import 'package:verdelia_core/app/VerdeliaImage.dart';
-import 'package:verdelia_core/app/Services/UserService.dart';
 import 'package:event/user_change_notifier.dart';
 import 'package:ui/Services/ResponseHandler.dart';
+import 'package:ui/components/gender/gender_widgets.dart';
 import 'package:ui/components/map_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:locator/locator.dart';
 import 'package:provider/provider.dart';
-import 'dart:async';
 
 class AppUserEditFormScreen extends StatefulWidget {
-  // final AppUser? appUser;
-
   const AppUserEditFormScreen({super.key});
 
   @override
@@ -29,17 +27,16 @@ class _AppUserEditFormScreenState extends State<AppUserEditFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late AppUser _editedUser;
 
-  bool _initialized = false; // to prevent re-initialization
+  /// Holds the pending gender selection. Kept in form state rather than
+  /// on `_editedUser` because the dropdown emits on change, not on save.
+  /// `_editedUser` is updated in [onSaved] to keep the two in sync.
+  Gender? _editedGender;
+
+  bool _initialized = false;
 
   File? _editedImage;
   bool _isLoading = false;
   bool _imageChanged = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // _editedUser = widget.appUser!.copyWith(); // Deep copy
-  }
 
   Future<void> _pickImage() async {
     try {
@@ -56,14 +53,13 @@ class _AppUserEditFormScreenState extends State<AppUserEditFormScreen> {
           _editedImage = File(pickedFile.path);
         });
       }
-    } on PlatformException catch (e) {
+    } on PlatformException {
       ResponseHandler.handleResponse(
         context: context,
         statusCode: 500,
         responseCode: AppResponseCodes.put_success,
         finalMessage: AppLocalizations.of(context)!.putSuccess,
       );
-      // _showErrorSnackbar('Failed to pick image: ${e.message}');
     }
   }
 
@@ -75,6 +71,10 @@ class _AppUserEditFormScreenState extends State<AppUserEditFormScreen> {
           ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
       final AppUser? user = args?["user"];
       _editedUser = user ?? AppUser.empty();
+      // Seed the gender field from the user. `AppUser.personGender` is
+      // now a typed `Gender`, so no parsing is needed.
+      _editedGender = _editedUser.personGender;
+      _initialized = true;
     }
   }
 
@@ -82,50 +82,55 @@ class _AppUserEditFormScreenState extends State<AppUserEditFormScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     _formKey.currentState!.save();
+
+    // Fold the gender picked via the dropdown into the model. The
+    // dropdown doesn't participate in `onSaved`, so do it here.
+    _editedUser = _editedUser.copyWith(
+      personGender: _editedGender ?? Gender.unspecified,
+    );
+
     setState(() => _isLoading = true);
 
-    // Copy editedUser now (because we modify it asynchronously later)
-    var localUser = _editedUser;
+    try {
+      var updatedUser = _editedUser;
 
-    // Run tasks in background
-    unawaited(Future(() async {
-      try {
-        if (_imageChanged && _editedImage != null) {
-          VerdeliaImage image = AppLocator.get<VerdeliaImage>();
-          image.setupImage(
-            filepath: _editedImage!.path,
-            filename: _editedImage!.path.split("/").last,
-            entityType: 'user',
-            ownerId: '${_editedUser.idAppUser}',
-            entityId: '${_editedUser.idAppUser}',
-          );
-          final imageUrl = await image.uploadImage();
-
-          localUser = localUser.copyWith(appUserImageUrl: imageUrl);
+      if (_imageChanged && _editedImage != null) {
+        final image = AppLocator.get<VerdeliaImage>();
+        image.setupImage(
+          filepath: _editedImage!.path,
+          filename: _editedImage!.path.split('/').last,
+          entityType: 'user',
+          ownerId: '${updatedUser.idAppUser}',
+          entityId: '${updatedUser.idAppUser}',
+        );
+        final imageUrl = await image.uploadImage();
+        if (imageUrl is! String || imageUrl.trim().isEmpty) {
+          throw StateError('Image upload did not return an image URL.');
         }
 
-        await Provider.of<AppUserNotifier>(context, listen: false)
-            .updateAppUser(localUser);
-
-        if (mounted) {
-          ResponseHandler.handleResponse(
-              context: context,
-              statusCode: 200,
-              responseCode: "PUT_SUCCESS",
-              finalMessage: AppLocalizations.of(context)!.putSuccess);
-          Navigator.pop(context, localUser);
-        }
-      } on VerdeliaException catch (e) {
-        // _showErrorSnackbar(AppLocalizations.of(context)!.putFailure);
-        ResponseHandler.handleResponse(
-            context: context,
-            statusCode: 200,
-            responseCode: e.message,
-            finalMessage: AppLocalizations.of(context)!.putSuccess);
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
+        updatedUser = updatedUser.copyWith(appUserImageUrl: imageUrl);
       }
-    }));
+
+      await context.read<AppUserNotifier>().updateAppUser(updatedUser);
+
+      if (!mounted) return;
+      _editedUser = updatedUser;
+      ResponseHandler.handleResponse(
+        context: context,
+        statusCode: 200,
+        responseCode: 'PUT_SUCCESS',
+        finalMessage: AppLocalizations.of(context)!.putSuccess,
+      );
+      Navigator.pop(context, updatedUser);
+    } on VerdeliaException catch (e) {
+      if (mounted) _showErrorSnackbar(e.message);
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackbar(AppLocalizations.of(context)!.putFailure);
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _showErrorSnackbar(String message) {
@@ -181,17 +186,11 @@ class _AppUserEditFormScreenState extends State<AppUserEditFormScreen> {
                       onSaved: (v) => _editedUser =
                           _editedUser.copyWith(personBirthDate: v),
                     ),
-                    _buildTextFormField(
-                      label: loc.genderText,
-                      initialValue: _editedUser.personGender,
-                      onSaved: (v) =>
-                          _editedUser = _editedUser.copyWith(personGender: v),
-                    ),
+
+                    // ─── Gender ───────────────────────────────────
+                    _buildGenderField(loc),
+
                     _buildSectionHeader(loc.locationInfoText, theme),
-                    // _buildLocationPicker(context),
-                    // const SizedBox(
-                    //   height: 16,
-                    // ),
                     _buildTextFormField(
                       label: loc.locationNameText,
                       initialValue: _editedUser.locationName,
@@ -225,17 +224,12 @@ class _AppUserEditFormScreenState extends State<AppUserEditFormScreen> {
                     const SizedBox(height: 32),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context)
-                            .colorScheme
-                            .primary, // Button background color
-                        foregroundColor: Theme.of(context)
-                            .colorScheme
-                            .onPrimary, // Text & icon color
-                        padding: EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 12), // optional
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(12), // Rounded corners
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       onPressed: _submitForm,
@@ -245,6 +239,25 @@ class _AppUserEditFormScreenState extends State<AppUserEditFormScreen> {
                 ),
               ),
             ),
+    );
+  }
+
+  /// Gender dropdown, aligned with the spacing of the surrounding
+  /// text fields. Uses [GenderDropdownField] so the localized labels
+  /// and enum handling live in one place.
+  Widget _buildGenderField(AppLocalizations loc) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: GenderDropdownField(
+        value: _editedGender,
+        labelText: loc.genderText,
+        allowUnspecified: true,
+        onChanged: (value) {
+          setState(() {
+            _editedGender = value;
+          });
+        },
+      ),
     );
   }
 
@@ -258,12 +271,9 @@ class _AppUserEditFormScreenState extends State<AppUserEditFormScreen> {
       onTap: () async {
         final position = await showLocationInputDialog(context);
         if (position != null && mounted) {
-          // _position = position;
           _editedUser = _editedUser.copyWith(
               locationLatitude: position.latitude,
               locationLongitude: position.longitude);
-          // setState(() {
-          // });
         }
       },
       child: Container(
@@ -332,7 +342,7 @@ class _AppUserEditFormScreenState extends State<AppUserEditFormScreen> {
             ),
             if (hasLocation)
               IconButton(
-                icon: Icon(Icons.edit, size: 20),
+                icon: const Icon(Icons.edit, size: 20),
                 color: theme.colorScheme.secondary,
                 onPressed: () async {
                   final newPosition = await showLocationInputDialog(context);
@@ -436,7 +446,7 @@ class _AppUserEditFormScreenState extends State<AppUserEditFormScreen> {
     required String? initialValue,
     required void Function(String?) onSaved,
     int maxLength = 300,
-    bool enabled = true, // <-- default value: disabled
+    bool enabled = true,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -447,7 +457,7 @@ class _AppUserEditFormScreenState extends State<AppUserEditFormScreen> {
           border: const OutlineInputBorder(),
           counterText: '',
         ),
-        enabled: enabled, // <-- control editing here
+        enabled: enabled,
         maxLength: maxLength,
         validator: (value) {
           if ((value?.isEmpty ?? true) && enabled) {

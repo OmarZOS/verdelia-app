@@ -541,7 +541,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       personLastName: '',
       personBirthDate: '',
       appUserEmail: loc.guestEmail ?? 'guest@example.com',
-      personGender: '',
+      personGender: Gender.unspecified,
       personCountryCode: '',
       bloodType: 'B+',
       idLocation: 0,

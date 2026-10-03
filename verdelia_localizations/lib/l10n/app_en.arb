@@ -2726,5 +2726,81 @@
   "noProductsFoundForQuery": "No products found for \"{query}\"",
   "@noProductsFoundForQuery": { "placeholders": { "query": { "type": "String" } } },
   "stockLabel": "Stock: {count}",
-  "@stockLabel": { "placeholders": { "count": { "type": "String" } } }
+  "@stockLabel": { "placeholders": { "count": { "type": "String" } } },
+
+    "genderMale": "Male",
+  "genderFemale": "Female",
+  "genderOther": "Other",
+  "genderUnspecified": "Unspecified",
+
+  "productVisibilityLabel": "Visibility",
+  "@productVisibilityLabel": {
+    "description": "Label for the product visibility toggle"
+  },
+  "productVisibilityVisibleHint": "Buyers can see this product",
+  "@productVisibilityVisibleHint": {
+    "description": "Hint shown when the product is visible to buyers"
+  },
+  "productVisibilityHiddenHint": "Hidden from the catalog",
+  "@productVisibilityHiddenHint": {
+    "description": "Hint shown when the product is hidden from buyers"
+  },
+
+  "noVisibleProductsText": "No visible products",
+  "@noVisibleProductsText": {
+    "description": "Shown when all products in the grid are hidden from buyers"
+  },
+  "noVisibleProductsSubtitle": "All products for this supplier are currently hidden",
+  "@noVisibleProductsSubtitle": {
+    "description": "Subtitle for the hidden-only empty state"
+  },
+
+  "resourceUnitsLabel": "units",
+  "@resourceUnitsLabel": {
+    "description": "Unit label for consumable resource requirements"
+  },
+  "resourceItemsLabel": "items",
+  "@resourceItemsLabel": {
+    "description": "Unit label for non-consumable resource requirements"
+  },
+  "staffCountLabel": "{range} staff",
+  "@staffCountLabel": {
+    "description": "Staff count, e.g. '2 staff' or '1-3 staff'",
+    "placeholders": {
+      "range": { "type": "String" }
+    }
+  },
+  "staffHoursEachLabel": "{hours}h each",
+  "@staffHoursEachLabel": {
+    "description": "Allocated hours per staff member",
+    "placeholders": {
+      "hours": { "type": "String" }
+    }
+  },
+
+  "resourceTypeConsumable": "consumable",
+  "@resourceTypeConsumable": {
+    "description": "Resource type: consumable (used up per service)"
+  },
+  "resourceTypeNonConsumable": "reusable",
+  "@resourceTypeNonConsumable": {
+    "description": "Resource type: non-consumable / reusable"
+  },
+  "resourceTypeRawMaterial": "raw material",
+  "@resourceTypeRawMaterial": {
+    "description": "Resource type: raw material"
+  },
+  "resourceTypeEquipment": "equipment",
+  "@resourceTypeEquipment": {
+    "description": "Resource type: equipment"
+  },
+  "resourceTypeTool": "tool",
+  "@resourceTypeTool": {
+    "description": "Resource type: tool"
+  },
+  "resourceTypeSupply": "supply",
+  "@resourceTypeSupply": {
+    "description": "Resource type: supply"
+  },
+  "staffHourlyRateLabel": "{rate}/h"
 }

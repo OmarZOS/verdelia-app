@@ -6083,7 +6083,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get productVisibilityUpdateFailedMessage => 'فشل تحديث الرؤية';
 
   @override
-  String get editorModeBadge => 'وضع المحرر';
+  String get editorModeBadge => 'وضع البائع';
 
   @override
   String get pricingSectionTitle => 'التسعير';
@@ -7080,5 +7080,71 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String stockLabel(String count) {
     return 'المخزون: $count';
+  }
+
+  @override
+  String get genderMale => 'ذكر';
+
+  @override
+  String get genderFemale => 'أنثى';
+
+  @override
+  String get genderOther => 'آخر';
+
+  @override
+  String get genderUnspecified => 'غير محدد';
+
+  @override
+  String get productVisibilityLabel => 'الظهور';
+
+  @override
+  String get productVisibilityVisibleHint => 'يمكن للمشترين رؤية هذا المنتج';
+
+  @override
+  String get productVisibilityHiddenHint => 'مخفي من الكتالوج';
+
+  @override
+  String get noVisibleProductsText => 'لا توجد منتجات ظاهرة';
+
+  @override
+  String get noVisibleProductsSubtitle => 'جميع منتجات هذا المورّد مخفية حاليًا';
+
+  @override
+  String get resourceUnitsLabel => 'وحدات';
+
+  @override
+  String get resourceItemsLabel => 'عناصر';
+
+  @override
+  String staffCountLabel(String range) {
+    return '$range موظف';
+  }
+
+  @override
+  String staffHoursEachLabel(String hours) {
+    return '$hours ساعة لكل فرد';
+  }
+
+  @override
+  String get resourceTypeConsumable => 'قابل للاستهلاك';
+
+  @override
+  String get resourceTypeNonConsumable => 'قابل لإعادة الاستخدام';
+
+  @override
+  String get resourceTypeRawMaterial => 'مادة خام';
+
+  @override
+  String get resourceTypeEquipment => 'معدات';
+
+  @override
+  String get resourceTypeTool => 'أداة';
+
+  @override
+  String get resourceTypeSupply => 'مستلزمات';
+
+  @override
+  String staffHourlyRateLabel(Object rate) {
+    return '$rate/س';
   }
 }

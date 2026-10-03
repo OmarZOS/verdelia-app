@@ -7,6 +7,7 @@ import 'package:event/product_change_notifier.dart';
 import 'package:provider/provider.dart';
 import 'package:ui/utils/category_hierarchy.dart';
 import 'package:ui/components/image/image_url.dart';
+import 'package:ui/components/product/quantifier_label.dart';
 
 String _productCategoryHierarchy(
   Product product,
@@ -28,6 +29,107 @@ String _productCategoryHierarchy(
     localizedLeaf: '',
     localizations: localizations,
   );
+}
+
+// ==================================================================
+// Fallback network image
+// ==================================================================
+
+/// Renders the first candidate URL that actually loads.
+///
+/// Walks [candidates] in order. When the current URL fails to load
+/// (network error, 404, malformed data), it advances to the next one.
+/// Renders [placeholderBuilder] only when every candidate has failed.
+///
+/// URLs are resolved and de-duplicated once on init, so a repeated
+/// source (e.g. the seller attached the origin image) is never fetched
+/// twice.
+class FallbackNetworkImage extends StatefulWidget {
+  final List<String?> candidates;
+  final BoxFit fit;
+  final WidgetBuilder placeholderBuilder;
+
+  const FallbackNetworkImage({
+    super.key,
+    required this.candidates,
+    this.fit = BoxFit.cover,
+    required this.placeholderBuilder,
+  });
+
+  @override
+  State<FallbackNetworkImage> createState() => _FallbackNetworkImageState();
+}
+
+class _FallbackNetworkImageState extends State<FallbackNetworkImage> {
+  late List<String> _urls;
+  int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _urls = _resolveUrls();
+  }
+
+  @override
+  void didUpdateWidget(covariant FallbackNetworkImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Restart the walk when the candidate list changes (e.g. the
+    // product was edited and now points at a different image).
+    if (!_sameCandidates(oldWidget.candidates, widget.candidates)) {
+      _urls = _resolveUrls();
+      _index = 0;
+    }
+  }
+
+  List<String> _resolveUrls() {
+    final seen = <String>{};
+    final out = <String>[];
+    for (final candidate in widget.candidates) {
+      final resolved = resolveImageUrl(candidate);
+      if (resolved != null && resolved.isNotEmpty && seen.add(resolved)) {
+        out.add(resolved);
+      }
+    }
+    return out;
+  }
+
+  bool _sameCandidates(List<String?> a, List<String?> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  void _advance() {
+    if (_index + 1 >= _urls.length) return;
+    setState(() => _index++);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_urls.isEmpty || _index >= _urls.length) {
+      return widget.placeholderBuilder(context);
+    }
+
+    return Image.network(
+      _urls[_index],
+      key: ValueKey(_urls[_index]),
+      fit: widget.fit,
+      errorBuilder: (_, __, ___) {
+        // Defer the advance so we never call setState while the error
+        // callback is still inside the build phase.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _advance();
+        });
+        return widget.placeholderBuilder(context);
+      },
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
+  }
 }
 
 // ==================================================================
@@ -53,13 +155,14 @@ class EditorHero extends StatelessWidget {
     this.displayName,
   });
 
-  /// Prefer the seller's own image (first gallery entry); fall back to
-  /// the linked IProduct's reference image when the gallery is empty or
-  /// its primary URL is malformed.
-  String? _resolvedImageUrl() {
-    return resolveImageUrl(product.primaryImageUrl) ??
-        resolveImageUrl(product.product_origin?.iproductImageUrl);
-  }
+  /// Ordered image candidates: seller's primary, the rest of the seller
+  /// gallery, then the linked origin's reference image. Passed straight
+  /// to [FallbackNetworkImage], which picks the first one that loads.
+  List<String?> _imageCandidates() => <String?>[
+        product.primaryImageUrl,
+        ...product.imageUrls,
+        product.product_origin?.iproductImageUrl,
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -73,14 +176,9 @@ class EditorHero extends StatelessWidget {
       loc,
     );
 
-    final imageUrl = _resolvedImageUrl();
-    final hasImage = imageUrl != null;
     final hasGallery = product.product_images.length > 1;
 
-    final name = (displayName != null && displayName!.isNotEmpty)
-        ? displayName!
-        : product.product_name;
-
+    final name = _resolveDisplayName(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
       decoration: BoxDecoration(
@@ -104,19 +202,10 @@ class EditorHero extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                   child: Container(
                     color: cs.surfaceVariant,
-                    child: hasImage
-                        ? Image.network(
-                            imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _placeholder(cs),
-                            loadingBuilder: (context, child, progress) {
-                              if (progress == null) return child;
-                              return const Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            },
-                          )
-                        : _placeholder(cs),
+                    child: FallbackNetworkImage(
+                      candidates: _imageCandidates(),
+                      placeholderBuilder: (context) => _placeholder(cs),
+                    ),
                   ),
                 ),
                 if (hasGallery)
@@ -199,16 +288,13 @@ class EditorHero extends StatelessWidget {
                         label: categoryLabel,
                         color: cs.secondary,
                       ),
-                    if ((product.product_quantifier ?? '').isNotEmpty)
-                      _Pill(
-                        label: product.product_quantifier!,
+                    QuantifierLabel(
+                      raw: product.product_quantifier,
+                      pillBuilder: (context, label, style) => _Pill(
+                        label: label,
                         color: cs.onSurfaceVariant,
                       ),
-                    if (_originGlutenStatus() != null)
-                      _Pill(
-                        label: _originGlutenLabel(context)!,
-                        color: _originGlutenColor(context),
-                      ),
+                    ),
                   ],
                 ),
               ],
@@ -219,42 +305,23 @@ class EditorHero extends StatelessWidget {
     );
   }
 
-  /// The origin's gluten status, or null when there's no origin, the
-  /// status is empty, or the status is the neutral 'unknown'.
-  String? _originGlutenStatus() {
-    final origin = product.product_origin;
-    if (origin == null) return null;
-    final s = origin.iproductGlutenStatus;
-    if (s.isEmpty || s == 'unknown') return null;
-    return s;
-  }
-
-  String? _originGlutenLabel(BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
-    switch (_originGlutenStatus()) {
-      case 'gluten_free':
-        return loc.glutenFreeLabel;
-      case 'contains_gluten':
-        return loc.containsGlutenLabel;
-      case 'may_contain_gluten':
-        return loc.mayContainGlutenLabel;
-      default:
-        return null;
+  String _resolveDisplayName(BuildContext context) {
+    if (displayName != null && displayName!.trim().isNotEmpty) {
+      return displayName!.trim();
     }
-  }
 
-  Color _originGlutenColor(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    switch (_originGlutenStatus()) {
-      case 'gluten_free':
-        return const Color(0xFF1E8E5A);
-      case 'contains_gluten':
-        return cs.error;
-      case 'may_contain_gluten':
-        return const Color(0xFFB26A00);
-      default:
-        return cs.onSurfaceVariant;
-    }
+    final localeLang = Localizations.localeOf(context).languageCode;
+    final localized = (localeLang == 'ar' || localeLang == 'fr')
+        ? product.nameFor(localeLang)
+        : product.product_name;
+    if (localized.trim().isNotEmpty) return localized.trim();
+
+    final raw = (product.product_nameRaw ?? '').trim();
+    if (raw.isNotEmpty) return raw;
+
+    // Fall back to the id so editors can at least identify the row.
+    final id = product.id_product;
+    return id != null ? 'Product #$id' : '—';
   }
 
   Widget _placeholder(ColorScheme cs) {

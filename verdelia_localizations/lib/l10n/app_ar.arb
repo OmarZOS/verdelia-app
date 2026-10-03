@@ -2145,7 +2145,7 @@
   "productNowHiddenMessage": "المنتج الآن مخفي",
   "productVisibilityUpdateFailedMessage": "فشل تحديث الرؤية",
 
-  "editorModeBadge": "وضع المحرر",
+  "editorModeBadge": "وضع البائع",
   "pricingSectionTitle": "التسعير",
   "basePriceLabel": "السعر الأساسي",
   "basePriceCaption": "تكلفة المورد",
@@ -2497,5 +2497,36 @@
   "searchProductsHint": "ابحث عن المنتجات…",
   "supplierProductsBadge": "منتجات المورد",
   "noProductsFoundForQuery": "لم يتم العثور على منتجات لـ «{query}»",
-  "stockLabel": "المخزون: {count}"
+  "stockLabel": "المخزون: {count}",
+
+  "genderMale": "ذكر",
+  "genderFemale": "أنثى",
+  "genderOther": "آخر",
+  "genderUnspecified": "غير محدد",
+  "productVisibilityLabel": "الظهور",
+  "productVisibilityVisibleHint": "يمكن للمشترين رؤية هذا المنتج",
+  "productVisibilityHiddenHint": "مخفي من الكتالوج",
+
+  "noVisibleProductsText": "لا توجد منتجات ظاهرة",
+  "@noVisibleProductsText": {
+    "description": "Shown when all products in the grid are hidden from buyers"
+  },
+  "noVisibleProductsSubtitle": "جميع منتجات هذا المورّد مخفية حاليًا",
+  "@noVisibleProductsSubtitle": {
+    "description": "Subtitle for the hidden-only empty state"
+  },
+
+  "resourceUnitsLabel": "وحدات",
+  "resourceItemsLabel": "عناصر",
+  "staffCountLabel": "{range} موظف",
+  "staffHoursEachLabel": "{hours} ساعة لكل فرد",
+
+  "resourceTypeConsumable": "قابل للاستهلاك",
+  "resourceTypeNonConsumable": "قابل لإعادة الاستخدام",
+  "resourceTypeRawMaterial": "مادة خام",
+  "resourceTypeEquipment": "معدات",
+  "resourceTypeTool": "أداة",
+  "resourceTypeSupply": "مستلزمات",
+
+  "staffHourlyRateLabel": "{rate}/س"
 }

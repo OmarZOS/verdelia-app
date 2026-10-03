@@ -2498,5 +2498,37 @@
   "searchProductsHint": "Rechercher des produits…",
   "supplierProductsBadge": "Produits du fournisseur",
   "noProductsAvailable": "Aucun produit disponible",
-  "stockLabel": "Stock : {count}"
+  "stockLabel": "Stock : {count}",
+    "genderMale": "Homme",
+  "genderFemale": "Femme",
+  "genderOther": "Autre",
+  "genderUnspecified": "Non spécifié",
+
+  "productVisibilityLabel": "Visibilité",
+  "productVisibilityVisibleHint": "Les acheteurs peuvent voir ce produit",
+  "productVisibilityHiddenHint": "Masqué du catalogue",
+
+  "noVisibleProductsText": "Aucun produit visible",
+  "@noVisibleProductsText": {
+    "description": "Shown when all products in the grid are hidden from buyers"
+  },
+  "noVisibleProductsSubtitle": "Tous les produits de ce fournisseur sont actuellement masqués",
+  "@noVisibleProductsSubtitle": {
+    "description": "Subtitle for the hidden-only empty state"
+  },
+
+  "resourceUnitsLabel": "unités",
+  "resourceItemsLabel": "articles",
+  "staffCountLabel": "{range} personnel",
+  "staffHoursEachLabel": "{hours}h chacun",
+
+  "resourceTypeConsumable": "consommable",
+  "resourceTypeNonConsumable": "réutilisable",
+  "resourceTypeRawMaterial": "matière première",
+  "resourceTypeEquipment": "équipement",
+  "resourceTypeTool": "outil",
+  "resourceTypeSupply": "fourniture",
+
+  "staffHourlyRateLabel": "{rate}/h"
+
 }

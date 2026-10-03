@@ -45,40 +45,71 @@ class ServiceDetailsHeader extends StatelessWidget {
       ],
       flexibleSpace: LayoutBuilder(
         builder: (context, constraints) {
-          final isExpanded = constraints.biggest.height == kToolbarHeight;
+          // Treat anything within ~20dp of the collapsed height as
+          // collapsed. Matches the visual moment the title settles.
+          final collapsedHeight =
+              kToolbarHeight + MediaQuery.of(context).padding.top;
+          final isExpanded = constraints.biggest.height > collapsedHeight + 20;
+
+          // Icon stays modest in both states so the collapsed toolbar
+          // row never exceeds the ~56dp slot.
+          final iconSize = isExpanded ? 56.0 : 32.0;
 
           return FlexibleSpaceBar(
             titlePadding: EdgeInsets.only(
               left: 72,
-              bottom: isExpanded ? 16 : 8, // Adjust padding based on state
-              right:
-                  onEditPressed != null ? 56 : 16, // Make room for edit button
+              right: onEditPressed != null ? 56 : 16,
+              // Bottom padding keeps the title centred in the collapsed
+              // toolbar; larger when expanded to sit above the gradient.
+              bottom: isExpanded ? 16 : 4,
             ),
             centerTitle: false,
-            title: Container(
-              padding: const EdgeInsets.only(right: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: Text(
-                      service.name,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: colorScheme.onSurface,
-                        fontSize:
-                            isExpanded ? 18 : 20, // Smaller when collapsed
+            title: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Text column is the flexible part. Collapsed state is
+                // strictly one line — no chip, no second line — so the
+                // row height is bounded by the icon and the toolbar
+                // slot is never exceeded.
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        service.name,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: colorScheme.onSurface,
+                          fontSize: isExpanded ? 18 : 16,
+                        ),
+                        // Collapsed: one line. Expanded: up to two.
+                        maxLines: isExpanded ? 2 : 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: isExpanded,
                       ),
-                      maxLines: isExpanded ? 1 : 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      if (isExpanded) ...[
+                        const SizedBox(height: 4),
+                        ServiceStatusChip(isActive: service.isActive),
+                      ],
+                    ],
                   ),
-                  if (!isExpanded) const SizedBox(height: 4),
-                  if (!isExpanded)
-                    ServiceStatusChip(isActive: service.isActive),
-                ],
-              ),
+                ),
+                SizedBox(width: isExpanded ? 12 : 8),
+                Container(
+                  width: iconSize,
+                  height: iconSize,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _getServiceIcon(service.categoryId),
+                    size: isExpanded ? 28 : 18,
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ],
             ),
             background: Container(
               decoration: BoxDecoration(
@@ -90,27 +121,6 @@ class ServiceDetailsHeader extends StatelessWidget {
                     colorScheme.surface,
                   ],
                 ),
-              ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    right: 20,
-                    bottom: 20,
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary.withOpacity(0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        _getServiceIcon(service.categoryId),
-                        size: 40,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ),
           );

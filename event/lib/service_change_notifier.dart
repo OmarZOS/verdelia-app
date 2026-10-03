@@ -1,27 +1,43 @@
+// lib/event/service/service_notifier.dart
+
 import 'dart:async';
 import 'dart:developer' as developer;
+
+import 'package:event/TraceableNotifier.dart';
+import 'package:event/service/service_category_persistence.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:verdelia_core/business/finance/ProvidedService.dart';
-import 'package:verdelia_core/business/CategoryHierarchyIndex.dart';
-import 'package:event/TraceableNotifier.dart';
-import 'package:verdelia_core/app/VerdeliaException.dart';
 import 'package:locator/locator.dart';
+import 'package:verdelia_core/app/VerdeliaException.dart';
+import 'package:verdelia_core/business/CategoryHierarchyIndex.dart';
+import 'package:verdelia_core/business/finance/ProvidedService.dart';
 import 'package:verdelia_core/business/services/ProvidedServiceManagementService.dart';
 
 class ServiceNotifier extends TraceableNotifier {
   final ProvidedServiceManagementService _serviceManager =
       AppLocator.get<ProvidedServiceManagementService>();
+  final ServiceCategoryPersistence _categoryPersistence =
+      ServiceCategoryPersistence();
 
   final List<ProvidedService> _services = [];
+
   List<ProvidedServiceCategory> _serviceCategories = [];
   CategoryHierarchyIndex<ProvidedServiceCategory> _categoryHierarchy =
       CategoryHierarchyIndex.fromItems(
     <ProvidedServiceCategory>[],
     (category) => category.name,
   );
+
+  /// Staff roles keyed by id, populated after a successful
+  /// [fetchStaffRolesByCategory]. Used by requirement cards to resolve
+  /// a role id into a name when the service payload didn't inline the
+  /// nested `staff_role` block.
+  final Map<int, StaffRole> _staffRolesById = {};
+
   bool _serviceCategoriesLoaded = false;
   Future<List<ProvidedServiceCategory>>? _pendingServiceCategoryFetch;
+  late final Future<void> _categoryBootstrap;
+
   bool _isLoading = false;
   bool _notificationScheduled = false;
   bool _hasMore = true;
@@ -37,12 +53,17 @@ class ServiceNotifier extends TraceableNotifier {
   Timer? _debounce;
   int _requestToken = 0;
 
-  // GETTERS
-  List<ProvidedService> get services => List.unmodifiable(_services);
-
   final Map<int, ProvidedService> _cachedServices = {};
 
-  // Add a method to get cached service
+  ServiceNotifier() {
+    // Bootstrap: restore persisted categories, then fetch if still empty.
+    _categoryBootstrap = _bootstrapCategories();
+  }
+
+  // ============ GETTERS ============
+
+  List<ProvidedService> get services => List.unmodifiable(_services);
+
   ProvidedService? getCachedService(int serviceId) {
     return _cachedServices[serviceId];
   }
@@ -50,12 +71,10 @@ class ServiceNotifier extends TraceableNotifier {
   List<ProvidedService> get filteredServices {
     if (_searchQuery.isEmpty) return services;
 
-    // Actually filter based on search query
     return services.where((service) {
       final name = service.name.toLowerCase();
       final description = service.description.toLowerCase();
       final query = _searchQuery.toLowerCase();
-
       return name.contains(query) || description.contains(query);
     }).toList();
   }
@@ -64,22 +83,145 @@ class ServiceNotifier extends TraceableNotifier {
   bool get hasMore => _hasMore;
   String get searchQuery => _searchQuery;
   int? get currentProviderId => _currentProviderId;
-  List<ProvidedServiceCategory> get serviceCategories =>
-      List.unmodifiable(_serviceCategories);
+
+  /// Categories, always non-empty after bootstrap when the backend
+  /// has any. Reading this getter kicks off a fetch if the list is
+  /// still empty and no request is in flight.
+  List<ProvidedServiceCategory> get serviceCategories {
+    if (_serviceCategories.isEmpty && _pendingServiceCategoryFetch == null) {
+      unawaited(fetchServiceCategories());
+    }
+    return List.unmodifiable(_serviceCategories);
+  }
+
   CategoryHierarchyIndex<ProvidedServiceCategory> get categoryHierarchy =>
       _categoryHierarchy;
 
-  Future<List<ProvidedServiceCategory>> fetchServiceCategories(
-      {String? callerKey, bool forceRefresh = false}) async {
-    if (!forceRefresh && _serviceCategoriesLoaded) {
+  // ============ CATEGORY LOOKUPS ============
+
+  /// Resolved display name for [categoryId] in [languageCode], or empty
+  /// when the id is null / zero / unknown.
+  ///
+  /// Prefers the trilingual naming contribution carried by the
+  /// category, falling back to the humanized canonical key
+  /// (`health.diagnostics.diagnostic_imaging` → `Diagnostic Imaging`).
+  String categoryName(
+    int? categoryId, {
+    String languageCode = 'en',
+  }) {
+    final category = categoryById(categoryId);
+    if (category == null) return '';
+    return category.nameFor(languageCode);
+  }
+
+  /// Look up the full category by id, or null when unknown.
+  ///
+  /// Prefer this over reaching into [serviceCategories] directly so the
+  /// null / zero guards live in one place.
+  ProvidedServiceCategory? categoryById(int? categoryId) {
+    if (categoryId == null || categoryId <= 0) return null;
+    for (final category in _serviceCategories) {
+      if (category.id == categoryId) return category;
+    }
+    return null;
+  }
+
+  // ============ STAFF ROLE LOOKUPS ============
+
+  /// Resolved display name for [roleId] in [languageCode], or empty
+  /// when the role isn't cached.
+  ///
+  /// Prefers the trilingual naming contribution carried by the role,
+  /// falling back to the flat `staff_role_name`.
+  String staffRoleName(
+    int? roleId, {
+    String languageCode = 'en',
+  }) {
+    final role = staffRoleById(roleId);
+    if (role == null) return '';
+    return role.nameFor(languageCode);
+  }
+
+  /// Look up a cached staff role by id, or null when unknown.
+  StaffRole? staffRoleById(int? roleId) {
+    if (roleId == null || roleId <= 0) return null;
+    return _staffRolesById[roleId];
+  }
+
+  /// Register roles after a fetch, keyed by id.
+  ///
+  /// Called automatically by [fetchStaffRolesByCategory] on success,
+  /// but exposed for callers that already have a `List<StaffRole>` in
+  /// hand (e.g. hydrated from a service payload).
+  void registerStaffRoles(Iterable<StaffRole> roles) {
+    var changed = false;
+    for (final role in roles) {
+      if (role.id <= 0) continue;
+      _staffRolesById[role.id] = role;
+      changed = true;
+    }
+    if (changed) _notifySafely();
+  }
+
+  // ============ CATEGORY BOOTSTRAP ============
+
+  Future<void> _bootstrapCategories() async {
+    await _restorePersistedCategories();
+
+    if (_serviceCategories.isEmpty) {
+      try {
+        await fetchServiceCategories();
+      } catch (error, stackTrace) {
+        debugPrint(
+          '[ServiceNotifier] Category bootstrap fetch failed: '
+          '$error\n$stackTrace',
+        );
+      }
+    }
+  }
+
+  Future<void> _restorePersistedCategories() async {
+    try {
+      final persisted = await _categoryPersistence.load();
+      if (persisted == null || persisted.isEmpty) {
+        _serviceCategories = const [];
+        return;
+      }
+      _applyCategories(persisted);
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[ServiceNotifier] Failed to restore service categories: '
+        '$error\n$stackTrace',
+      );
+    }
+  }
+
+  // ============ CATEGORIES ============
+
+  Future<List<ProvidedServiceCategory>> fetchServiceCategories({
+    String? callerKey,
+    bool forceRefresh = false,
+  }) async {
+    await _categoryBootstrap;
+
+    if (!forceRefresh &&
+        _serviceCategoriesLoaded &&
+        _serviceCategories.isNotEmpty) {
       return serviceCategories;
     }
-    if (!forceRefresh && _pendingServiceCategoryFetch != null) {
-      return _pendingServiceCategoryFetch!;
+
+    final pending = _pendingServiceCategoryFetch;
+    if (pending != null) {
+      if (!forceRefresh) return pending;
+      try {
+        await pending;
+      } catch (_) {
+        // Forced refresh still gets a chance after a failed request.
+      }
     }
 
     final key = callerKey ?? getCallerKey('fetchServiceCategories');
-    final request = _loadServiceCategories(key);
+    final request = _loadServiceCategories(key, forceRefresh: forceRefresh);
     _pendingServiceCategoryFetch = request;
     try {
       return await request;
@@ -91,18 +233,37 @@ class ServiceNotifier extends TraceableNotifier {
   }
 
   Future<List<ProvidedServiceCategory>> _loadServiceCategories(
-    String key,
-  ) async {
+    String key, {
+    required bool forceRefresh,
+  }) async {
     try {
-      final categories =
-          await _serviceManager.getServiceCategories(callerKey: key);
-      _serviceCategories = List.unmodifiable(categories);
-      _categoryHierarchy = CategoryHierarchyIndex.fromItems(
-        categories,
-        (category) => category.name,
+      final categories = await _serviceManager.getServiceCategories(
+        callerKey: key,
       );
-      _serviceCategoriesLoaded = true;
+
+      // A successful-but-empty response should not be cached or treated
+      // as authoritative — leave state empty so the next call retries.
+      if (categories.isEmpty) {
+        debugPrint(
+          '[ServiceNotifier] getServiceCategories returned an empty list '
+          '(forceRefresh=$forceRefresh, callerKey=$key)',
+        );
+        storeSuccess(key, const [], responseCode: 'EMPTY');
+        return serviceCategories;
+      }
+
+      _applyCategories(categories);
       storeSuccess(key, categories);
+
+      try {
+        await _categoryPersistence.save(categories);
+      } catch (error, stackTrace) {
+        debugPrint(
+          '[ServiceNotifier] Failed to persist service categories: '
+          '$error\n$stackTrace',
+        );
+      }
+
       _notifySafely();
       return serviceCategories;
     } catch (e) {
@@ -111,13 +272,35 @@ class ServiceNotifier extends TraceableNotifier {
     }
   }
 
-  Future<List<StaffRole>> fetchStaffRolesByCategory(int categoryId,
-      {String? callerKey}) async {
+  void _applyCategories(List<ProvidedServiceCategory> categories) {
+    _serviceCategories = List.unmodifiable(categories);
+    _categoryHierarchy = CategoryHierarchyIndex.fromItems(
+      categories,
+      (category) => category.name,
+    );
+    _serviceCategoriesLoaded = true;
+  }
+
+  // ============ STAFF ROLES ============
+
+  /// Fetch the staff roles for [categoryId] and cache them by id.
+  ///
+  /// The cache is what lets requirement cards resolve a role id into a
+  /// localized label when the service payload only sent the id.
+  Future<List<StaffRole>> fetchStaffRolesByCategory(
+    int categoryId, {
+    String? callerKey,
+    bool forceRefresh = false,
+  }) async {
     final key = callerKey ??
         getCallerKey('fetchStaffRolesByCategory', id: categoryId.toString());
+
     try {
-      final roles = await _serviceManager.getStaffRolesByCategory(categoryId,
-          callerKey: key);
+      final roles = await _serviceManager.getStaffRolesByCategory(
+        categoryId,
+        callerKey: key,
+      );
+      registerStaffRoles(roles);
       storeSuccess(key, roles);
       return roles;
     } catch (e) {
@@ -126,7 +309,8 @@ class ServiceNotifier extends TraceableNotifier {
     }
   }
 
-  // INTERNAL HELPERS
+  // ============ INTERNAL HELPERS ============
+
   void _setLoading(bool value) {
     _isLoading = value;
     _notifySafely();
@@ -147,9 +331,8 @@ class ServiceNotifier extends TraceableNotifier {
     _hasMore = true;
   }
 
-  // ------------------------------------------------------------
-  // 🔵 MAIN FETCH — paginated AND supports supplier switching
-  // ------------------------------------------------------------
+  // ============ MAIN FETCH ============
+
   Future<void> fetchServices({
     int serviceId = 0,
     int categoryId = 0,
@@ -176,26 +359,27 @@ class ServiceNotifier extends TraceableNotifier {
       name: 'ServiceNotifier',
     );
 
-    if (_isLoading) {
+    final switchingProvider =
+        providerId != 0 && providerId != _currentProviderId;
+    final startingNewSearch = query.isNotEmpty && query != _searchQuery;
+    if (_isLoading && !reset && !switchingProvider && !startingNewSearch) {
       debugPrint(
         '[SERVICES] fetchServices SKIPPED: already loading '
         'currentProviderId=$_currentProviderId',
       );
       developer.log(
-          'fetchServices skipped because a request is already loading',
-          name: 'ServiceNotifier');
+        'fetchServices skipped because a request is already loading',
+        name: 'ServiceNotifier',
+      );
       return;
     }
 
-    // Handle supplier switching
-    if (providerId != 0 && providerId != _currentProviderId) {
+    if (switchingProvider) {
       _currentProviderId = providerId;
       reset = true;
-      // Clear search when switching suppliers
       _searchQuery = '';
     }
 
-    // If we're searching with a new query, reset
     if (query.isNotEmpty && query != _searchQuery) {
       _searchQuery = query;
       reset = true;
@@ -240,7 +424,6 @@ class ServiceNotifier extends TraceableNotifier {
       );
 
       if (token != _requestToken) {
-        // stale request
         storeFailure(key, 'Stale request cancelled',
             errorCode: 'STALE_REQUEST');
         return;
@@ -253,6 +436,11 @@ class ServiceNotifier extends TraceableNotifier {
       if (list != null) {
         _services.addAll(list);
         storeSuccess(key, list);
+
+        // Opportunistically harvest any inline staff roles from the
+        // freshly-loaded services so requirement cards can resolve
+        // labels even before fetchStaffRolesByCategory runs.
+        _harvestStaffRoles(list);
       } else {
         storeSuccess(key, [], responseCode: 'EMPTY');
       }
@@ -300,8 +488,27 @@ class ServiceNotifier extends TraceableNotifier {
     }
   }
 
-  Future<ProvidedService?> fetchServiceDetails(int serviceId,
-      {String? callerKey}) async {
+  /// Walk a batch of services and register any inline staff roles
+  /// they carry, so the id-based lookup works without a separate
+  /// fetch. Silent — no notification if nothing new arrived.
+  void _harvestStaffRoles(List<ProvidedService> services) {
+    var changed = false;
+    for (final service in services) {
+      for (final requirement in service.staffRequirements) {
+        final role = requirement.staffRole;
+        if (role != null && role.id > 0) {
+          _staffRolesById[role.id] = role;
+          changed = true;
+        }
+      }
+    }
+    if (changed) _notifySafely();
+  }
+
+  Future<ProvidedService?> fetchServiceDetails(
+    int serviceId, {
+    String? callerKey,
+  }) async {
     final key = callerKey ??
         getCallerKey('fetchServiceDetails', id: serviceId.toString());
 
@@ -312,12 +519,12 @@ class ServiceNotifier extends TraceableNotifier {
           .getProvidedService(serviceId.toString(), callerKey: key);
 
       if (service != null) {
-        // Update the service in the list if it exists
         final index = _services.indexWhere((s) => s.id == serviceId);
         if (index != -1) {
           _services[index] = service;
           notifyListeners();
         }
+        _harvestStaffRoles([service]);
         storeSuccess(key, service);
       } else {
         storeFailure(key, null, code: 404, errorCode: 'NOT_FOUND');
@@ -335,18 +542,18 @@ class ServiceNotifier extends TraceableNotifier {
     }
   }
 
-  // Add clear cache method if needed
   void clearCache() {
     _cachedServices.clear();
     logInfo('Service cache cleared');
   }
 
-  Future<ProvidedService?> getServiceById(int serviceId,
-      {String? callerKey}) async {
+  Future<ProvidedService?> getServiceById(
+    int serviceId, {
+    String? callerKey,
+  }) async {
     final key =
         callerKey ?? getCallerKey('getServiceById', id: serviceId.toString());
 
-    // First check if we already have this service in our list
     try {
       final existingService = _services.firstWhere(
         (service) => service.id == serviceId,
@@ -354,16 +561,14 @@ class ServiceNotifier extends TraceableNotifier {
       storeSuccess(key, existingService, responseCode: 'CACHED');
       return existingService;
     } catch (e) {
-      // Service not found in list
+      // Service not found in list — fall through to API.
     }
 
-    // If not in list, fetch from API
     return await fetchServiceDetails(serviceId, callerKey: key);
   }
 
-  // ------------------------------------------------------------
-  // 🔎 DEBOUNCED SEARCH (300 ms)
-  // ------------------------------------------------------------
+  // ============ SEARCH ============
+
   Future<void> searchServices(String query, {String? callerKey}) async {
     final key = callerKey ??
         getCallerKey('searchServices', suffix: query.isEmpty ? 'empty' : query);
@@ -372,7 +577,6 @@ class ServiceNotifier extends TraceableNotifier {
     _debounce?.cancel();
 
     if (query.isEmpty) {
-      // Clear search and reload
       _searchQuery = '';
       await fetchServices(reset: true, callerKey: key);
       return;
@@ -383,28 +587,28 @@ class ServiceNotifier extends TraceableNotifier {
     });
   }
 
-  // ------------------------------------------------------------
-  // ⬇️ INFINITE SCROLL
-  // ------------------------------------------------------------
+  // ============ INFINITE SCROLL ============
+
   Future<void> loadMore({String? callerKey}) async {
     final key = callerKey ?? getCallerKey('loadMore');
     if (_isLoading || !_hasMore || _searchQuery.isNotEmpty) return;
     await fetchServices(reset: false, callerKey: key);
   }
 
-  // ------------------------------------------------------------
-  // 🔄 REFRESH
-  // ------------------------------------------------------------
+  // ============ REFRESH ============
+
   Future<void> refresh({String? callerKey}) async {
     final key = callerKey ?? getCallerKey('refresh');
     await fetchServices(reset: true, callerKey: key);
   }
 
-  // ------------------------------------------------------------
-  // 🟢 ADD SERVICE
-  // ------------------------------------------------------------
-  Future<ProvidedService?> addService(ProvidedService service,
-      {String? callerKey, String? token}) async {
+  // ============ ADD ============
+
+  Future<ProvidedService?> addService(
+    ProvidedService service, {
+    String? callerKey,
+    String? token,
+  }) async {
     final key = callerKey ?? getCallerKey('addService', suffix: service.name);
 
     _setLoading(true);
@@ -418,6 +622,7 @@ class ServiceNotifier extends TraceableNotifier {
 
       if (created != null) {
         _services.insert(0, created);
+        _harvestStaffRoles([created]);
         storeSuccess(key, created);
         notifyListeners();
       } else {
@@ -434,11 +639,13 @@ class ServiceNotifier extends TraceableNotifier {
     }
   }
 
-  // ------------------------------------------------------------
-  // 🟡 UPDATE SERVICE
-  // ------------------------------------------------------------
-  Future<ProvidedService?> updateService(ProvidedService service,
-      {String? callerKey, String? token}) async {
+  // ============ UPDATE ============
+
+  Future<ProvidedService?> updateService(
+    ProvidedService service, {
+    String? callerKey,
+    String? token,
+  }) async {
     final key =
         callerKey ?? getCallerKey('updateService', id: service.id.toString());
 
@@ -456,6 +663,7 @@ class ServiceNotifier extends TraceableNotifier {
         if (index != -1) {
           _services[index] = updated;
         }
+        _harvestStaffRoles([updated]);
         storeSuccess(key, updated);
         notifyListeners();
       } else {
@@ -472,10 +680,13 @@ class ServiceNotifier extends TraceableNotifier {
     }
   }
 
-  // ------------------------------------------------------------
-  // 🔴 DELETE SERVICE
-  // ------------------------------------------------------------
-  Future<int?> deleteService(int id, {String? callerKey, String? token}) async {
+  // ============ DELETE ============
+
+  Future<int?> deleteService(
+    int id, {
+    String? callerKey,
+    String? token,
+  }) async {
     final key = callerKey ?? getCallerKey('deleteService', id: id.toString());
 
     _setLoading(true);
@@ -506,9 +717,8 @@ class ServiceNotifier extends TraceableNotifier {
     }
   }
 
-  // ------------------------------------------------------------
-  // CLEAR SEARCH
-  // ------------------------------------------------------------
+  // ============ CLEAR SEARCH ============
+
   void clearSearch({String? callerKey}) {
     final key = callerKey ?? getCallerKey('clearSearch');
     if (_searchQuery.isNotEmpty) {
@@ -518,19 +728,12 @@ class ServiceNotifier extends TraceableNotifier {
     }
   }
 
-  // ------------------------------------------------------------
-  // CLEAR SELECTED SERVICE
-  // ------------------------------------------------------------
-  // void clearSelectedService() {
-  //   _selectedService = null;
-  // }
+  // ============ CLEAR ALL ============
 
-  // ------------------------------------------------------------
-  // CLEAR ALL (for logout or cleanup)
-  // ------------------------------------------------------------
   void clearAll({String? callerKey}) {
     final key = callerKey ?? getCallerKey('clearAll');
     _services.clear();
+    _staffRolesById.clear();
     _searchQuery = '';
     _currentProviderId = null;
     _page = 0;

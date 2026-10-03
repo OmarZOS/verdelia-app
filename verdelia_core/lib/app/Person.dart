@@ -1,5 +1,91 @@
 import 'dart:developer';
 
+/// Canonical gender values for a person.
+///
+/// Serialization is lowercase (`'male'`, `'female'`, `'other'`,
+/// `'unspecified'`) to match the backend enum. The API is tolerant of
+/// mixed case on input; parsing normalizes.
+enum Gender {
+  male,
+  female,
+  other,
+  unspecified;
+
+  /// Value written to JSON and rendered by UI when a lowercase string
+  /// is needed (badges, filters, etc.).
+  String get wireValue => name; // enum name is already lowercase
+
+  /// Human-facing label. The UI layer can map this to a localized
+  /// string; keeping the raw label here means a caller that doesn't
+  /// care about i18n still gets something readable.
+  String get label {
+    switch (this) {
+      case Gender.male:
+        return 'Male';
+      case Gender.female:
+        return 'Female';
+      case Gender.other:
+        return 'Other';
+      case Gender.unspecified:
+        return 'Unspecified';
+    }
+  }
+
+  /// Single-character glyph for compact UI (person cards, headers).
+  String get icon {
+    switch (this) {
+      case Gender.male:
+        return '♂';
+      case Gender.female:
+        return '♀';
+      default:
+        return '?';
+    }
+  }
+
+  /// Parse any backend or user-supplied value into a [Gender].
+  ///
+  /// Accepts:
+  ///   - the exact enum names (`'male'`, `'female'`, …)
+  ///   - common variants (`'m'`, `'f'`, `'man'`, `'woman'`, …)
+  ///   - the localized strings the old string path used to receive
+  ///     (`'Male'`, `'Female'`, `'Other'`)
+  ///   - null, empty, or unknown values → [Gender.unspecified]
+  static Gender fromString(String? raw) {
+    if (raw == null) return Gender.unspecified;
+    final v = raw.trim().toLowerCase();
+    if (v.isEmpty) return Gender.unspecified;
+
+    switch (v) {
+      case 'male':
+      case 'm':
+      case 'man':
+      case 'homme':
+        return Gender.male;
+      case 'female':
+      case 'f':
+      case 'woman':
+      case 'femme':
+        return Gender.female;
+      case 'other':
+      case 'o':
+      case 'autre':
+        return Gender.other;
+      case 'unspecified':
+      case 'unknown':
+      case 'n/a':
+      case '-':
+        return Gender.unspecified;
+      default:
+        return Gender.unspecified;
+    }
+  }
+
+  /// Convenience: is this a "known" gender? Useful for UI branches
+  /// that only want to render the glyph when the value is meaningful.
+  bool get isKnown => this != Gender.unspecified;
+}
+
 class Person {
   final int id_person;
   final int person_details_id;
@@ -20,12 +106,19 @@ class Person {
   });
 
   String get fullName =>
-      '${person_details.person_first_name ?? ''} ${person_details.person_last_name ?? ''}'
+      '${person_details.person_first_name} ${person_details.person_last_name}'
           .trim();
 
   String? get firstName => person_details.person_first_name;
   String? get lastName => person_details.person_last_name;
-  String? get gender => person_details.person_gender;
+
+  /// Typed gender. Prefer this to any string-based comparison.
+  Gender get gender => person_details.person_gender;
+
+  /// Lowercase wire value, for callers that need the raw string
+  /// (JSON payloads, filter chips, query params).
+  String get genderValue => person_details.person_gender.wireValue;
+
   String? get nationality => person_details.person_country_code;
   DateTime? get birthDate => person_details.person_birth_date;
 
@@ -46,7 +139,7 @@ class Person {
     return currentAge != null && currentAge >= 18;
   }
 
-  /// Robust fromJson that handles both direct and nested structures
+  /// Robust fromJson that handles both direct and nested structures.
   factory Person.fromJson(Map<String, dynamic> json) {
     try {
       // Handle different JSON structures
@@ -164,25 +257,18 @@ class Person {
 
   String get initials {
     if (!hasBasicInfo) return '?';
-    final firstInitial = person_details.person_first_name?.isNotEmpty == true
-        ? person_details.person_first_name![0]
+    final firstInitial = person_details.person_first_name.isNotEmpty
+        ? person_details.person_first_name[0]
         : '';
-    final lastInitial = person_details.person_last_name?.isNotEmpty == true
-        ? person_details.person_last_name![0]
+    final lastInitial = person_details.person_last_name.isNotEmpty
+        ? person_details.person_last_name[0]
         : '';
     return (firstInitial + lastInitial).toUpperCase();
   }
 
-  String get genderIcon {
-    switch (person_details.person_gender?.toLowerCase()) {
-      case 'male':
-        return '♂';
-      case 'female':
-        return '♀';
-      default:
-        return '?';
-    }
-  }
+  /// Gender glyph, sourced from the enum. Kept for backward
+  /// compatibility — callers can also read `gender.icon` directly.
+  String get genderIcon => person_details.person_gender.icon;
 
   String? get formattedBirthDate {
     if (person_details.person_birth_date == null) return null;
@@ -191,7 +277,7 @@ class Person {
 
   @override
   String toString() {
-    return 'Person(id_person: $id_person, name: "$fullName", gender: $gender, nationality: $nationality)';
+    return 'Person(id_person: $id_person, name: "$fullName", gender: ${gender.wireValue}, nationality: $nationality)';
   }
 
   @override
@@ -209,7 +295,10 @@ class PersonDetails {
   final String person_last_name;
   final String person_first_name;
   final DateTime? person_birth_date;
-  final String person_gender;
+
+  /// Typed gender. Serialized as lowercase via [Gender.wireValue].
+  final Gender person_gender;
+
   final String person_country_code;
   final String? person_email;
   final String? person_phone;
@@ -241,6 +330,7 @@ class PersonDetails {
 
   bool get hasName =>
       person_first_name.isNotEmpty || person_last_name.isNotEmpty;
+
   String get fullName => '$person_first_name $person_last_name'.trim();
   String? get person_nationality => person_country_code;
 
@@ -253,8 +343,11 @@ class PersonDetails {
   }
 
   String? get addressLine {
-    if (person_address == null && person_city == null && person_country == null)
+    if (person_address == null &&
+        person_city == null &&
+        person_country == null) {
       return null;
+    }
     final parts = <String>[];
     if (person_address != null) parts.add(person_address!);
     if (person_city != null) parts.add(person_city!);
@@ -270,7 +363,8 @@ class PersonDetails {
       person_birth_date: json['person_birth_date'] != null
           ? DateTime.tryParse(json['person_birth_date'] as String)
           : null,
-      person_gender: json['person_gender'] as String? ?? '',
+      // Enum from string — tolerant of case and common variants.
+      person_gender: Gender.fromString(json['person_gender'] as String?),
       person_country_code: json['person_country_code'] as String? ?? '',
       person_email: json['person_email'] as String?,
       person_phone: json['person_phone'] as String?,
@@ -294,7 +388,8 @@ class PersonDetails {
       'person_last_name': person_last_name,
       'person_first_name': person_first_name,
       'person_birth_date': person_birth_date?.toIso8601String(),
-      'person_gender': person_gender,
+      // Wire format is lowercase — matches the backend enum.
+      'person_gender': person_gender.wireValue,
       'person_country_code': person_country_code,
       'person_email': person_email,
       'person_phone': person_phone,
@@ -313,7 +408,7 @@ class PersonDetails {
     String? person_last_name,
     String? person_first_name,
     DateTime? person_birth_date,
-    String? person_gender,
+    Gender? person_gender,
     String? person_country_code,
     String? person_email,
     String? person_phone,
@@ -345,12 +440,12 @@ class PersonDetails {
   }
 
   factory PersonDetails.empty() {
-    return PersonDetails(
+    return const PersonDetails(
       id_person_details: 0,
       person_last_name: '',
       person_first_name: '',
       person_birth_date: null,
-      person_gender: '',
+      person_gender: Gender.unspecified,
       person_country_code: '',
       person_email: null,
       person_phone: null,
@@ -366,7 +461,9 @@ class PersonDetails {
 
   @override
   String toString() {
-    return 'PersonDetails(id_person_details: $id_person_details, name: "$fullName", email: $person_email, phone: $person_phone)';
+    return 'PersonDetails(id_person_details: $id_person_details, '
+        'name: "$fullName", gender: ${person_gender.wireValue}, '
+        'email: $person_email, phone: $person_phone)';
   }
 }
 
@@ -378,7 +475,10 @@ extension PersonExtensions on Person {
         person_details.person_email?.toLowerCase().contains(searchQuery) ==
             true ||
         person_details.person_phone?.contains(query) == true ||
-        person_details.person_country_code.toLowerCase().contains(searchQuery);
+        person_details.person_country_code
+            .toLowerCase()
+            .contains(searchQuery) ||
+        person_details.person_gender.wireValue.contains(searchQuery);
   }
 }
 

@@ -74,8 +74,19 @@ class _CustomerProductViewState extends State<CustomerProductView> {
   /// IProduct's reference image when the gallery is empty or its
   /// primary URL is malformed.
   String? _resolvedImageUrl() {
-    return resolveImageUrl(widget.product.primaryImageUrl) ??
-        resolveImageUrl(widget.product.product_origin?.iproductImageUrl);
+    final candidates = <String?>[
+      widget.product.primaryImageUrl,
+      ...widget.product.imageUrls,
+      widget.product.product_origin?.iproductImageUrl,
+    ];
+
+    for (final candidate in candidates) {
+      final resolved = resolveImageUrl(candidate);
+      if (resolved != null && resolved.isNotEmpty) {
+        return resolved;
+      }
+    }
+    return null;
   }
 
   void _updateQuantity(int newValue) {
@@ -436,7 +447,7 @@ class _CustomerProductViewState extends State<CustomerProductView> {
     final theme = Theme.of(context);
     final radius = BorderRadius.circular(20);
 
-    if (imageUrl == null) {
+    if (imageUrl == null || imageUrl.isEmpty) {
       return Container(
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHighest,
