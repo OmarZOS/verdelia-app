@@ -14550,6 +14550,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Longitude must be between −180 and 180'**
   String get invalidLongitudeMsg;
+
+  /// No description provided for @cannotNavigateInvalidSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot navigate: Invalid supplier ID'**
+  String get cannotNavigateInvalidSupplier;
+
+  /// No description provided for @focusOnMapTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus on map'**
+  String get focusOnMapTooltip;
+
+  /// No description provided for @noUserToDisplay.
+  ///
+  /// In en, this message translates to:
+  /// **'No user to display'**
+  String get noUserToDisplay;
+
+  /// No description provided for @copiedToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} copied'**
+  String copiedToClipboard(String label);
+
+  /// No description provided for @editProfileLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit profile'**
+  String get editProfileLabel;
+
+  /// No description provided for @shareProfileLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get shareProfileLabel;
+
+  /// No description provided for @noInformationAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to show here yet'**
+  String get noInformationAvailable;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

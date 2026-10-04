@@ -1,6 +1,5 @@
 // lib/provider_geo/components/suppliers_panel.dart
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
@@ -37,15 +36,12 @@ class PanelContent extends StatefulWidget {
 }
 
 class _PanelContentState extends State<PanelContent> {
-  bool _categoriesFetched = false;
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<SupplierChangeNotifier>().fetchSupplierCategories();
-      _categoriesFetched = true;
     });
   }
 
@@ -70,8 +66,6 @@ class _PanelContentState extends State<PanelContent> {
   // ============================================================
 
   Widget _buildHeaderSection(ThemeData theme, AppLocalizations loc) {
-    final active = widget.selectedLocation != null;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -127,6 +121,8 @@ class _PanelContentState extends State<PanelContent> {
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.w500,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   onDeleted: () => widget.onDeleteLocationFilter?.call(),
                   backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
@@ -142,6 +138,7 @@ class _PanelContentState extends State<PanelContent> {
       ),
     );
   }
+
   // ============================================================
   // LIST
   // ============================================================
@@ -163,6 +160,8 @@ class _PanelContentState extends State<PanelContent> {
               loc.notFoundError,
               style: theme.textTheme.bodyLarge,
               textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ),
@@ -191,9 +190,6 @@ class _PanelContentState extends State<PanelContent> {
   Widget _buildFilterButton(ThemeData theme, AppLocalizations loc) {
     final active = widget.selectedLocation != null;
 
-    // Explicit min tap target. Material's guideline is 48x48. We give
-    // it 48x48 exactly so hit testing never lands on a partially
-    // animated edge.
     return SizedBox(
       width: 48,
       height: 48,
@@ -234,10 +230,6 @@ class _PanelContentState extends State<PanelContent> {
 // ============================================================================
 // SUPPLIER TILE
 // ============================================================================
-//
-// Extracted into its own widget so the per-supplier Selector lives at a
-// stable widget identity. Rebuilding the parent list doesn't re-subscribe
-// each row.
 
 class _SupplierTile extends StatelessWidget {
   final Supplier supplier;
@@ -253,59 +245,38 @@ class _SupplierTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final loc = AppLocalizations.of(context)!;
     final localeLang = Localizations.localeOf(context).languageCode;
 
-    return Selector<SupplierChangeNotifier, String>(
-      selector: (_, notifier) {
-        for (final category in notifier.supplierCategories) {
-          if (category.productProviderTypeId ==
-              supplier.productProviderTypeId) {
-            return localizedCategoryHierarchy(
-              categoryPath: category.productCategoryDesc,
-              localizedLeaf: category.nameFor(localeLang),
-              localizations: loc,
-            );
-          }
-        }
-        return '';
-      },
-      builder: (context, categoryName, _) {
-        return Card(
-          color: isDarkMode
-              ? theme.colorScheme.primaryContainer.withOpacity(0.2)
-              : null,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+    return Card(
+      color: isDarkMode
+          ? theme.colorScheme.primaryContainer.withOpacity(0.2)
+          : null,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: _SupplierAvatar(supplier: supplier),
+        title: _SupplierTitle(supplier: supplier),
+        subtitle: _SupplierSubtitle(supplier: supplier),
+        trailing: IconButton(
+          icon: Icon(
+            FontAwesomeIcons.locationDot,
+            color: supplier.hasLocation
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurfaceVariant.withOpacity(0.4),
           ),
-          child: ListTile(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            leading: _SupplierAvatar(supplier: supplier),
-            title: _SupplierTitle(
-              supplier: supplier,
-              categoryName: categoryName,
-            ),
-            subtitle: _SupplierSubtitle(supplier: supplier),
-            trailing: IconButton(
-              icon: Icon(
-                FontAwesomeIcons.locationDot,
-                color: supplier.hasLocation
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.onSurfaceVariant.withOpacity(0.4),
-              ),
-              onPressed: supplier.hasLocation ? onFocusLocation : null,
-            ),
-            onTap: () {
-              context
-                  .read<SupplierChangeNotifier>()
-                  .selectSupplier(supplier.idProductProvider);
-              showSupplierDetails(context, supplier);
-            },
-          ),
-        );
-      },
+          onPressed: supplier.hasLocation ? onFocusLocation : null,
+          tooltip: AppLocalizations.of(context)?.focusOnMapTooltip,
+        ),
+        onTap: () {
+          context
+              .read<SupplierChangeNotifier>()
+              .selectSupplier(supplier.idProductProvider);
+          showSupplierDetails(context, supplier);
+        },
+      ),
     );
   }
 }
@@ -317,6 +288,8 @@ class _SupplierAvatar extends StatelessWidget {
 
   const _SupplierAvatar({required this.supplier});
 
+  static const double _radius = 24;
+
   bool get _hasValidImage {
     final url = supplier.supplierImageUrl;
     return url != null && url.isNotEmpty && url.startsWith('http');
@@ -325,34 +298,37 @@ class _SupplierAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final diameter = _radius * 2;
 
     return CircleAvatar(
-      radius: 40,
+      radius: _radius,
       backgroundColor: theme.colorScheme.primaryContainer,
       child: _hasValidImage
-          ? Image.network(
-              supplier.supplierImageUrl!,
-              width: 40,
-              height: 40,
-              fit: BoxFit.cover,
-              key: ValueKey(supplier.supplierImageUrl),
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      value: loadingProgress.expectedTotalBytes != null
-                          ? loadingProgress.cumulativeBytesLoaded /
-                              loadingProgress.expectedTotalBytes!
-                          : null,
+          ? ClipOval(
+              child: Image.network(
+                supplier.supplierImageUrl!,
+                width: diameter,
+                height: diameter,
+                fit: BoxFit.cover,
+                key: ValueKey(supplier.supplierImageUrl),
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                            : null,
+                      ),
                     ),
-                  ),
-                );
-              },
-              errorBuilder: (_, __, ___) => _fallbackIcon(theme),
+                  );
+                },
+                errorBuilder: (_, __, ___) => _fallbackIcon(theme),
+              ),
             )
           : _fallbackIcon(theme),
     );
@@ -362,8 +338,8 @@ class _SupplierAvatar extends StatelessWidget {
     return SvgPicture.asset(
       'assets/icons/${supplier.productProviderTypeId}.svg',
       package: 'provider_geo',
-      width: 30,
-      height: 30,
+      width: 24,
+      height: 24,
       color: theme.colorScheme.onSurface,
     );
   }
@@ -373,57 +349,27 @@ class _SupplierAvatar extends StatelessWidget {
 
 class _SupplierTitle extends StatelessWidget {
   final Supplier supplier;
-  final String categoryName;
 
-  const _SupplierTitle({
-    required this.supplier,
-    required this.categoryName,
-  });
+  const _SupplierTitle({required this.supplier});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final localeLang = Localizations.localeOf(context).languageCode;
     final displayName = supplier.nameFor(localeLang);
-    final category =
-        categoryName.isNotEmpty ? categoryName : _fallbackCategory(context);
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 4,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        Text(
-          displayName,
-          style: theme.textTheme.titleMedium,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            category,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSecondaryContainer,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
+    return Text(
+      displayName,
+      style: theme.textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.w600,
+      ),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
     );
-  }
-
-  String _fallbackCategory(BuildContext context) {
-    return AppLocalizations.of(context)?.all ?? 'General';
   }
 }
 
-// ── Subtitle ──
+// ── Subtitle: organisation name + optional category chip ──
 
 class _SupplierSubtitle extends StatelessWidget {
   final Supplier supplier;
@@ -437,15 +383,93 @@ class _SupplierSubtitle extends StatelessWidget {
     final localeLang = Localizations.localeOf(context).languageCode;
     final organisationName = supplier.organisationNameFor(localeLang);
 
-    if (organisationName.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (organisationName.isNotEmpty)
+          Text(
+            loc.by_organisation(organisationName),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+          ),
+        if (organisationName.isNotEmpty) const SizedBox(height: 4),
+        _CategoryChip(supplier: supplier),
+      ],
+    );
+  }
+}
 
-    return Text(
-      loc.by_organisation(organisationName),
-      style: theme.textTheme.bodyMedium?.copyWith(
-        color: theme.colorScheme.onSurface.withOpacity(0.6),
-      ),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
+// ── Category chip ──
+
+class _CategoryChip extends StatelessWidget {
+  final Supplier supplier;
+
+  const _CategoryChip({required this.supplier});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
+    final localeLang = Localizations.localeOf(context).languageCode;
+
+    return Selector<SupplierChangeNotifier, String>(
+      selector: (_, notifier) {
+        for (final category in notifier.supplierCategories) {
+          if (category.productProviderTypeId ==
+              supplier.productProviderTypeId) {
+            // Leaf only — the chip is a glance affordance. The full
+            // path is available from the same category if a future
+            // screen needs it.
+            return localizedCategoryLeaf(
+              categoryPath: category.productCategoryDesc,
+              localizedLeaf: category.nameFor(localeLang),
+              localizations: loc,
+            );
+          }
+        }
+        return '';
+      },
+      builder: (context, categoryName, _) {
+        final label = categoryName.isNotEmpty ? categoryName : loc.all;
+
+        return Container(
+          constraints: const BoxConstraints(maxWidth: 140),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.category_outlined,
+                size: 11,
+                color: theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
+              ),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  label,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w600,
+                    height: 1.0,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

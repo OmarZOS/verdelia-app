@@ -2679,6 +2679,17 @@
   "pickOnMapMsg": "اختر من الخريطة",
   "invalidCoordinatesMsg": "أدخل أرقاماً صحيحة",
   "invalidLatitudeMsg": "يجب أن يكون خط العرض بين −90 و90",
-  "invalidLongitudeMsg": "يجب أن يكون خط الطول بين −180 و180"
+  "invalidLongitudeMsg": "يجب أن يكون خط الطول بين −180 و180",
+
+  "cannotNavigateInvalidSupplier": "تعذّر التنقل: معرّف المورّد غير صالح",
+
+  "focusOnMapTooltip": "التركيز على الخريطة",
+
+  "noUserToDisplay": "لا يوجد مستخدم للعرض",
+  "copiedToClipboard": "تم نسخ {label}",
+
+  "editProfileLabel": "تعديل الملف الشخصي",
+  "shareProfileLabel": "مشاركة",
+  "noInformationAvailable": "لا يوجد شيء لعرضه هنا بعد"
   
 }

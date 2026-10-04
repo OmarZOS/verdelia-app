@@ -15,11 +15,6 @@ class ProductCard extends StatelessWidget {
   final Product product;
 
   /// Which view the card opens when tapped.
-  ///
-  /// Defaults to [ProductDetailsMode.customer] so a card rendered in a
-  /// shop or catalog opens the buyer-facing view. Pass
-  /// [ProductDetailsMode.editor] when the card is rendered inside the
-  /// supplier dashboard, where tapping a product should open the editor.
   final ProductDetailsMode mode;
 
   const ProductCard({
@@ -28,9 +23,6 @@ class ProductCard extends StatelessWidget {
     this.mode = ProductDetailsMode.customer,
   }) : super(key: key);
 
-  /// Prefer the seller's own image (first gallery entry); fall back to
-  /// the linked IProduct's reference image when the gallery is empty or
-  /// its primary URL is malformed.
   String? _resolvedImageUrl() {
     final candidates = <String?>[
       product.primaryImageUrl,
@@ -52,6 +44,7 @@ class ProductCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final categoryId = product.product_category_id ?? 0;
+    final l10n = AppLocalizations.of(context)!;
 
     final localeLang = Localizations.localeOf(context).languageCode;
     final localizedName = (localeLang == 'ar' || localeLang == 'fr')
@@ -63,29 +56,25 @@ class ProductCard extends StatelessWidget {
 
     final brand = (product.product_brand ?? '').trim();
 
-    final localizations = AppLocalizations.of(context)!;
-
     final categoryHierarchy =
         context.select<ProductNotifier, LocalizedCategoryHierarchy>(
       (notifier) {
-        final matchingCategories = notifier.productCategories.where(
-          (category) => category.productCategoryId == categoryId,
-        );
-        if (matchingCategories.isEmpty) {
-          return localizedCategoryHierarchyParts(
-            categoryPath: product.product_category_name ?? '',
-            localizedLeaf: notifier.categoryName(
-              categoryId,
-              languageCode: localeLang,
-            ),
-            localizations: localizations,
-          );
+        for (final category in notifier.productCategories) {
+          if (category.productCategoryId == categoryId) {
+            return localizedCategoryHierarchyParts(
+              categoryPath: category.productCategoryDesc,
+              localizedLeaf: category.nameFor(localeLang),
+              localizations: l10n,
+            );
+          }
         }
-        final category = matchingCategories.first;
         return localizedCategoryHierarchyParts(
-          categoryPath: category.productCategoryDesc,
-          localizedLeaf: category.nameFor(localeLang),
-          localizations: localizations,
+          categoryPath: product.product_category_name ?? '',
+          localizedLeaf: notifier.categoryName(
+            categoryId,
+            languageCode: localeLang,
+          ),
+          localizations: l10n,
         );
       },
     );
@@ -106,164 +95,245 @@ class ProductCard extends StatelessWidget {
       child: InkWell(
         onTap: () {
           Future.delayed(const Duration(milliseconds: 150), () {
+            if (!context.mounted) return;
             Navigator.pushNamed(
               context,
               AppRoutes.productDetails,
               arguments: {
-                "product": product,
-                "mode":
-                    mode == ProductDetailsMode.editor ? "editor" : "customer",
+                'product': product,
+                'mode':
+                    mode == ProductDetailsMode.editor ? 'editor' : 'customer',
               },
             );
           });
         },
         splashColor: colors.primary.withOpacity(0.06),
         highlightColor: colors.primary.withOpacity(0.03),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ─── Image with soft gradient overlay ────────────────
-            Expanded(
-              flex: 6,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Walks the candidate list and renders the first URL
-                  // that actually loads. Malformed URLs are skipped at
-                  // resolution time; load failures advance to the next.
-                  FallbackNetworkImage(
-                    candidates: <String?>[
-                      product.primaryImageUrl,
-                      ...product.imageUrls,
-                      product.product_origin?.iproductImageUrl,
-                    ],
-                    fit: BoxFit.cover,
-                    placeholderBuilder: (context) => _buildPlaceholder(context),
-                  ),
-
-                  // Subtle top-to-bottom scrim so the badge reads on any image
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    top: 0,
-                    height: 56,
-                    child: IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.black.withOpacity(0.28),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // If the card is inside a tight fixed-height cell (e.g. a
+            // GridView with `childAspectRatio: 1.2`), the two
+            // `Expanded` slots fight each other for the leftover
+            // space. Below ~240dp we drop to a flex layout with
+            // explicit proportions that always sum to the available
+            // height, so neither the image nor the details section
+            // overflows.
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ─── Image ───
+                // Fixed 55% of the available height when bounded,
+                // otherwise a natural 180dp placeholder for the
+                // unbounded case (a ListView cell).
+                if (constraints.hasBoundedHeight)
+                  SizedBox(
+                    height: constraints.maxHeight * 0.55,
+                    child: _buildImageSection(
+                      context,
+                      colors,
+                      categoryHierarchy,
+                      categoryId,
+                      hasGallery,
+                    ),
+                  )
+                else
+                  SizedBox(
+                    height: 180,
+                    child: _buildImageSection(
+                      context,
+                      colors,
+                      categoryHierarchy,
+                      categoryId,
+                      hasGallery,
                     ),
                   ),
 
-                  // Category badge, top-left
-                  if (categoryHierarchy.caption.isNotEmpty)
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      right: 8,
-                      child: _CategoryBadge(
-                        hierarchy: categoryHierarchy,
-                        categoryId: categoryId,
-                      ),
-                    ),
-
-                  // Gallery count badge, bottom-right
-                  if (hasGallery)
-                    Positioned(
-                      right: 8,
-                      bottom: 8,
-                      child: _GalleryCountBadge(
-                        count: product.product_images.length,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-            // ─── Details ─────────────────────────────────────────
-            Expanded(
-              flex: 5,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (brand.isNotEmpty)
-                      Text(
-                        brand.toUpperCase(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: colors.onSurface.withOpacity(0.5),
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.7,
-                        ),
-                      ),
-                    if (brand.isNotEmpty) const SizedBox(height: 2),
-                    Expanded(
-                      child: Text(
-                        productName.isNotEmpty ? productName : '—',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: colors.onSurface,
-                          height: 1.2,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            AppLocalizations.of(context)!
-                                .price(product.product_price ?? '--'),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: colors.primary,
-                              height: 1.0,
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: colors.primary.withOpacity(0.08),
-                            shape: BoxShape.circle,
-                          ),
-                          alignment: Alignment.center,
-                          child: Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 15,
-                            color: colors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                // ─── Details ───
+                Flexible(
+                  child: _buildDetailsSection(
+                    context,
+                    theme,
+                    colors,
+                    productName,
+                    brand,
+                    l10n,
+                  ),
                 ),
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );
   }
+
+  // ============================================================
+  // IMAGE SECTION
+  // ============================================================
+
+  Widget _buildImageSection(
+    BuildContext context,
+    ColorScheme colors,
+    LocalizedCategoryHierarchy categoryHierarchy,
+    int categoryId,
+    bool hasGallery,
+  ) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        FallbackNetworkImage(
+          candidates: <String?>[
+            product.primaryImageUrl,
+            ...product.imageUrls,
+            product.product_origin?.iproductImageUrl,
+          ],
+          fit: BoxFit.cover,
+          placeholderBuilder: (context) => _buildPlaceholder(context),
+        ),
+
+        // Top scrim so the category badge stays legible on any image.
+        Positioned(
+          left: 0,
+          right: 0,
+          top: 0,
+          height: 56,
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.28),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        if (categoryHierarchy.caption.isNotEmpty ||
+            categoryHierarchy.leaf.isNotEmpty)
+          Positioned(
+            top: 8,
+            left: 8,
+            right: 8,
+            child: _CategoryBadge(
+              hierarchy: categoryHierarchy,
+              categoryId: categoryId,
+            ),
+          ),
+
+        if (hasGallery)
+          Positioned(
+            right: 8,
+            bottom: 8,
+            child: _GalleryCountBadge(
+              count: product.product_images.length,
+            ),
+          ),
+      ],
+    );
+  }
+
+  // ============================================================
+  // DETAILS SECTION
+  // ============================================================
+
+  Widget _buildDetailsSection(
+    BuildContext context,
+    ThemeData theme,
+    ColorScheme colors,
+    String productName,
+    String brand,
+    AppLocalizations l10n,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Brand line — fixed 1 line, ellipsized.
+          if (brand.isNotEmpty) ...[
+            Text(
+              brand.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colors.onSurface.withOpacity(0.5),
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.7,
+              ),
+            ),
+            const SizedBox(height: 2),
+          ],
+
+          // Product name — up to 2 lines, ellipsized.
+          Flexible(
+            child: Text(
+              productName.isNotEmpty ? productName : '—',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: colors.onSurface,
+                height: 1.2,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          // Price row — price on the left (flexible), arrow on the
+          // right (fixed 28dp). Both pinned to the bottom of the
+          // details column via MainAxisAlignment.end on the outer
+          // column if needed.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.price(product.product_price ?? '--'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: colors.primary,
+                    height: 1.0,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: colors.primary.withOpacity(0.08),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 15,
+                  color: colors.primary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // PLACEHOLDERS
+  // ============================================================
 
   Widget _buildFallbackImage(BuildContext context, int categoryId) {
     return Container(
@@ -271,7 +341,7 @@ class ProductCard extends StatelessWidget {
       alignment: Alignment.center,
       child: SvgPicture.asset(
         'assets/icons/$categoryId.svg',
-        package: "product_catalog",
+        package: 'product_catalog',
         width: 40,
         height: 40,
         color: Theme.of(context).colorScheme.onSurface.withOpacity(0.45),
@@ -293,7 +363,7 @@ class ProductCard extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════
-// Category badge — floats over the image, small pill
+// Category badge
 // ══════════════════════════════════════════════════════════════════
 
 class _CategoryBadge extends StatelessWidget {
@@ -307,7 +377,7 @@ class _CategoryBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Prefer the leaf for a short pill; fall back to subdomain, then domain.
+    // Prefer leaf for a short pill; fall back to subdomain, then domain.
     final label = hierarchy.leaf.isNotEmpty
         ? hierarchy.leaf
         : (hierarchy.subdomain.isNotEmpty
@@ -316,49 +386,65 @@ class _CategoryBadge extends StatelessWidget {
 
     if (label.isEmpty) return const SizedBox.shrink();
 
-    return Align(
+    final tooltipMessage = hierarchy.hasHierarchy ? hierarchy.fullLabel : null;
+
+    final chip = Align(
       alignment: Alignment.topLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.55),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SvgPicture.asset(
-              'assets/icons/$categoryId.svg',
-              package: 'product_catalog',
-              width: 11,
-              height: 11,
-              color: Colors.white.withOpacity(0.9),
-              placeholderBuilder: (_) => const SizedBox.shrink(),
-            ),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.2,
-                  height: 1.0,
+      child: ConstrainedBox(
+        // The badge sits over the image; cap its width so it never
+        // eats the whole thumbnail on a narrow card.
+        constraints: const BoxConstraints(maxWidth: 140),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.55),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SvgPicture.asset(
+                'assets/icons/$categoryId.svg',
+                package: 'product_catalog',
+                width: 11,
+                height: 11,
+                color: Colors.white.withOpacity(0.9),
+                placeholderBuilder: (_) => const SizedBox.shrink(),
+              ),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.2,
+                    height: 1.0,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
+    );
+
+    if (tooltipMessage == null) return chip;
+
+    return Tooltip(
+      message: tooltipMessage,
+      waitDuration: const Duration(milliseconds: 400),
+      child: chip,
     );
   }
 }
 
 // ══════════════════════════════════════════════════════════════════
-// Gallery count badge — small pill in the bottom-right of the image
+// Gallery count badge
 // ══════════════════════════════════════════════════════════════════
 
 class _GalleryCountBadge extends StatelessWidget {
@@ -395,6 +481,8 @@ class _GalleryCountBadge extends StatelessWidget {
                 letterSpacing: 0.2,
                 fontFeatures: [FontFeature.tabularFigures()],
               ),
+              maxLines: 1,
+              softWrap: false,
             ),
           ],
         ),
@@ -403,7 +491,5 @@ class _GalleryCountBadge extends StatelessWidget {
   }
 }
 
-/// Mirror of the enum declared on the details screen. Keep the two in
-/// sync — or, if the details screen already exports the enum, import it
-/// from there instead of redeclaring.
+/// Mirror of the enum declared on the details screen.
 enum ProductDetailsMode { customer, editor }

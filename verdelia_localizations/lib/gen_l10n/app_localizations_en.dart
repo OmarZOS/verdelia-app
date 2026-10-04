@@ -7605,4 +7605,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get invalidLongitudeMsg => 'Longitude must be between −180 and 180';
+
+  @override
+  String get cannotNavigateInvalidSupplier => 'Cannot navigate: Invalid supplier ID';
+
+  @override
+  String get focusOnMapTooltip => 'Focus on map';
+
+  @override
+  String get noUserToDisplay => 'No user to display';
+
+  @override
+  String copiedToClipboard(String label) {
+    return '$label copied';
+  }
+
+  @override
+  String get editProfileLabel => 'Edit profile';
+
+  @override
+  String get shareProfileLabel => 'Share';
+
+  @override
+  String get noInformationAvailable => 'Nothing to show here yet';
 }

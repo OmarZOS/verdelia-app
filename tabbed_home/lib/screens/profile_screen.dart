@@ -13,8 +13,25 @@ import 'package:event/user_change_notifier.dart';
 import 'package:tabbed_home/screens/components/flipping_avatar.dart';
 import 'package:ui/components/gender/gender_widgets.dart';
 
+typedef _ProfileSections = ({
+  List<Widget> personal,
+  List<Widget> business,
+  List<Widget> account,
+  Widget? preferences,
+});
+
 /// Which profile the screen is rendering.
 enum ProfileMode { owner, visitor }
+
+class _Breakpoint {
+  static const double medium = 720;
+  static const double expanded = 1080;
+}
+
+class _Rhythm {
+  static const double sectionGap = 20;
+  static const double cardRadius = 16;
+}
 
 class ProfileScreen extends StatefulWidget {
   final ProfileMode mode;
@@ -30,8 +47,23 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen>
+    with SingleTickerProviderStateMixin {
   bool get _isOwner => widget.mode == ProfileMode.owner;
+
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,10 +76,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             builder: (context, notifier, _) {
               final user = notifier.appUser;
               if (user is! AppUser) {
-                return const Padding(
-                  padding: EdgeInsets.only(top: 120),
-                  child: Center(child: CircularProgressIndicator()),
-                );
+                return const _LoadingState();
               }
               return _buildBody(context, user, notifier);
             },
@@ -58,9 +87,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final user = widget.user;
     if (user == null) {
-      return const Scaffold(
+      return Scaffold(
         body: SafeArea(
-          child: Center(child: Text('No user to display')),
+          child: Center(
+            child: Text(AppLocalizations.of(context)?.noUserToDisplay ?? '—'),
+          ),
         ),
       );
     }
@@ -84,112 +115,150 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final l10n = AppLocalizations.of(context)!;
     final locale =
         context.read<LocaleProvider>().locale?.toLanguageTag() ?? 'en';
+    final cs = Theme.of(context).colorScheme;
 
-    // Owner mode uses the notifier's subscription when the user row
-    // doesn't carry an inlined one. This gives the tile current data
-    // even when the payload only sent the FK.
     final Subscription? subscription =
         user.subscription ?? notifier?.subscription;
 
-    // Resolve the plan from the notifier's cached catalogue.
-    // Falls back to null when the notifier isn't available (visitor
-    // mode) or the catalogue hasn't been fetched yet — the
-    // subscription section degrades gracefully by hiding the plan
-    // rows.
     Plan? plan;
     final planId = subscription?.subscriptionPlanId;
     if (planId != null && planId > 0) {
       plan = notifier?.planById(planId);
     }
 
-    // If the plan isn't cached yet, kick off a fetch. Fire-and-forget;
-    // the notifier notifies listeners on completion and the next build
-    // picks up the plan.
     if (_isOwner && plan == null && planId != null && planId > 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifier?.fetchPlans();
       });
     }
 
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(),
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, _isOwner ? 96 : 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _IdentityHeader(
-                  user: user,
-                  isOwner: _isOwner,
-                  l10n: l10n,
-                ),
-                const SizedBox(height: 20),
+    final sections = _buildSections(
+      user: user,
+      l10n: l10n,
+      locale: locale,
+      subscription: subscription,
+      plan: plan,
+    );
 
-                // ─── Status strip: subscription + wallet + quota ──
-                if (_isOwner)
-                  _StatusStrip(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isExpanded = constraints.maxWidth >= _Breakpoint.expanded;
+
+        return CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: _ProfileCoverHeader(
+                user: user,
+                isOwner: _isOwner,
+                l10n: l10n,
+              ),
+            ),
+            if (_isOwner)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                  child: _StatusStrip(
                     user: user,
                     subscription: subscription,
                     l10n: l10n,
                   ),
-                if (_isOwner) const SizedBox(height: 16),
-
-                // ─── Personal ───────────────────────────────────
-                _Section(
-                  icon: Icons.person_pin_outlined,
-                  title: l10n.personalInfoText,
-                  entries: _personalEntries(user, l10n, locale),
                 ),
-
-                // ─── Contact ────────────────────────────────────
-                if (_isOwner && _hasContact(user))
-                  _Section(
-                    icon: Icons.contact_page_outlined,
-                    title: l10n.contactInfoText,
-                    entries: _contactEntries(user, l10n),
-                  ),
-
-                // ─── Location ───────────────────────────────────
-                if (_isOwner && _hasLocation(user))
-                  _Section(
-                    icon: Icons.place_outlined,
-                    title: l10n.locationInfoText,
-                    entries: _locationEntries(user, l10n),
-                  ),
-
-                // ─── Subscription ───────────────────────────────
-                if (_isOwner && subscription != null)
-                  _Section(
-                    icon: Icons.workspace_premium_outlined,
-                    title: l10n.subscriptionInfoText,
-                    entries: _subscriptionEntries(subscription, plan, l10n),
-                  ),
-
-                // ─── Wallet ─────────────────────────────────────
-                if (_isOwner && user.hasInlinedWallet)
-                  _Section(
-                    icon: Icons.account_balance_wallet_outlined,
-                    title: l10n.walletSectionText,
-                    entries: _walletEntries(user.wallet!, l10n),
-                  ),
-
-                // ─── Account ────────────────────────────────────
-                if (_isOwner)
-                  _Section(
-                    icon: Icons.shield_outlined,
-                    title: l10n.accountStatusText,
-                    entries: _accountEntries(user, l10n, locale),
-                  ),
-
-                // ─── Preferences ────────────────────────────────
-                if (_isOwner) _PreferencesSection(user: user, l10n: l10n),
-              ],
+              ),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _TabBarDelegate(
+                controller: _tabController,
+                l10n: l10n,
+                colors: cs,
+              ),
             ),
-          ),
+            SliverFillRemaining(
+              hasScrollBody: true,
+              child: isExpanded
+                  ? _ExpandedBody(
+                      tabController: _tabController,
+                      personal: sections.personal,
+                      business: sections.business,
+                      account: sections.account,
+                      preferences: sections.preferences,
+                      bottomPadding: _isOwner ? 96 : 32,
+                    )
+                  : _CompactBody(
+                      tabController: _tabController,
+                      personal: sections.personal,
+                      business: sections.business,
+                      account: sections.account,
+                      preferences: sections.preferences,
+                      bottomPadding: _isOwner ? 96 : 32,
+                    ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  _ProfileSections _buildSections({
+    required AppUser user,
+    required AppLocalizations l10n,
+    required String locale,
+    required Subscription? subscription,
+    required Plan? plan,
+  }) {
+    // ── Personal tab: identity + contact + location ──
+    final personal = <Widget>[
+      _Section(
+        icon: Icons.person_pin_outlined,
+        title: l10n.personalInfoText,
+        entries: _personalEntries(user, l10n, locale),
+      ),
+      if (_isOwner && _hasContact(user))
+        _Section(
+          icon: Icons.contact_page_outlined,
+          title: l10n.contactInfoText,
+          entries: _contactEntries(user, l10n),
         ),
-      ],
+      if (_isOwner && _hasLocation(user))
+        _Section(
+          icon: Icons.place_outlined,
+          title: l10n.locationInfoText,
+          entries: _locationEntries(user, l10n),
+        ),
+    ];
+
+    // ── Business tab: subscription + wallet ──
+    final business = <Widget>[
+      if (_isOwner && subscription != null)
+        _Section(
+          icon: Icons.workspace_premium_outlined,
+          title: l10n.subscriptionInfoText,
+          entries: _subscriptionEntries(subscription, plan, l10n),
+        ),
+      if (_isOwner && user.hasInlinedWallet)
+        _Section(
+          icon: Icons.account_balance_wallet_outlined,
+          title: l10n.walletSectionText,
+          entries: _walletEntries(user.wallet!, l10n),
+        ),
+    ];
+
+    // ── Account tab: status + timestamps ──
+    final account = <Widget>[
+      if (_isOwner)
+        _Section(
+          icon: Icons.shield_outlined,
+          title: l10n.accountStatusText,
+          entries: _accountEntries(user, l10n, locale),
+        ),
+    ];
+
+    return (
+      personal: personal,
+      business: business,
+      account: account,
+      preferences:
+          _isOwner ? _PreferencesSection(user: user, l10n: l10n) : null,
     );
   }
 
@@ -314,9 +383,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     AppLocalizations l10n,
   ) {
     return [
-      // Plan name, when we have it. If the catalogue hasn't been
-      // fetched, the entry is filtered out and the section just shows
-      // the subscription's own fields.
       if (plan != null && plan.planName.isNotEmpty)
         _Entry(
           icon: Icons.card_membership_outlined,
@@ -327,8 +393,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _Entry(
           icon: Icons.payments_outlined,
           label: l10n.subscriptionPriceText,
-          value:
-              '${plan.planPrice.toStringAsFixed(2)} ${l10n.currencySymbol ?? 'DA'}',
+          value: '${plan.planPrice.toStringAsFixed(2)} ${l10n.currencySymbol}',
         ),
       if (plan != null)
         _Entry(
@@ -346,12 +411,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         label: l10n.subscriptionExpiryText,
         value: sub.subscriptionExpiry == null
             ? l10n.subscriptionNeverExpiresLabel
-            : _formatDateTime(sub.subscriptionExpiry),
+            : _formatDateTime(context, sub.subscriptionExpiry!),
       ),
       _Entry(
         icon: Icons.event_available_outlined,
         label: l10n.subscriptionCreatedText,
-        value: _formatDateTime(sub.subscriptionCreatedAt),
+        value: _formatDateTime(context, sub.subscriptionCreatedAt),
       ),
       _Entry(
         icon: Icons.check_circle_outline,
@@ -401,33 +466,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _Entry(
         icon: Icons.timer_outlined,
         label: l10n.lastActiveText,
-        value: _formatDateTime(user.appUserLastActive),
+        value: _formatDateTime(context, user.appUserLastActive),
       ),
       _Entry(
         icon: Icons.calendar_today_outlined,
         label: l10n.accountCreatedText,
-        value: _formatDateTime(user.appUserCreation),
+        value: _formatDateTime(context, user.appUserCreation),
       ),
       _Entry(
         icon: Icons.update_outlined,
         label: l10n.accountUpdatedText,
-        value: _formatDateTime(user.appUserLastUpdated),
+        value: _formatDateTime(context, user.appUserLastUpdated),
       ),
     ];
   }
 
   // ==================== Formatters ====================
-
-  String _formatVerification(AppLocalizations l10n, VerifiedAppUser status) {
-    switch (status) {
-      case VerifiedAppUser.verified:
-        return l10n.verifiedLabel;
-      case VerifiedAppUser.unverified:
-        return l10n.unverifiedLabel;
-      case VerifiedAppUser.unknown:
-        return l10n.unknownLabel;
-    }
-  }
 
   String _formatLoginOption(AppLocalizations l10n, LoginOption option) {
     switch (option) {
@@ -493,8 +547,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}';
   }
 
-  /// Date-only. `person_birth_date` is a Date column on the backend,
-  /// so no time component is meaningful.
   String? _formatDateOnly(String? raw, String locale) {
     if (raw == null || raw.isEmpty) return null;
     final parsed = DateTime.tryParse(raw);
@@ -502,7 +554,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return DateFormat.yMd(locale).format(parsed);
   }
 
-  String? _formatDateTime(DateTime? date) {
+  String? _formatDateTime(BuildContext context, DateTime? date) {
     if (date == null) return null;
     final locale =
         context.read<LocaleProvider>().locale?.toLanguageTag() ?? 'en';
@@ -511,15 +563,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
 }
 
 // ══════════════════════════════════════════════════════════════════
-// Identity header
+// Loading state
 // ══════════════════════════════════════════════════════════════════
 
-class _IdentityHeader extends StatelessWidget {
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              color: cs.primary,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            AppLocalizations.of(context)?.loading ?? 'Loading…',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Profile cover + identity header
+// ══════════════════════════════════════════════════════════════════
+//
+// Facebook pattern: a full-bleed cover band with a gradient, the
+// avatar overlapping its bottom edge, then a horizontal identity row
+// underneath. On narrow screens the identity row wraps; on wide
+// screens the name and action buttons sit side by side.
+
+class _ProfileCoverHeader extends StatelessWidget {
   final AppUser user;
   final bool isOwner;
   final AppLocalizations l10n;
 
-  const _IdentityHeader({
+  const _ProfileCoverHeader({
     required this.user,
     required this.isOwner,
     required this.l10n,
@@ -530,18 +622,366 @@ class _IdentityHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final fullName = user.displayName;
-    final avatarSize = MediaQuery.of(context).size.width * 0.24;
+    final avatarSize =
+        (MediaQuery.sizeOf(context).width * 0.28).clamp(84.0, 140.0);
+    const buttonOverhang = 18.0;
+    final avatarBox = avatarSize * 2 + buttonOverhang;
+    const coverHeight = 180.0;
 
-    return Semantics(
-      label: fullName.isEmpty ? l10n.userInfoText : fullName,
-      child: Column(
+    // How much of the cover the avatar's center sits below the bottom
+    // edge. Positive = the avatar's center is that far below the cover.
+    // Adjust visually — 8dp gives a slight overlap that reads as
+    // intentional, larger values push the avatar further out.
+    const avatarDrop = 8.0;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= _Breakpoint.medium;
+
+        // The cover is 180dp; the identity row starts `avatarBox/2 -
+        // avatarDrop` below the cover's bottom edge. That's the top of
+        // the avatar box. The row's own height (which we don't know
+        // ahead of time) extends below that. Since `Stack` sizes itself
+        // to its largest non-Positioned child by default, we don't
+        // Position the identity row — we let the Stack compute its
+        // height from it.
+        final rowTop = coverHeight - (avatarBox / 2 - avatarDrop);
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // ─── Cover band — Positioned so it doesn't contribute to
+            //     the Stack's height. ───
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: coverHeight,
+              child: _CoverBand(colors: cs),
+            ),
+
+            // ─── Identity row — NOT Positioned. It sizes the Stack. ───
+            // Padding pushes it down by `rowTop` so the avatar lands
+            // where we want relative to the cover. Since it's not
+            // Positioned, the Stack grows to fit its full natural
+            // height.
+            Padding(
+              padding: EdgeInsets.only(top: rowTop),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: isWide
+                    ? _WideIdentityRow(
+                        user: user,
+                        isOwner: isOwner,
+                        l10n: l10n,
+                        avatarSize: avatarSize,
+                        avatarBox: avatarBox,
+                        buttonOverhang: buttonOverhang,
+                        fullName: fullName,
+                      )
+                    : _NarrowIdentityRow(
+                        user: user,
+                        isOwner: isOwner,
+                        l10n: l10n,
+                        avatarSize: avatarSize,
+                        avatarBox: avatarBox,
+                        buttonOverhang: buttonOverhang,
+                        fullName: fullName,
+                      ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _CoverBand extends StatelessWidget {
+  final ColorScheme colors;
+
+  const _CoverBand({required this.colors});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                colors.primary.withOpacity(0.85),
+                colors.primary.withOpacity(0.55),
+                colors.tertiary.withOpacity(0.45),
+              ],
+              stops: const [0.0, 0.55, 1.0],
+            ),
+          ),
+        ),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: CustomPaint(
+              painter: _DotPatternPainter(
+                color: Colors.white.withOpacity(0.06),
+                spacing: 22,
+                radius: 1.4,
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 60,
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.10),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Wide layout: avatar left, name + actions right ──
+
+class _WideIdentityRow extends StatelessWidget {
+  final AppUser user;
+  final bool isOwner;
+  final AppLocalizations l10n;
+  final double avatarSize;
+  final double avatarBox;
+  final double buttonOverhang;
+  final String fullName;
+
+  const _WideIdentityRow({
+    required this.user,
+    required this.isOwner,
+    required this.l10n,
+    required this.avatarSize,
+    required this.avatarBox,
+    required this.buttonOverhang,
+    required this.fullName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        _Avatar(
+          user: user,
+          avatarSize: avatarSize,
+          avatarBox: avatarBox,
+          buttonOverhang: buttonOverhang,
+        ),
+        const SizedBox(width: 20),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  fullName.isEmpty ? '—' : fullName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.6,
+                    color: cs.onSurface,
+                    height: 1.1,
+                  ),
+                ),
+                if ((user.appUserName ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '@${user.appUserName}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                _IdentityBadgesRow(user: user, l10n: l10n),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        // Padding(
+        //   padding: const EdgeInsets.only(bottom: 8),
+        //   child: _HeaderActions(
+        //     isOwner: isOwner,
+        //     onEdit: isOwner ? () => _onEditPressed(context) : null,
+        //     onShare: () => _onSharePressed(context),
+        //   ),
+        // ),
+      ],
+    );
+  }
+
+  void _onEditPressed(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Edit profile (not implemented)')),
+    );
+  }
+
+  void _onSharePressed(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Share profile (not implemented)')),
+    );
+  }
+}
+
+// ── Narrow layout: avatar and name in a column ──
+
+class _NarrowIdentityRow extends StatelessWidget {
+  final AppUser user;
+  final bool isOwner;
+  final AppLocalizations l10n;
+  final double avatarSize;
+  final double avatarBox;
+  final double buttonOverhang;
+  final String fullName;
+
+  const _NarrowIdentityRow({
+    required this.user,
+    required this.isOwner,
+    required this.l10n,
+    required this.avatarSize,
+    required this.avatarBox,
+    required this.buttonOverhang,
+    required this.fullName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Column(
+      children: [
+        _Avatar(
+          user: user,
+          avatarSize: avatarSize,
+          avatarBox: avatarBox,
+          buttonOverhang: buttonOverhang,
+        ),
+        const SizedBox(height: 14),
+        Text(
+          fullName.isEmpty ? '—' : fullName,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.4,
+            color: cs.onSurface,
+            height: 1.15,
+          ),
+        ),
+        if ((user.appUserName ?? '').isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            '@${user.appUserName}',
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
+        _IdentityBadgesRow(user: user, l10n: l10n),
+        const SizedBox(height: 14),
+        // _HeaderActions(
+        //   isOwner: isOwner,
+        //   onEdit: isOwner ? () => _onEditPressed(context) : null,
+        //   onShare: () => _onSharePressed(context),
+        //   fullWidth: true,
+        // ),
+      ],
+    );
+  }
+
+  void _onEditPressed(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Edit profile (not implemented)')),
+    );
+  }
+
+  void _onSharePressed(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Share profile (not implemented)')),
+    );
+  }
+}
+
+// ── Avatar with ring and verified dot ──
+
+class _Avatar extends StatelessWidget {
+  final AppUser user;
+  final double avatarSize;
+  final double avatarBox;
+  final double buttonOverhang;
+
+  const _Avatar({
+    required this.user,
+    required this.avatarSize,
+    required this.avatarBox,
+    required this.buttonOverhang,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return SizedBox(
+      width: avatarBox,
+      height: avatarBox,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Stack(
-            alignment: Alignment.bottomRight,
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(3),
+          Positioned(
+            left: 0,
+            top: 0,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: cs.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.18),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
@@ -549,13 +989,6 @@ class _IdentityHeader extends StatelessWidget {
                     end: Alignment.bottomRight,
                     colors: [cs.primary, cs.tertiary],
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: cs.primary.withOpacity(0.25),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
                 ),
                 child: FlippingAvatar(
                   imageUrl: user.appUserImageUrl ?? '',
@@ -565,64 +998,65 @@ class _IdentityHeader extends StatelessWidget {
                   backgroundColor: cs.surfaceVariant,
                 ),
               ),
-              if (user.verifiedAppUser != null)
-                Positioned(
-                  right: 6,
-                  bottom: 6,
-                  child: _VerifiedDot(
-                    verified: user.isVerified,
-                    borderColor: cs.surface,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            fullName.isEmpty ? '—' : fullName,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.3,
             ),
           ),
-          if ((user.appUserName ?? '').isNotEmpty) ...[
-            const SizedBox(height: 2),
-            Text(
-              '@${user.appUserName}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: cs.onSurfaceVariant,
+          if (user.verifiedAppUser != null)
+            Positioned(
+              right: buttonOverhang + 4,
+              top: 4,
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: user.isVerified ? Colors.green : Colors.grey,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: cs.surface, width: 3),
+                ),
+                child: user.isVerified
+                    ? Icon(
+                        Icons.check_rounded,
+                        size: 12,
+                        color: cs.surface,
+                      )
+                    : null,
               ),
             ),
-          ],
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            alignment: WrapAlignment.center,
-            children: [
-              if (user.verifiedAppUser != null)
-                _StatusBadge(
-                  icon: user.isVerified
-                      ? Icons.verified_rounded
-                      : Icons.help_outline,
-                  label: _formatVerification(user.verifiedAppUser!),
-                  tone: user.isVerified
-                      ? _BadgeTone.positive
-                      : _BadgeTone.neutral,
-                ),
-              _StatusBadge(
-                icon: Icons.workspace_premium_outlined,
-                label: _formatUserType(user.appUserType),
-                tone: _BadgeTone.neutral,
-              ),
-            ],
-          ),
         ],
       ),
     );
   }
+}
 
-  String _formatVerification(VerifiedAppUser status) {
+// ── Badge row: verified + user type ──
+
+class _IdentityBadgesRow extends StatelessWidget {
+  final AppUser user;
+  final AppLocalizations l10n;
+
+  const _IdentityBadgesRow({required this.user, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        if (user.verifiedAppUser != null)
+          _StatusBadge(
+            icon: user.isVerified ? Icons.verified_rounded : Icons.help_outline,
+            label: _verificationLabel(user.verifiedAppUser!),
+            tone: user.isVerified ? _BadgeTone.positive : _BadgeTone.neutral,
+          ),
+        _StatusBadge(
+          icon: Icons.workspace_premium_outlined,
+          label: _userTypeLabel(user.appUserType),
+          tone: _BadgeTone.neutral,
+        ),
+      ],
+    );
+  }
+
+  String _verificationLabel(VerifiedAppUser status) {
     switch (status) {
       case VerifiedAppUser.verified:
         return l10n.verifiedLabel;
@@ -633,7 +1067,7 @@ class _IdentityHeader extends StatelessWidget {
     }
   }
 
-  String _formatUserType(AppUserType? type) {
+  String _userTypeLabel(AppUserType? type) {
     switch (type) {
       case AppUserType.customer:
         return l10n.customer;
@@ -646,8 +1080,326 @@ class _IdentityHeader extends StatelessWidget {
   }
 }
 
+// ── Action buttons under the name ──
+
+class _HeaderActions extends StatelessWidget {
+  final bool isOwner;
+  final VoidCallback? onEdit;
+  final VoidCallback? onShare;
+  final bool fullWidth;
+
+  const _HeaderActions({
+    required this.isOwner,
+    required this.onEdit,
+    required this.onShare,
+    this.fullWidth = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    final buttons = <Widget>[
+      if (isOwner && onEdit != null)
+        FilledButton.icon(
+          onPressed: onEdit,
+          icon: const Icon(Icons.edit_rounded, size: 18),
+          label: Text(l10n?.editProfileLabel ?? 'Edit profile'),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        ),
+      if (onShare != null)
+        OutlinedButton.icon(
+          onPressed: onShare,
+          icon: const Icon(Icons.share_outlined, size: 18),
+          label: Text(l10n?.shareProfileLabel ?? 'Share'),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        ),
+    ];
+
+    if (fullWidth) {
+      return Row(
+        children: [
+          for (var i = 0; i < buttons.length; i++) ...[
+            if (i > 0) const SizedBox(width: 8),
+            Expanded(child: buttons[i]),
+          ],
+        ],
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < buttons.length; i++) ...[
+          if (i > 0) const SizedBox(width: 8),
+          buttons[i],
+        ],
+      ],
+    );
+  }
+}
+
 // ══════════════════════════════════════════════════════════════════
-// Status strip — subscription, wallet, quota at a glance
+// Tab bar delegate (pinned header)
+// ══════════════════════════════════════════════════════════════════
+
+class _TabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabController controller;
+  final AppLocalizations l10n;
+  final ColorScheme colors;
+
+  _TabBarDelegate({
+    required this.controller,
+    required this.l10n,
+    required this.colors,
+  });
+
+  @override
+  double get minExtent => 52;
+  @override
+  double get maxExtent => 52;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    final theme = Theme.of(context);
+    return Container(
+      color: colors.surface,
+      child: Column(
+        children: [
+          TabBar(
+            controller: controller,
+            labelColor: colors.primary,
+            unselectedLabelColor: colors.onSurfaceVariant,
+            indicatorColor: colors.primary,
+            indicatorWeight: 3,
+            indicatorSize: TabBarIndicatorSize.tab,
+            labelStyle: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+            unselectedLabelStyle: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+            tabs: [
+              Tab(text: l10n.personalInfoText),
+              Tab(
+                text: l10n.subscriptionInfoText,
+                // Subscription tab is only meaningful for owners, but
+                // we always show it and render an empty state when the
+                // user isn't an owner. Keeps the tab bar stable
+                // across owner/visitor transitions.
+              ),
+              Tab(text: l10n.accountStatusText),
+            ],
+          ),
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: colors.outlineVariant.withOpacity(0.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _TabBarDelegate oldDelegate) {
+    return oldDelegate.controller != controller ||
+        oldDelegate.l10n != l10n ||
+        oldDelegate.colors != colors;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Compact body — TabBarView with the three section groups
+// ══════════════════════════════════════════════════════════════════
+
+class _CompactBody extends StatelessWidget {
+  final TabController tabController;
+  final List<Widget> personal;
+  final List<Widget> business;
+  final List<Widget> account;
+  final Widget? preferences;
+  final double bottomPadding;
+
+  const _CompactBody({
+    required this.tabController,
+    required this.personal,
+    required this.business,
+    required this.account,
+    required this.preferences,
+    required this.bottomPadding,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TabBarView(
+      controller: tabController,
+      children: [
+        _TabScroll(
+          sections: personal,
+          bottomPadding: bottomPadding,
+        ),
+        _TabScroll(
+          sections: business,
+          trailing: preferences,
+          bottomPadding: bottomPadding,
+        ),
+        _TabScroll(
+          sections: account,
+          bottomPadding: bottomPadding,
+        ),
+      ],
+    );
+  }
+}
+
+class _TabScroll extends StatelessWidget {
+  final List<Widget> sections;
+  final Widget? trailing;
+  final double bottomPadding;
+
+  const _TabScroll({
+    required this.sections,
+    this.trailing,
+    required this.bottomPadding,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (sections.isEmpty && trailing == null) {
+      return const _EmptyTab();
+    }
+
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(16, 20, 16, bottomPadding),
+      children: [
+        ...sections,
+        if (trailing != null) trailing!,
+      ],
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Expanded body — two-column split with the tabs on the right
+// ══════════════════════════════════════════════════════════════════
+
+class _ExpandedBody extends StatelessWidget {
+  final TabController tabController;
+  final List<Widget> personal;
+  final List<Widget> business;
+  final List<Widget> account;
+  final Widget? preferences;
+  final double bottomPadding;
+
+  const _ExpandedBody({
+    required this.tabController,
+    required this.personal,
+    required this.business,
+    required this.account,
+    required this.preferences,
+    required this.bottomPadding,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // On expanded screens, the same TabBarView spans the full width,
+    // but we constrain the content column to a comfortable reading
+    // width and center it. This keeps a wide monitor from stretching
+    // the entries to absurd line lengths.
+    return TabBarView(
+      controller: tabController,
+      children: [
+        _CenteredColumn(children: personal, bottomPadding: bottomPadding),
+        _CenteredColumn(
+          children: [...business, if (preferences != null) preferences!],
+          bottomPadding: bottomPadding,
+        ),
+        _CenteredColumn(children: account, bottomPadding: bottomPadding),
+      ],
+    );
+  }
+}
+
+class _CenteredColumn extends StatelessWidget {
+  final List<Widget> children;
+  final double bottomPadding;
+
+  const _CenteredColumn({
+    required this.children,
+    required this.bottomPadding,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 820),
+        child: ListView(
+          physics: const BouncingScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(24, 24, 24, bottomPadding),
+          children: children,
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Empty tab
+// ══════════════════════════════════════════════════════════════════
+
+class _EmptyTab extends StatelessWidget {
+  const _EmptyTab();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.inbox_outlined,
+              size: 48,
+              color: cs.onSurfaceVariant.withOpacity(0.5),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              AppLocalizations.of(context)?.noInformationAvailable ??
+                  'Nothing to show here yet',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Status strip
 // ══════════════════════════════════════════════════════════════════
 
 class _StatusStrip extends StatelessWidget {
@@ -669,7 +1421,7 @@ class _StatusStrip extends StatelessWidget {
       cards.add(
         _StatusCard(
           icon: subscription!.isActive
-              ? Icons.workspace_premium
+              ? Icons.workspace_premium_rounded
               : Icons.workspace_premium_outlined,
           label: l10n.subscriptionInfoText,
           value: subscription!.isActive
@@ -684,7 +1436,7 @@ class _StatusStrip extends StatelessWidget {
     if (user.hasInlinedWallet) {
       cards.add(
         _StatusCard(
-          icon: Icons.account_balance_wallet,
+          icon: Icons.account_balance_wallet_rounded,
           label: l10n.walletBalanceText,
           value:
               '${user.wallet!.walletBalance.toStringAsFixed(2)} ${user.wallet!.walletCurrency}',
@@ -696,20 +1448,25 @@ class _StatusStrip extends StatelessWidget {
 
     cards.add(
       _StatusCard(
-        icon: Icons.bolt,
+        icon: Icons.bolt_rounded,
         label: l10n.quotaText,
         value: '${user.quota}',
         tone: user.quota > 0 ? _BadgeTone.positive : _BadgeTone.neutral,
       ),
     );
 
-    return Row(
-      children: [
-        for (var i = 0; i < cards.length; i++) ...[
-          if (i > 0) const SizedBox(width: 10),
-          Expanded(child: cards[i]),
-        ],
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final available = constraints.maxWidth;
+        final perCard = available >= 360 ? (available - 20) / 3 : available;
+        return Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: cards
+              .map((c) => SizedBox(width: perCard, child: c))
+              .toList(growable: false),
+        );
+      },
     );
   }
 }
@@ -738,33 +1495,46 @@ class _StatusCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: fg.withOpacity(0.2)),
+        border: Border.all(color: fg.withOpacity(0.18)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+      child: Row(
         children: [
-          Icon(icon, size: 18, color: fg),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: fg,
-              height: 1.1,
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: fg.withOpacity(0.14),
+              borderRadius: BorderRadius.circular(8),
             ),
+            child: Icon(icon, size: 14, color: fg),
           ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: fg.withOpacity(0.75),
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.2,
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: fg,
+                    height: 1.1,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: fg.withOpacity(0.75),
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -774,7 +1544,7 @@ class _StatusCard extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════
-// Section — icon + title, then a responsive grid of entry tiles
+// Section
 // ══════════════════════════════════════════════════════════════════
 
 class _Entry {
@@ -806,25 +1576,25 @@ class _Section extends StatelessWidget {
     required this.entries,
   });
 
+  static const double _minTileWidth = 210;
+
   @override
   Widget build(BuildContext context) {
-    // Filter out entries that have no value to keep cards tight. An
-    // entry with `value == null` or empty is a missing field, not an
-    // interesting empty state.
     final filled = entries.where((e) => e.hasValue).toList();
     if (filled.isEmpty) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: _Rhythm.sectionGap),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _SectionHeader(icon: icon, title: title),
+          const SizedBox(height: 10),
           LayoutBuilder(
             builder: (context, constraints) {
               final columns = _columnsForWidth(
                 constraints.maxWidth,
-                itemMinWidth: 220,
+                itemMinWidth: _minTileWidth,
               );
 
               if (columns <= 1 || filled.length == 1) {
@@ -866,26 +1636,20 @@ class _SectionHeader extends StatelessWidget {
     final cs = theme.colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 10),
+      padding: const EdgeInsets.only(left: 2),
       child: Row(
         children: [
-          Container(
-            width: 4,
-            height: 18,
-            decoration: BoxDecoration(
-              color: cs.primary,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Icon(icon, size: 18, color: cs.primary),
-          const SizedBox(width: 6),
+          Icon(icon, size: 16, color: cs.primary),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               title,
-              style: theme.textTheme.titleMedium?.copyWith(
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: cs.onSurface,
+                letterSpacing: -0.2,
               ),
             ),
           ),
@@ -910,18 +1674,18 @@ class _StackedCard extends StatelessWidget {
         spaced.add(Divider(
           height: 1,
           thickness: 1,
+          indent: 16,
+          endIndent: 16,
           color: cs.outlineVariant.withOpacity(0.4),
         ));
       }
     }
 
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      color: cs.surfaceContainerHighest.withOpacity(0.35),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: cs.outlineVariant.withOpacity(0.5)),
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withOpacity(0.35),
+        borderRadius: BorderRadius.circular(_Rhythm.cardRadius),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
@@ -975,7 +1739,7 @@ class _TitledCard extends StatelessWidget {
     return Material(
       color: cs.surfaceContainerHighest.withOpacity(0.35),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(_Rhythm.cardRadius),
         side: BorderSide(color: cs.outlineVariant.withOpacity(0.5)),
       ),
       clipBehavior: Clip.antiAlias,
@@ -985,7 +1749,7 @@ class _TitledCard extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════
-// Entry tile — icon, label, value. Copies on tap when marked copyable.
+// Entry tile
 // ══════════════════════════════════════════════════════════════════
 
 class _EntryTile extends StatelessWidget {
@@ -1000,46 +1764,51 @@ class _EntryTile extends StatelessWidget {
     final display = entry.value!;
 
     final tile = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(entry.icon, size: 16, color: cs.onSurfaceVariant),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
+          Icon(
+            entry.icon,
+            size: 18,
+            color: cs.onSurfaceVariant.withOpacity(0.7),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
                   entry.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelMedium?.copyWith(
+                  style: theme.textTheme.labelSmall?.copyWith(
                     color: cs.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
-                    letterSpacing: 0.2,
+                    letterSpacing: 0.4,
                   ),
                 ),
-              ),
-              if (entry.copyable)
-                Icon(
-                  Icons.content_copy_rounded,
-                  size: 13,
-                  color: cs.onSurfaceVariant.withOpacity(0.5),
+                const SizedBox(height: 2),
+                Text(
+                  display,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface,
+                    height: 1.25,
+                    letterSpacing: -0.1,
+                  ),
                 ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            display,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: cs.onSurface,
-              height: 1.2,
+              ],
             ),
           ),
+          if (entry.copyable)
+            Icon(
+              Icons.content_copy_rounded,
+              size: 14,
+              color: cs.onSurfaceVariant.withOpacity(0.4),
+            ),
         ],
       ),
     );
@@ -1047,19 +1816,32 @@ class _EntryTile extends StatelessWidget {
     if (!entry.copyable) return tile;
 
     return InkWell(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(_Rhythm.cardRadius),
       onTap: () async {
         await Clipboard.setData(ClipboardData(text: display));
         if (!context.mounted) return;
+        final l10n = AppLocalizations.of(context)!;
         final label = entry.copyLabel ?? entry.label;
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(
             SnackBar(
-              content: Text('$label copied'),
-              duration: const Duration(milliseconds: 1200),
+              content: Row(
+                children: [
+                  Icon(
+                    Icons.check_circle_rounded,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.onInverseSurface,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(l10n.copiedToClipboard(label)),
+                  ),
+                ],
+              ),
+              duration: const Duration(milliseconds: 1400),
               behavior: SnackBarBehavior.floating,
-              width: 220,
+              width: 280,
             ),
           );
       },
@@ -1069,7 +1851,7 @@ class _EntryTile extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════
-// Preferences — compact layout, decoded from the JSON blob
+// Preferences
 // ══════════════════════════════════════════════════════════════════
 
 class _PreferencesSection extends StatelessWidget {
@@ -1111,7 +1893,7 @@ class _PreferencesSection extends StatelessWidget {
     if (rows.isEmpty) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: _Rhythm.sectionGap),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1119,13 +1901,12 @@ class _PreferencesSection extends StatelessWidget {
             icon: Icons.tune_outlined,
             title: l10n.preferencesText,
           ),
-          Card(
-            margin: EdgeInsets.zero,
-            elevation: 0,
-            color: cs.surfaceContainerHighest.withOpacity(0.35),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-              side: BorderSide(color: cs.outlineVariant.withOpacity(0.5)),
+          const SizedBox(height: 10),
+          Container(
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest.withOpacity(0.35),
+              borderRadius: BorderRadius.circular(_Rhythm.cardRadius),
+              border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
             ),
             child: Padding(
               padding: const EdgeInsets.all(12),
@@ -1141,13 +1922,6 @@ class _PreferencesSection extends StatelessWidget {
     );
   }
 
-  /// Decode the `app_user_preferences` blob.
-  ///
-  /// The backend double-encodes: the DB column holds a JSON string
-  /// whose value is *itself* a JSON string. A single `jsonDecode` can
-  /// yield another string; decode twice if needed. Malformed content
-  /// returns an empty map — preferences are cosmetic and shouldn't
-  /// break the screen.
   Map<String, dynamic> _decodePreferences(String? raw) {
     if (raw == null || raw.isEmpty) return {};
     try {
@@ -1200,6 +1974,7 @@ class _PrefChip extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.2,
                 ),
+                maxLines: 1,
               ),
               Text(
                 value,
@@ -1207,6 +1982,8 @@ class _PrefChip extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   color: cs.onSurface,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -1217,28 +1994,41 @@ class _PrefChip extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════
-// Small widgets
+// Dot pattern for the cover
 // ══════════════════════════════════════════════════════════════════
 
-class _VerifiedDot extends StatelessWidget {
-  final bool verified;
-  final Color borderColor;
+class _DotPatternPainter extends CustomPainter {
+  final Color color;
+  final double spacing;
+  final double radius;
 
-  const _VerifiedDot({required this.verified, required this.borderColor});
+  _DotPatternPainter({
+    required this.color,
+    this.spacing = 24,
+    this.radius = 1.5,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 16,
-      height: 16,
-      decoration: BoxDecoration(
-        color: verified ? Colors.green : Colors.grey,
-        shape: BoxShape.circle,
-        border: Border.all(color: borderColor, width: 2.5),
-      ),
-    );
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+    for (double x = 0; x < size.width; x += spacing) {
+      for (double y = 0; y < size.height; y += spacing) {
+        canvas.drawCircle(Offset(x, y), radius, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DotPatternPainter oldDelegate) {
+    return oldDelegate.color != color ||
+        oldDelegate.spacing != spacing ||
+        oldDelegate.radius != radius;
   }
 }
+
+// ══════════════════════════════════════════════════════════════════
+// Badge tone
+// ══════════════════════════════════════════════════════════════════
 
 enum _BadgeTone { positive, neutral, warning }
 
@@ -1293,12 +2083,17 @@ class _StatusBadge extends StatelessWidget {
         children: [
           Icon(icon, size: 13, color: fg),
           const SizedBox(width: 5),
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: fg,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.2,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: fg,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.2,
+              ),
             ),
           ),
         ],

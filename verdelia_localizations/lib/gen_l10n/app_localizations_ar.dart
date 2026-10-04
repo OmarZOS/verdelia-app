@@ -7605,4 +7605,27 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get invalidLongitudeMsg => 'يجب أن يكون خط الطول بين −180 و180';
+
+  @override
+  String get cannotNavigateInvalidSupplier => 'تعذّر التنقل: معرّف المورّد غير صالح';
+
+  @override
+  String get focusOnMapTooltip => 'التركيز على الخريطة';
+
+  @override
+  String get noUserToDisplay => 'لا يوجد مستخدم للعرض';
+
+  @override
+  String copiedToClipboard(String label) {
+    return 'تم نسخ $label';
+  }
+
+  @override
+  String get editProfileLabel => 'تعديل الملف الشخصي';
+
+  @override
+  String get shareProfileLabel => 'مشاركة';
+
+  @override
+  String get noInformationAvailable => 'لا يوجد شيء لعرضه هنا بعد';
 }

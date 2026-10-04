@@ -2,13 +2,9 @@ import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 
 /// Structured, presentation-ready view of a category path.
 ///
-/// The picker lays the three parts out at different weights:
-///   - [leaf]      → the primary, large label
-///   - [subdomain] → small caption above or below the leaf
-///   - [domain]    → small caption, shown first
-///
-/// Any of the three may be empty when the source path doesn't carry
-/// that segment (legacy rows, flat categories, etc.).
+/// The three parts are kept separate so the caller can render them
+/// at different weights, or drop segments that don't fit — the single
+/// concatenated string is only useful for tooltips and autocomplete.
 class LocalizedCategoryHierarchy {
   final String domain;
   final String subdomain;
@@ -20,19 +16,30 @@ class LocalizedCategoryHierarchy {
     required this.leaf,
   });
 
+  /// True when nothing meaningful was resolved.
+  bool get isEmpty => domain.isEmpty && subdomain.isEmpty && leaf.isEmpty;
+
+  /// True when there's more than just the leaf.
+  bool get hasHierarchy => domain.isNotEmpty || subdomain.isNotEmpty;
+
   /// Small caption above the leaf: `domain › subdomain`.
-  /// Empty when both parts are missing.
   String get caption {
     final parts = [domain, subdomain].where((p) => p.isNotEmpty);
-    return parts.join('  ›  ');
+    return parts.join(' › ');
   }
 
-  /// Combined single-line form, useful for autocomplete, tooltips,
-  /// chips, or anywhere that can't render two weights.
+  /// Combined single-line form, for tooltips or anywhere that
+  /// genuinely has one line and full width. Prefer rendering the
+  /// parts separately — this string is what causes overflow when
+  /// shoved into a chip or a card subtitle.
   String get fullLabel {
     final parts = [domain, subdomain, leaf].where((p) => p.isNotEmpty);
-    return parts.join('  ›  ');
+    return parts.join(' › ');
   }
+
+  /// Just the leaf. Safe for narrow slots like chips, trailing text,
+  /// and list subtitles.
+  String get leafOnly => leaf;
 
   @override
   String toString() => fullLabel;
@@ -41,9 +48,8 @@ class LocalizedCategoryHierarchy {
 /// Build a presentation-ready hierarchy from a dotted category path.
 ///
 /// [categoryPath] is the raw dotted key (`domain.subdomain.category`).
-/// [localizedLeaf] is the leaf's localized display string — it takes
-/// precedence over the raw trailing segment so the caller controls
-/// how the leaf name is resolved.
+/// [localizedLeaf] takes precedence over the raw trailing segment so
+/// the caller controls how the leaf name is resolved.
 LocalizedCategoryHierarchy localizedCategoryHierarchyParts({
   required String categoryPath,
   required String localizedLeaf,
@@ -55,7 +61,6 @@ LocalizedCategoryHierarchy localizedCategoryHierarchyParts({
       .where((segment) => segment.isNotEmpty)
       .toList();
 
-  // Leaf: prefer the caller-provided localized name.
   final resolvedLeaf = localizedLeaf.isNotEmpty && !localizedLeaf.contains('.')
       ? localizedLeaf
       : (segments.isEmpty ? '' : _humanize(segments.last));
@@ -76,10 +81,13 @@ LocalizedCategoryHierarchy localizedCategoryHierarchyParts({
   );
 }
 
-/// Backwards-compatible single-string form.
+/// Single-string form. Kept for backwards compatibility with callers
+/// that genuinely only render one line. New callers should prefer
+/// [localizedCategoryHierarchyParts] and pick the segments they need.
 ///
-/// Kept so existing callers that only render one line
-/// (autocomplete rows, filter chips, breadcrumbs) don't break.
+/// This is the function that produces the long
+/// `"Food › Dining › Restaurants"` string. If you're hitting
+/// overflow, use the parts version and render only `leaf`.
 String localizedCategoryHierarchy({
   required String categoryPath,
   required String localizedLeaf,
@@ -90,6 +98,20 @@ String localizedCategoryHierarchy({
     localizedLeaf: localizedLeaf,
     localizations: localizations,
   ).fullLabel;
+}
+
+/// Convenience wrapper: the leaf, localized. This is what a chip,
+/// a card subtitle, or a trailing label should use.
+String localizedCategoryLeaf({
+  required String categoryPath,
+  required String localizedLeaf,
+  required AppLocalizations localizations,
+}) {
+  return localizedCategoryHierarchyParts(
+    categoryPath: categoryPath,
+    localizedLeaf: localizedLeaf,
+    localizations: localizations,
+  ).leaf;
 }
 
 String localizedCategorySegment(AppLocalizations localizations, String key) {

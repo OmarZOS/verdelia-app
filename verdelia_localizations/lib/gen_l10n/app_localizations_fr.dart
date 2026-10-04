@@ -7605,4 +7605,27 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get invalidLongitudeMsg => 'La longitude doit être comprise entre −180 et 180';
+
+  @override
+  String get cannotNavigateInvalidSupplier => 'Navigation impossible : identifiant de fournisseur invalide';
+
+  @override
+  String get focusOnMapTooltip => 'Centrer sur la carte';
+
+  @override
+  String get noUserToDisplay => 'Aucun utilisateur à afficher';
+
+  @override
+  String copiedToClipboard(String label) {
+    return '$label copié';
+  }
+
+  @override
+  String get editProfileLabel => 'Modifier le profil';
+
+  @override
+  String get shareProfileLabel => 'Partager';
+
+  @override
+  String get noInformationAvailable => 'Rien à afficher ici pour le moment';
 }

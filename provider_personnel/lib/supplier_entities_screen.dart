@@ -71,12 +71,6 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
 
   int get _pendingCount => _pendingRules.length;
 
-  /// Filter suppliers by the current type and query.
-  ///
-  /// The search matches against the flat provider name AND against
-  /// every language in the naming contribution, so a user typing in
-  /// Arabic or French finds the same rows a user typing in English
-  /// would find.
   List<AccessibleSupplier> get _filtered {
     var suppliers = _visibleSuppliers;
 
@@ -96,13 +90,11 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       suppliers = suppliers.where((s) {
-        // Provider matches: flat + every language on the naming block.
         final providerMatches = _matchesQuery(s.supplier.providerName, q) ||
             _matchesQuery(s.supplier.naming?.en, q) ||
             _matchesQuery(s.supplier.naming?.ar, q) ||
             _matchesQuery(s.supplier.naming?.fr, q);
 
-        // Org matches: same idea.
         final orgMatches =
             _matchesQuery(s.supplier.providerOrganisationName, q) ||
                 _matchesQuery(s.supplier.organisationNaming?.en, q) ||
@@ -134,6 +126,7 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       widget.supplierNotifier.fetchSupplierCategories();
       if (_visibleSuppliers.isEmpty && widget.userId > 0) {
         _loadData();
@@ -169,10 +162,10 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
       ]);
 
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                AppLocalizations.of(context)?.refreshSuccess ?? 'Refreshed'),
+            content: Text(l10n?.refreshSuccess ?? 'Refreshed'),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 2),
           ),
@@ -180,9 +173,10 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${AppLocalizations.of(context)?.error}: $e'),
+            content: Text('${l10n?.error ?? 'Error'}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -241,192 +235,286 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
     ColorScheme cs,
     int count,
     int pending,
-  ) =>
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: cs.primary,
-          borderRadius: const BorderRadius.vertical(
-            bottom: Radius.circular(16),
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      decoration: BoxDecoration(
+        color: cs.primary,
+        borderRadius: const BorderRadius.vertical(
+          bottom: Radius.circular(16),
+        ),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: Icon(Icons.arrow_back_rounded, color: cs.onPrimary),
+            onPressed: () => Navigator.pop(context),
+            tooltip: l10n?.back ?? 'Back',
           ),
-        ),
-        child: Row(
-          children: [
-            IconButton(
-              icon: Icon(Icons.arrow_back_rounded, color: cs.onPrimary),
-              onPressed: () => Navigator.pop(context),
-              tooltip: l10n?.back ?? 'Back',
-            ),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n?.businesses ?? 'Businesses',
-                    style: TextStyle(
-                      color: cs.onPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    '$count ${l10n?.accessible ?? 'accessible'}${pending > 0 ? ' • $pending ${l10n?.pending ?? 'pending'}' : ''}',
-                    style: TextStyle(
-                      color: cs.onPrimary.withOpacity(0.8),
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              icon: _isLoading
-                  ? SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Below this width, the subtitle becomes a compact
+                // "count only" form. The title never wraps.
+                final compact = constraints.maxWidth < 200;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      l10n?.businesses ?? 'Businesses',
+                      style: TextStyle(
                         color: cs.onPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
-                    )
-                  : Icon(Icons.refresh, color: cs.onPrimary),
-              onPressed: _isLoading ? null : _refresh,
-              tooltip: l10n?.refresh ?? 'Refresh',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      compact
+                          ? '$count'
+                          : pending > 0
+                              ? '$count ${l10n?.accessible ?? 'accessible'}'
+                                  ' • $pending ${l10n?.pending ?? 'pending'}'
+                              : '$count ${l10n?.accessible ?? 'accessible'}',
+                      style: TextStyle(
+                        color: cs.onPrimary.withOpacity(0.8),
+                        fontSize: 13,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                );
+              },
             ),
-          ],
-        ),
-      );
+          ),
+          const SizedBox(width: 4),
+          IconButton(
+            icon: _isLoading
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: cs.onPrimary,
+                    ),
+                  )
+                : Icon(Icons.refresh, color: cs.onPrimary),
+            onPressed: _isLoading ? null : _refresh,
+            tooltip: l10n?.refresh ?? 'Refresh',
+          ),
+        ],
+      ),
+    );
+  }
 
   // ============================================================
   // SEARCH
   // ============================================================
 
-  Widget _buildSearch(AppLocalizations? l10n, ColorScheme cs) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: TextField(
-          controller: _searchController,
-          decoration: InputDecoration(
-            hintText: l10n?.searchBusinesses ?? 'Search businesses...',
-            prefixIcon: Icon(Icons.search, color: cs.primary),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: cs.outline.withOpacity(0.3)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: cs.outline.withOpacity(0.3)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: cs.primary, width: 2),
-            ),
-            filled: true,
-            fillColor: cs.surfaceVariant.withOpacity(0.2),
-            suffixIcon: _searchQuery.isNotEmpty
-                ? IconButton(
-                    icon: Icon(Icons.clear, color: cs.onSurfaceVariant),
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() => _searchQuery = '');
-                    },
-                  )
-                : null,
+  Widget _buildSearch(AppLocalizations? l10n, ColorScheme cs) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: l10n?.searchBusinesses ?? 'Search businesses...',
+          hintMaxLines: 1,
+          prefixIcon: Icon(Icons.search, color: cs.primary),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: cs.outline.withOpacity(0.3)),
           ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: cs.outline.withOpacity(0.3)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: cs.primary, width: 2),
+          ),
+          filled: true,
+          fillColor: cs.surfaceVariant.withOpacity(0.2),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: Icon(Icons.clear, color: cs.onSurfaceVariant),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                )
+              : null,
         ),
-      );
+      ),
+    );
+  }
 
   // ============================================================
   // STATS
   // ============================================================
+  //
+  // The chip row is horizontally scrollable so it never overflows
+  // regardless of language or text scale. When the row is too wide
+  // for the screen, the user scrolls; individual chips never wrap.
 
   Widget _buildStats(
     AppLocalizations? l10n,
     ColorScheme cs,
     int total,
     int pending,
-  ) =>
-      Padding(
+  ) {
+    return SizedBox(
+      height: 34,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           children: [
-            _chip(l10n?.total ?? 'Total', total, cs.primary),
+            _chip(
+              icon: Icons.apps_rounded,
+              label: l10n?.total ?? 'Total',
+              count: total,
+              color: cs.primary,
+            ),
             const SizedBox(width: 8),
-            _chip(l10n?.owned ?? 'Owned', _owned.length, Colors.blue),
+            _chip(
+              icon: Icons.person_rounded,
+              label: l10n?.owned ?? 'Owned',
+              count: _owned.length,
+              color: Colors.blue,
+            ),
             const SizedBox(width: 8),
-            _chip(l10n?.managed ?? 'Managed', _managed.length, Colors.green),
+            _chip(
+              icon: Icons.group_rounded,
+              label: l10n?.managed ?? 'Managed',
+              count: _managed.length,
+              color: Colors.green,
+            ),
             if (pending > 0) ...[
               const SizedBox(width: 8),
-              _chip(l10n?.pending ?? 'Pending', pending, Colors.orange),
+              _chip(
+                icon: Icons.schedule_rounded,
+                label: l10n?.pending ?? 'Pending',
+                count: pending,
+                color: Colors.orange,
+              ),
             ],
           ],
         ),
-      );
+      ),
+    );
+  }
 
-  Widget _chip(String label, int count, Color color) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '$count',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: color,
-                fontSize: 12,
-              ),
+  Widget _chip({
+    required IconData icon,
+    required String label,
+    required int count,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            '$count',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: color,
+              fontSize: 12,
             ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(color: color, fontSize: 11),
-            ),
-          ],
-        ),
-      );
+            maxLines: 1,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(color: color, fontSize: 11),
+            maxLines: 1,
+            softWrap: false,
+          ),
+        ],
+      ),
+    );
+  }
 
   // ============================================================
   // FILTERS
   // ============================================================
+  //
+  // Same treatment: horizontally scrollable, per-chip text never
+  // wraps. Chips stay their natural size; the row scrolls.
 
   Widget _buildFilters(AppLocalizations? l10n, ColorScheme cs) {
     final filters = [
-      {'value': 'all', 'label': l10n?.all ?? 'All'},
-      {'value': 'owned', 'label': l10n?.owned ?? 'Owned'},
-      {'value': 'managed', 'label': l10n?.managed ?? 'Managed'},
-      {'value': 'pending', 'label': l10n?.pendingInvitations ?? 'Pending'},
+      (
+        value: 'all',
+        icon: Icons.apps_rounded,
+        label: l10n?.all ?? 'All',
+      ),
+      (
+        value: 'owned',
+        icon: Icons.person_rounded,
+        label: l10n?.owned ?? 'Owned',
+      ),
+      (
+        value: 'managed',
+        icon: Icons.group_rounded,
+        label: l10n?.managed ?? 'Managed',
+      ),
+      (
+        value: 'pending',
+        icon: Icons.schedule_rounded,
+        label: l10n?.pendingInvitations ?? 'Pending',
+      ),
     ];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: filters.map((f) {
-            final selected = _filterType == f['value'];
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilterChip(
-                label: Text(f['label']!),
-                selected: selected,
-                onSelected: (_) => setState(() => _filterType = f['value']!),
-                selectedColor: cs.primary.withOpacity(0.15),
-                checkmarkColor: cs.primary,
-                labelStyle: TextStyle(
-                  color: selected ? cs.primary : cs.onSurface,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: SizedBox(
+        height: 40,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: filters.map((f) {
+              final selected = _filterType == f.value;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  avatar: selected
+                      ? null
+                      : Icon(f.icon, size: 16, color: cs.onSurfaceVariant),
+                  label: Text(
+                    f.label,
+                    maxLines: 1,
+                    softWrap: false,
+                  ),
+                  selected: selected,
+                  showCheckmark: true,
+                  onSelected: (_) => setState(() => _filterType = f.value),
+                  selectedColor: cs.primary.withOpacity(0.15),
+                  checkmarkColor: cs.primary,
+                  labelStyle: TextStyle(
+                    color: selected ? cs.primary : cs.onSurface,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                  side: selected
+                      ? BorderSide(color: cs.primary, width: 2)
+                      : BorderSide(color: cs.outline.withOpacity(0.3)),
                 ),
-                side: selected
-                    ? BorderSide(color: cs.primary, width: 2)
-                    : BorderSide(color: cs.outline.withOpacity(0.3)),
-              ),
-            );
-          }).toList(),
+              );
+            }).toList(),
+          ),
         ),
       ),
     );
@@ -441,16 +529,26 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
 
     if (pendingRules.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.inbox_rounded, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            Text(
-              l10n?.noPendingInvitations ?? 'No pending invitations',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.inbox_rounded,
+                size: 64,
+                color: Colors.grey.shade400,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                l10n?.noPendingInvitations ?? 'No pending invitations',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -470,8 +568,6 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
     final supplier = rule.productProvider!;
     final createdAt = rule.createdAt;
 
-    // Resolve the name for the ambient locale so the pending card
-    // shows the same translation the rest of the app uses.
     final localeLang = Localizations.localeOf(context).languageCode;
     final displayName = supplier.nameFor(localeLang);
     final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'S';
@@ -525,7 +621,12 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
                         maxLines: 1,
                       ),
                       const SizedBox(height: 4),
-                      Row(
+                      // Wrap so the date chip drops to a new line
+                      // when the row is too narrow for both.
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -541,14 +642,15 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
                             ),
                             child: Text(
                               l10n?.pending ?? 'Pending',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 10,
                                 color: Colors.orange,
                                 fontWeight: FontWeight.w600,
                               ),
+                              maxLines: 1,
+                              softWrap: false,
                             ),
                           ),
-                          const SizedBox(width: 8),
                           if (createdAt != null)
                             Text(
                               _formatDate(createdAt.toIso8601String()),
@@ -556,6 +658,8 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
                                 fontSize: 11,
                                 color: cs.onSurfaceVariant,
                               ),
+                              maxLines: 1,
+                              softWrap: false,
                             ),
                         ],
                       ),
@@ -565,44 +669,77 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
               ],
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _handleInvitation(rule, true),
-                    icon: const Icon(Icons.close_rounded, size: 18),
-                    label: Text(l10n?.decline ?? 'Decline'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: BorderSide(color: Colors.red.withOpacity(0.3)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+            // Action row collapses to icon-only buttons below a
+            // per-button width threshold.
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final perButton = (constraints.maxWidth - 12) / 2;
+                final showLabels = perButton >= 110;
+
+                return Row(
+                  children: [
+                    Expanded(
+                      child: showLabels
+                          ? OutlinedButton.icon(
+                              onPressed: () => _handleInvitation(rule, true),
+                              icon: const Icon(Icons.close_rounded, size: 18),
+                              label: Text(l10n?.decline ?? 'Decline'),
+                              style: _declineStyle(),
+                            )
+                          : OutlinedButton(
+                              onPressed: () => _handleInvitation(rule, true),
+                              style: _declineStyle(),
+                              child: const Icon(
+                                Icons.close_rounded,
+                                size: 20,
+                              ),
+                            ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _handleInvitation(rule, false),
-                    icon: const Icon(Icons.check_rounded, size: 18),
-                    label: Text(l10n?.accept ?? 'Accept'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: showLabels
+                          ? ElevatedButton.icon(
+                              onPressed: () => _handleInvitation(rule, false),
+                              icon: const Icon(Icons.check_rounded, size: 18),
+                              label: Text(l10n?.accept ?? 'Accept'),
+                              style: _acceptStyle(),
+                            )
+                          : ElevatedButton(
+                              onPressed: () => _handleInvitation(rule, false),
+                              style: _acceptStyle(),
+                              child: const Icon(
+                                Icons.check_rounded,
+                                size: 20,
+                              ),
+                            ),
                     ),
-                  ),
-                ),
-              ],
+                  ],
+                );
+              },
             ),
           ],
         ),
       ),
     );
   }
+
+  ButtonStyle _declineStyle() => OutlinedButton.styleFrom(
+        foregroundColor: Colors.red,
+        side: BorderSide(color: Colors.red.withOpacity(0.3)),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      );
+
+  ButtonStyle _acceptStyle() => ElevatedButton.styleFrom(
+        backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      );
 
   // ============================================================
   // INVITATION ACTIONS
@@ -618,33 +755,31 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
         answer: answer,
       );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              success
-                  ? (isDecline
-                      ? l10n?.invitationDeclinedSuccessfully ??
-                          'Invitation declined successfully'
-                      : l10n?.invitationAcceptedSuccessfully ??
-                          'Invitation accepted successfully')
-                  : l10n?.failedToProcessInvitation ??
-                      'Failed to process invitation',
-            ),
-            backgroundColor: success ? Colors.green : Colors.red,
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? (isDecline
+                    ? l10n?.invitationDeclinedSuccessfully ??
+                        'Invitation declined successfully'
+                    : l10n?.invitationAcceptedSuccessfully ??
+                        'Invitation accepted successfully')
+                : l10n?.failedToProcessInvitation ??
+                    'Failed to process invitation',
           ),
-        );
-        if (success) _refresh();
-      }
+          backgroundColor: success ? Colors.green : Colors.red,
+        ),
+      );
+      if (success) _refresh();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${l10n?.error}: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${l10n?.error ?? 'Error'}: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -656,27 +791,40 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
       AppLocalizations? l10n, List<AccessibleSupplier> suppliers) {
     if (suppliers.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.business_rounded, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            Text(
-              _searchQuery.isNotEmpty
-                  ? l10n?.noResults ?? 'No results found'
-                  : l10n?.noBusinesses ?? 'No businesses',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
-            ),
-            if (_searchQuery.isNotEmpty)
-              OutlinedButton.icon(
-                onPressed: () {
-                  _searchController.clear();
-                  setState(() => _searchQuery = '');
-                },
-                icon: const Icon(Icons.clear, size: 18),
-                label: Text(l10n?.clearSearch ?? 'Clear search'),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.business_rounded,
+                size: 64,
+                color: Colors.grey.shade400,
               ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                _searchQuery.isNotEmpty
+                    ? l10n?.noResults ?? 'No results found'
+                    : l10n?.noBusinesses ?? 'No businesses',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (_searchQuery.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                    icon: const Icon(Icons.clear, size: 18),
+                    label: Text(l10n?.clearSearch ?? 'Clear search'),
+                  ),
+                ),
+            ],
+          ),
         ),
       );
     }
@@ -712,9 +860,17 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
 
     Widget? trailing;
     if (hasManage) {
-      trailing = _permissionChip(l10n?.canManage ?? 'Can Manage', Colors.green);
+      trailing = _permissionChip(
+        icon: Icons.settings_rounded,
+        label: l10n?.canManage ?? 'Can Manage',
+        color: Colors.green,
+      );
     } else if (hasView) {
-      trailing = _permissionChip(l10n?.canView ?? 'Can View', Colors.blue);
+      trailing = _permissionChip(
+        icon: Icons.visibility_rounded,
+        label: l10n?.canView ?? 'Can View',
+        color: Colors.blue,
+      );
     }
 
     return SupplierCard(
@@ -733,29 +889,37 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
     );
   }
 
-  Widget _permissionChip(String label, Color color) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withOpacity(0.2)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.check_circle, size: 14, color: color),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
+  Widget _permissionChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: color,
+              fontWeight: FontWeight.w600,
             ),
-          ],
-        ),
-      );
+            maxLines: 1,
+            softWrap: false,
+          ),
+        ],
+      ),
+    );
+  }
 
   // ============================================================
   // PRIVILEGES DIALOG
@@ -786,7 +950,6 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
     final active = rules.where((r) => r.isActive).toList();
     final pending = rules.where((r) => r.isPending).toList();
 
-    // Resolve the name once for the dialog header.
     final localeLang = Localizations.localeOf(context).languageCode;
     final displayName = supplier.nameFor(localeLang);
     final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'S';
@@ -817,6 +980,7 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
                       fontWeight: FontWeight.bold,
                     ),
                 overflow: TextOverflow.ellipsis,
+                maxLines: 2,
               ),
             ),
           ],
@@ -843,14 +1007,6 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
                   false,
                 ),
               ],
-              if (rules.isEmpty)
-                Text(
-                  AppLocalizations.of(context)?.noPrivileges ??
-                      'No privileges assigned.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
             ],
           ),
         ),
@@ -885,6 +1041,8 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
               fontWeight: FontWeight.bold,
               color: active ? Colors.green : Colors.orange,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 8),
           ...rules.map((r) => _privilegeTile(r, active)),
@@ -894,22 +1052,21 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
   Widget _privilegeTile(ManagementRule rule, bool active) {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context);
+    final accent = active ? Colors.green : Colors.orange;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: (active ? Colors.green : Colors.orange).withOpacity(0.05),
+        color: accent.withOpacity(0.05),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: (active ? Colors.green : Colors.orange).withOpacity(0.2),
-        ),
+        border: Border.all(color: accent.withOpacity(0.2)),
       ),
       child: Row(
         children: [
           Icon(
             active ? Icons.check_circle_rounded : Icons.access_time_rounded,
-            color: active ? Colors.green : Colors.orange,
+            color: accent,
             size: 18,
           ),
           const SizedBox(width: 10),
@@ -923,6 +1080,8 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
                     fontWeight: FontWeight.w500,
                     color: cs.onSurface,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 if (rule.managementRuleExpiry != null)
                   Text(
@@ -932,14 +1091,17 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
                       fontSize: 10,
                       color: cs.onSurfaceVariant,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
               ],
             ),
           ),
+          const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: (active ? Colors.green : Colors.orange).withOpacity(0.1),
+              color: accent.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -948,9 +1110,11 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
                   : (l10n?.pendingStatus ?? 'Pending'),
               style: TextStyle(
                 fontSize: 9,
-                color: active ? Colors.green : Colors.orange,
+                color: accent,
                 fontWeight: FontWeight.w600,
               ),
+              maxLines: 1,
+              softWrap: false,
             ),
           ),
         ],
@@ -958,19 +1122,7 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
     );
   }
 
-  /// Human-readable label for a rule code.
-  ///
-  /// Falls back to `AppLocalizations.privilegeByCode` when available;
-  /// otherwise returns the raw code. Migrate this map to ARB when you
-  /// want full localization; the fallback keeps the screen working
-  /// while the ARB keys are being added.
   String _getPrivilegeDisplay(int code, AppLocalizations? l10n) {
-    // If AppLocalizations exposes a `privilege_<code>` lookup, use it.
-    // Uncomment and adapt once the ARB keys land:
-    //
-    // final resolved = l10n?.privilegeByCode(code);
-    // if (resolved != null && resolved.isNotEmpty) return resolved;
-
     const map = {
       1: 'Admin',
       2: 'Manage Personnel',
@@ -1000,10 +1152,6 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
       context,
       AppRoutes.supplierManage,
       arguments: {
-        // Route arg stays the flat name — the downstream screen
-        // resolves its own locale-aware name when it needs to render
-        // a header. Passing the flat name keeps the argument stable
-        // across locale changes.
         'supplierName': supplier.providerName,
         'orgId': supplier.idProviderOrganisation,
         'supplierId': supplier.idProductProvider,
@@ -1022,7 +1170,11 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
             children: [
               const CircularProgressIndicator.adaptive(),
               const SizedBox(height: 16),
-              Text(l10n?.loading ?? 'Loading...'),
+              Text(
+                l10n?.loading ?? 'Loading...',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ),
         ),
@@ -1039,22 +1191,50 @@ class _SupplierEntitiesScreenState extends State<SupplierEntitiesScreen>
     }
   }
 
-  Widget _buildFab(AppLocalizations? l10n, ColorScheme cs) =>
-      FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.pushNamed(
-            context,
-            AppRoutes.supplierManage,
-            arguments: {
-              'supplierId': 0,
-              'orgId': 0,
-              'isNew': true,
-            },
+  Widget _buildFab(AppLocalizations? l10n, ColorScheme cs) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // If the FAB would exceed roughly half the screen width, drop
+        // to icon-only. This handles long translations and small
+        // screens without a floating-action-overflow stripe.
+        final label = l10n?.add ?? 'Add';
+        final approxWidth = 40 + label.length * 9.0;
+        final showLabel = approxWidth < constraints.maxWidth * 0.5;
+
+        if (!showLabel) {
+          return FloatingActionButton(
+            onPressed: () => _navigateToNew(),
+            backgroundColor: cs.primary,
+            foregroundColor: cs.onPrimary,
+            tooltip: label,
+            child: const Icon(Icons.add_business_rounded),
           );
-        },
-        backgroundColor: cs.primary,
-        foregroundColor: cs.onPrimary,
-        icon: const Icon(Icons.add_business_rounded),
-        label: Text(l10n?.add ?? 'Add'),
-      );
+        }
+
+        return FloatingActionButton.extended(
+          onPressed: _navigateToNew,
+          backgroundColor: cs.primary,
+          foregroundColor: cs.onPrimary,
+          icon: const Icon(Icons.add_business_rounded),
+          label: Text(
+            label,
+            maxLines: 1,
+            softWrap: false,
+          ),
+        );
+      },
+    );
+  }
+
+  void _navigateToNew() {
+    Navigator.pushNamed(
+      context,
+      AppRoutes.supplierManage,
+      arguments: {
+        'supplierId': 0,
+        'orgId': 0,
+        'isNew': true,
+      },
+    );
+  }
 }
