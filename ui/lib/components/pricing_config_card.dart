@@ -4,7 +4,6 @@ import 'dart:async';
 import 'dart:ui' show FontFeature;
 
 import 'package:app_constants/app_constants.dart';
-import 'package:event/views/pricing_config_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
@@ -98,9 +97,6 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
   void didUpdateWidget(covariant PricingConfigCard oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Sync controllers from state, but never stomp a field the user is
-    // actively typing in. If the user is focused, the controller is
-    // authoritative and the state will catch up on commit.
     if (widget.basePrice != oldWidget.basePrice && !_basePriceFocus.hasFocus) {
       _basePriceController.text = widget.basePrice.toStringAsFixed(2);
     }
@@ -151,7 +147,6 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
     _debounce = Timer(widget.debounce, () => _commit(field));
   }
 
-  /// Emit the raw user input for [field]. No derivation here.
   void _commit(String field) {
     _debounce?.cancel();
     _pendingField = null;
@@ -176,8 +171,6 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
 
   // ==================== AI suggestion ====================
 
-  /// True when the AI price is present and differs from the current
-  /// final price.
   bool get _aiAvailable {
     final ai = widget.aiPrice;
     if (ai == null || ai <= 0) return false;
@@ -224,6 +217,8 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -250,7 +245,7 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
             controller: _basePriceController,
             focusNode: _basePriceFocus,
             icon: Icons.inventory_2_outlined,
-            suffix: 'DZD',
+            suffix: loc.currencyCode,
             onChanged: (_) => _scheduleCommit('base'),
             onSubmitted: (_) => _commit('base'),
           ),
@@ -284,7 +279,7 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
               controller: _finalPriceController,
               focusNode: _finalPriceFocus,
               icon: Icons.sell_outlined,
-              suffix: 'DZD',
+              suffix: loc.currencyCode,
               onChanged: (_) => _scheduleCommit('final'),
               onSubmitted: (_) => _commit('final'),
             ),
@@ -300,6 +295,29 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
         ],
       ),
     );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Shared number formatting helpers
+// ══════════════════════════════════════════════════════════════════
+
+/// Formats [amount] as a signed price using the locale's own sign
+/// placement. The `+` / `−` never sits on the wrong side of the
+/// numeral in Arabic, where the whole token is a single bidi run.
+extension _PricingFormatting on AppLocalizations {
+  String signedPrice(double amount, {bool alwaysSign = false}) {
+    final formatted = price(amount.abs().toStringAsFixed(2));
+    if (amount < 0) return priceNegative(formatted);
+    if (alwaysSign) return pricePositive(formatted);
+    return formatted;
+  }
+
+  String signedPercent(double value, {bool alwaysSign = false}) {
+    final formatted = value.abs().toStringAsFixed(2);
+    if (value < 0) return '$formatted%−';
+    if (alwaysSign) return '+$formatted%';
+    return '$formatted%';
   }
 }
 
@@ -344,6 +362,7 @@ class _AiSuggestionStrip extends StatelessWidget {
         border: Border.all(color: cs.primary.withOpacity(0.2)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.auto_awesome, size: 20, color: cs.primary),
           const SizedBox(width: 8),
@@ -359,15 +378,19 @@ class _AiSuggestionStrip extends StatelessWidget {
                     color: cs.onSurface,
                     fontWeight: FontWeight.w600,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'DZD ${aiPrice.toStringAsFixed(2)}',
+                  loc.price(aiPrice.toStringAsFixed(2)),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: cs.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 if (!applied)
                   Padding(
@@ -383,11 +406,14 @@ class _AiSuggestionStrip extends StatelessWidget {
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: accent,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
               ],
             ),
           ),
+          const SizedBox(width: 8),
           Container(
             width: 40,
             height: 40,
@@ -467,57 +493,75 @@ class _ModeTab extends StatelessWidget {
     required this.onTap,
   });
 
+  /// Below this per-tab width, the icon is dropped so the label
+  /// has room. Above it, both icon and label render.
+  static const double _iconMinWidth = 120;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
     return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: selected ? cs.surface : Colors.transparent,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final showIcon = constraints.maxWidth >= _iconMinWidth;
+
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
               borderRadius: BorderRadius.circular(10),
-              boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: cs.shadow.withOpacity(0.08),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: selected ? cs.surface : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: cs.shadow.withOpacity(0.08),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (showIcon) ...[
+                      Icon(
+                        icon,
+                        size: 16,
+                        color: selected ? cs.primary : cs.onSurfaceVariant,
                       ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  icon,
-                  size: 16,
-                  color: selected ? cs.primary : cs.onSurfaceVariant,
-                ),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: selected ? cs.primary : cs.onSurfaceVariant,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      const SizedBox(width: 6),
+                    ],
+                    Flexible(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: selected ? cs.primary : cs.onSurfaceVariant,
+                          fontWeight:
+                              selected ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -560,6 +604,8 @@ class _NumericField extends StatelessWidget {
             color: cs.onSurfaceVariant,
             fontWeight: FontWeight.w600,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 6),
         TextField(
@@ -579,6 +625,7 @@ class _NumericField extends StatelessWidget {
             helperStyle: theme.textTheme.bodySmall?.copyWith(
               color: cs.onSurfaceVariant.withOpacity(0.7),
             ),
+            helperMaxLines: 2,
             filled: true,
             fillColor: cs.surfaceVariant.withOpacity(0.3),
             contentPadding:
@@ -655,21 +702,23 @@ class _PricePreview extends StatelessWidget {
               fontWeight: FontWeight.w700,
               letterSpacing: 1.2,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 14),
           _PreviewRow(
             label: loc.pricingBasePriceLabel,
-            value: _fmt(basePrice, loc),
+            value: loc.signedPrice(basePrice),
           ),
           const SizedBox(height: 8),
           _PreviewRow(
             label: loc.pricingTaxLabel,
-            value: '+ ${_fmt(taxAmount, loc)}',
+            value: loc.signedPrice(taxAmount, alwaysSign: true),
           ),
           const SizedBox(height: 8),
           _PreviewRow(
             label: loc.pricingPriceAfterTaxLabel,
-            value: _fmt(priceAfterTax, loc),
+            value: loc.signedPrice(priceAfterTax),
             muted: true,
           ),
           const SizedBox(height: 8),
@@ -677,7 +726,7 @@ class _PricePreview extends StatelessWidget {
             label: loc.pricingProfitRowLabel(
               profitPercentage.toStringAsFixed(2),
             ),
-            value: '${profitPositive ? '+' : ''} ${_fmt(profitAmount, loc)}',
+            value: loc.signedPrice(profitAmount, alwaysSign: true),
             valueColor: profitPositive ? Colors.green.shade700 : cs.error,
           ),
           const Padding(
@@ -694,21 +743,31 @@ class _PricePreview extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                     color: cs.onSurface,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Text(
-                _fmt(finalPrice, loc),
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  color: cs.primary,
-                  fontWeight: FontWeight.w800,
-                  height: 1,
+              const SizedBox(width: 8),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: Text(
+                    loc.signedPrice(finalPrice),
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: cs.primary,
+                      fontWeight: FontWeight.w800,
+                      height: 1,
+                    ),
+                    maxLines: 1,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Align(
-            alignment: Alignment.centerRight,
+            alignment: AlignmentDirectional.centerEnd,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
@@ -727,12 +786,20 @@ class _PricePreview extends StatelessWidget {
                     color: profitPositive ? Colors.green.shade700 : cs.error,
                   ),
                   const SizedBox(width: 4),
-                  Text(
-                    '${profitPositive ? '+' : ''}'
-                    '${profitPercentage.toStringAsFixed(2)}%',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: profitPositive ? Colors.green.shade700 : cs.error,
-                      fontWeight: FontWeight.w700,
+                  Flexible(
+                    child: Text(
+                      loc.signedPercent(
+                        profitPercentage,
+                        alwaysSign: true,
+                      ),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color:
+                            profitPositive ? Colors.green.shade700 : cs.error,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
                     ),
                   ),
                 ],
@@ -742,10 +809,6 @@ class _PricePreview extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _fmt(double amount, AppLocalizations loc) {
-    return loc.price(amount.toStringAsFixed(2));
   }
 }
 
@@ -768,7 +831,7 @@ class _PreviewRow extends StatelessWidget {
     final cs = theme.colorScheme;
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Text(
@@ -778,14 +841,23 @@ class _PreviewRow extends StatelessWidget {
                   ? cs.onSurfaceVariant.withOpacity(0.7)
                   : cs.onSurfaceVariant,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-        Text(
-          value,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: valueColor ?? cs.onSurface,
-            fontWeight: FontWeight.w600,
-            fontFeatures: const [FontFeature.tabularFigures()],
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: valueColor ?? cs.onSurface,
+              fontWeight: FontWeight.w600,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+            textAlign: TextAlign.end,
           ),
         ),
       ],

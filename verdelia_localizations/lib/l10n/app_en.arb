@@ -1703,7 +1703,7 @@
   "durationPositive": "Duration must be positive",
   "enterBasePrice": "Enter base price",
   "basePriceRequired": "Base price is required",
-  "pricePositive": "Price must be positive",
+  "pricePositiveCondition": "Price must be positive",
   "enterFinalPrice": "Enter final price",
   "finalPriceRequired": "Final price is required",
   "pricingConfiguration": "Pricing Configuration",
@@ -2802,5 +2802,208 @@
   "@resourceTypeSupply": {
     "description": "Resource type: supply"
   },
-  "staffHourlyRateLabel": "{rate}/h"
+  "staffHourlyRateLabel": "{rate}/h",
+
+  "verificationStatusText": "Verification",
+  "verifiedLabel": "Verified",
+  "unverifiedLabel": "Not verified",
+  "unknownLabel": "Unknown",
+  "phoneText": "Phone",
+  "emailText": "Email",
+  "subscriptionInfoText": "Subscription",
+  "subscriptionPlanText": "Plan",
+  "subscriptionExpiryText": "Expires",
+  "quotaText": "Quota",
+
+  "verificationStatusText": "التحقق",
+  "verifiedLabel": "موثّق",
+  "unverifiedLabel": "غير موثّق",
+  "invalidEmail": "Enter a valid email address",
+  "unknownLabel": "غير معروف",
+
+  "coordinatesText": "Coordinates",
+  "subscriptionIdText": "Subscription ID",
+  "subscriptionPaymentText": "Payment ID",
+  "subscriptionQuotaText": "Quota",
+  "subscriptionCreatedText": "Subscribed on",
+  "subscriptionStatusText": "Status",
+  "subscriptionActiveLabel": "Active",
+  "subscriptionInactiveLabel": "Inactive",
+  "walletSectionText": "Wallet",
+  "walletIdText": "Wallet ID",
+  "walletBalanceText": "Balance",
+  "walletStatusText": "Status",
+  "walletTypeText": "Type",
+  "walletCurrencyText": "Currency",
+  "walletVersionText": "Version",
+  "walletStatusActive": "Active",
+  "walletStatusPendingVerification": "Pending verification",
+  "walletStatusInactive": "Inactive",
+  "walletStatusSuspended": "Suspended",
+  "walletStatusClosed": "Closed",
+  "walletTypeUser": "User",
+  "walletTypeProvider": "Provider",
+  "walletTypeOrganization": "Organization",
+  "walletTypeSystem": "System",
+  "walletTypeVirtual": "Virtual",
+  "walletTypeBusiness": "Business",
+  "quotaSectionText": "Usage quota",
+  "accountStatusText": "Account status",
+  "loginMethodText": "Login method",
+  "loginOptionGoogle": "Google",
+  "loginOptionVerdelia": "Verdelia",
+  "userIdText": "User ID",
+  "lastActiveText": "Last active",
+  "accountCreatedText": "Account created",
+  "accountUpdatedText": "Last updated",
+  "preferencesText": "Preferences",
+  "timezoneText": "Timezone",
+  "currencyText": "Currency",
+  "themeText": "Theme",
+  "notificationsText": "Notifications",
+  "enabledLabel": "Enabled",
+  "disabledLabel": "Disabled",
+  "dateFormatText": "Date format",
+
+  "contactInfoText": "Contact information",
+  "subscriptionNeverExpiresLabel": "Never",
+
+  "subscriptionPriceText": "Price",
+  "billingCycleText": "Billing cycle",
+  "billingCycleMonthly": "Monthly",
+  "billingCycleSemestrial": "Every 6 months",
+  "billingCycleYearly": "Yearly",
+  "billingCycleLifetime": "Lifetime",
+
+  "pricing": "Pricing & Costs",
+  "basePrice": "Base Price",
+  "finalPrice": "Final Price",
+  "totalCost": "Total Cost",
+  "profitMargin": "Profit Margin",
+  "serviceDiscountOff": "off",
+  "discountApplied": "Discount applied from base price",
+  "pricingConfiguration": "Pricing Configuration",
+  "pricingConfigAge": "Age: {value}",
+  "pricingConfigFrequency": "Frequency: {value}",
+  "pricingConfigAgeGroup": "Age Group: {value}",
+  "pricingConfigSample": "Sample: {value}",
+  "pricingConfigSpecialist": "Specialist Consultation",
+  "pricingConfigGovernmentFunded": "Government Funded",
+  "pricingConfigMaterials": "Materials: {value}",
+  "pricingConfigIncludes": "Includes: {value}",
+
+  "pricePositive": "+ {value}",
+  "@pricePositive": {
+    "placeholders": { "value": { "type": "String" } }
+  },
+  "priceNegative": "− {value}",
+  "@priceNegative": {
+    "placeholders": { "value": { "type": "String" } }
+  },
+
+  "percent": "{value}%",
+  "@percent": {
+    "placeholders": { "value": { "type": "String" } }
+  },
+
+  "deliveriesTitle": "Deliveries",
+  "deliveriesRefresh": "Refresh",
+  "deliveriesRefreshFailed": "Refresh failed: {error}",
+  "@deliveriesRefreshFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "deliveriesFilters": "Filters",
+  "deliveriesSearch": "Search",
+  "deliveriesCloseSearch": "Close search",
+  "deliveriesSearchHint": "Search by ID, customer, address…",
+
+  "deliveriesPhaseActive": "Active",
+  "deliveriesPhaseInFlight": "In flight",
+  "deliveriesPhaseClosed": "Closed",
+  "deliveriesPhaseSubtitle": "{count} {phase}",
+  "@deliveriesPhaseSubtitle": {
+    "placeholders": {
+      "count": { "type": "String" },
+      "phase": { "type": "String" }
+    }
+  },
+
+  "deliveriesChipAll": "All",
+
+  "deliveriesStatusPending": "Pending",
+  "deliveriesStatusProcessing": "Processing",
+  "deliveriesStatusConfirmed": "Confirmed",
+  "deliveriesStatusShipped": "Shipped",
+  "deliveriesStatusInTransit": "In transit",
+  "deliveriesStatusOutForDelivery": "Out for delivery",
+  "deliveriesStatusDelivered": "Delivered",
+  "deliveriesStatusFailed": "Failed",
+  "deliveriesStatusCancelled": "Cancelled",
+  "deliveriesStatusReturned": "Returned",
+  "deliveriesStatusRefunded": "Refunded",
+
+  "deliveriesFilterDueToday": "Due today",
+  "deliveriesFilterDelayed": "Delayed",
+  "deliveriesFilterUnassigned": "Unassigned",
+
+  "deliveriesEmptyActiveTitle": "No active deliveries",
+  "deliveriesEmptyActiveMessage": "Deliveries that are pending, processing, or confirmed will appear here.",
+  "deliveriesEmptyInFlightTitle": "Nothing is moving right now",
+  "deliveriesEmptyInFlightMessage": "Deliveries that are shipped, in transit, or out for delivery will appear here.",
+  "deliveriesEmptyClosedTitle": "No closed deliveries",
+  "deliveriesEmptyClosedMessage": "Delivered, failed, cancelled, returned, or refunded deliveries will appear here.",
+
+  "deliveriesEmptyGenericTitle": "No deliveries found",
+  "deliveriesEmptyGenericMessage": "Deliveries will appear here once they are created.",
+  "deliveriesEmptyFilteredTitle": "No deliveries match",
+  "deliveriesEmptyFilteredMessage": "Try clearing the filter to see more.",
+
+  "deliveriesEmptyPendingTitle": "No pending deliveries",
+  "deliveriesEmptyPendingMessage": "New deliveries awaiting acceptance will appear here.",
+  "deliveriesEmptyProcessingTitle": "No deliveries in processing",
+  "deliveriesEmptyProcessingMessage": "Deliveries currently being prepared will appear here.",
+  "deliveriesEmptyConfirmedTitle": "No confirmed deliveries",
+  "deliveriesEmptyConfirmedMessage": "Deliveries ready for pickup by a carrier will appear here.",
+  "deliveriesEmptyShippedTitle": "Nothing has shipped yet",
+  "deliveriesEmptyShippedMessage": "Deliveries handed off to a carrier will appear here.",
+  "deliveriesEmptyInTransitTitle": "Nothing in transit",
+  "deliveriesEmptyInTransitMessage": "Deliveries currently moving will appear here.",
+  "deliveriesEmptyOutForDeliveryTitle": "Nothing out for delivery",
+  "deliveriesEmptyOutForDeliveryMessage": "Deliveries on the final leg of their route will appear here.",
+  "deliveriesEmptyDeliveredTitle": "No delivered deliveries",
+  "deliveriesEmptyDeliveredMessage": "Completed deliveries will be listed here.",
+  "deliveriesEmptyFailedTitle": "No failed deliveries",
+  "deliveriesEmptyFailedMessage": "Deliveries that could not be completed will appear here.",
+  "deliveriesEmptyCancelledTitle": "No cancelled deliveries",
+  "deliveriesEmptyCancelledMessage": "Cancelled deliveries will be listed here.",
+  "deliveriesEmptyReturnedTitle": "No returned deliveries",
+  "deliveriesEmptyReturnedMessage": "Deliveries sent back to origin will appear here.",
+  "deliveriesEmptyRefundedTitle": "No refunded deliveries",
+  "deliveriesEmptyRefundedMessage": "Refunded deliveries will appear here.",
+
+  "posScanNoSupplier": "Select a supplier before scanning",
+  "posScanNotFound": "No product matches barcode \"{code}\"",
+  "@posScanNotFound": {
+    "placeholders": { "code": { "type": "String" } }
+  },
+
+  "mapPickerTitle": "Pick a location",
+  "mapPickerTapHint": "Tap anywhere on the map to drop a pin",
+  "mapPickerPinDropped": "Location selected",
+  "mapPickerCoordinates": "{lat}, {lng}",
+  "@mapPickerCoordinates": {
+    "placeholders": {
+      "lat": { "type": "String" },
+      "lng": { "type": "String" }
+    }
+  },
+  "mapPickerConfirm": "Confirm",
+  "mapPickerRecenter": "My location",
+  "mapPickerLocationUnavailable": "Could not determine your location",
+
+  "pickOnMapMsg": "Pick on map",
+  "invalidCoordinatesMsg": "Enter valid numbers",
+  "invalidLatitudeMsg": "Latitude must be between −90 and 90",
+  "invalidLongitudeMsg": "Longitude must be between −180 and 180"
+  
 }

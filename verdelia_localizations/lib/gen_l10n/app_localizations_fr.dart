@@ -4442,7 +4442,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get basePriceRequired => 'Le prix de base est requis';
 
   @override
-  String get pricePositive => 'Le prix doit être positif';
+  String get pricePositiveCondition => 'Le prix doit être positif';
 
   @override
   String get enterFinalPrice => 'Saisir le prix final';
@@ -7147,4 +7147,462 @@ class AppLocalizationsFr extends AppLocalizations {
   String staffHourlyRateLabel(Object rate) {
     return '$rate/h';
   }
+
+  @override
+  String get verificationStatusText => 'Vérification';
+
+  @override
+  String get verifiedLabel => 'Vérifié';
+
+  @override
+  String get unverifiedLabel => 'Non vérifié';
+
+  @override
+  String get unknownLabel => 'Inconnu';
+
+  @override
+  String get phoneText => 'Phone';
+
+  @override
+  String get emailText => 'Email';
+
+  @override
+  String get subscriptionInfoText => 'Subscription';
+
+  @override
+  String get subscriptionPlanText => 'Plan';
+
+  @override
+  String get subscriptionExpiryText => 'Expires';
+
+  @override
+  String get quotaText => 'Quota';
+
+  @override
+  String get invalidEmail => 'Saisissez une adresse e-mail valide';
+
+  @override
+  String get coordinatesText => 'Coordonnées';
+
+  @override
+  String get subscriptionIdText => 'ID d\'abonnement';
+
+  @override
+  String get subscriptionPaymentText => 'ID de paiement';
+
+  @override
+  String get subscriptionQuotaText => 'Quota';
+
+  @override
+  String get subscriptionCreatedText => 'Abonné le';
+
+  @override
+  String get subscriptionStatusText => 'Statut';
+
+  @override
+  String get subscriptionActiveLabel => 'Actif';
+
+  @override
+  String get subscriptionInactiveLabel => 'Inactif';
+
+  @override
+  String get walletSectionText => 'Portefeuille';
+
+  @override
+  String get walletIdText => 'ID du portefeuille';
+
+  @override
+  String get walletBalanceText => 'Solde';
+
+  @override
+  String get walletStatusText => 'Statut';
+
+  @override
+  String get walletTypeText => 'Type';
+
+  @override
+  String get walletCurrencyText => 'Devise';
+
+  @override
+  String get walletVersionText => 'Version';
+
+  @override
+  String get walletStatusActive => 'Actif';
+
+  @override
+  String get walletStatusPendingVerification => 'Vérification en attente';
+
+  @override
+  String get walletStatusInactive => 'Inactif';
+
+  @override
+  String get walletStatusSuspended => 'Suspendu';
+
+  @override
+  String get walletStatusClosed => 'Fermé';
+
+  @override
+  String get walletTypeUser => 'Utilisateur';
+
+  @override
+  String get walletTypeProvider => 'Fournisseur';
+
+  @override
+  String get walletTypeOrganization => 'Organisation';
+
+  @override
+  String get walletTypeSystem => 'Système';
+
+  @override
+  String get walletTypeVirtual => 'Virtuel';
+
+  @override
+  String get walletTypeBusiness => 'Entreprise';
+
+  @override
+  String get quotaSectionText => 'Quota d\'utilisation';
+
+  @override
+  String get accountStatusText => 'Statut du compte';
+
+  @override
+  String get loginMethodText => 'Méthode de connexion';
+
+  @override
+  String get loginOptionGoogle => 'Google';
+
+  @override
+  String get loginOptionVerdelia => 'Verdelia';
+
+  @override
+  String get userIdText => 'ID utilisateur';
+
+  @override
+  String get lastActiveText => 'Dernière activité';
+
+  @override
+  String get accountCreatedText => 'Compte créé le';
+
+  @override
+  String get accountUpdatedText => 'Dernière mise à jour';
+
+  @override
+  String get preferencesText => 'Préférences';
+
+  @override
+  String get timezoneText => 'Fuseau horaire';
+
+  @override
+  String get currencyText => 'Devise';
+
+  @override
+  String get themeText => 'Thème';
+
+  @override
+  String get notificationsText => 'Notifications';
+
+  @override
+  String get enabledLabel => 'Activé';
+
+  @override
+  String get disabledLabel => 'Désactivé';
+
+  @override
+  String get dateFormatText => 'Format de date';
+
+  @override
+  String get contactInfoText => 'Coordonnées';
+
+  @override
+  String get subscriptionNeverExpiresLabel => 'Jamais';
+
+  @override
+  String get subscriptionPriceText => 'Prix';
+
+  @override
+  String get billingCycleText => 'Cycle de facturation';
+
+  @override
+  String get billingCycleMonthly => 'Mensuel';
+
+  @override
+  String get billingCycleSemestrial => 'Semestriel';
+
+  @override
+  String get billingCycleYearly => 'Annuel';
+
+  @override
+  String get billingCycleLifetime => 'À vie';
+
+  @override
+  String pricingConfigAge(Object value) {
+    return 'Âge : $value';
+  }
+
+  @override
+  String pricingConfigFrequency(Object value) {
+    return 'Fréquence : $value';
+  }
+
+  @override
+  String pricingConfigAgeGroup(Object value) {
+    return 'Tranche d\'âge : $value';
+  }
+
+  @override
+  String pricingConfigSample(Object value) {
+    return 'Échantillon : $value';
+  }
+
+  @override
+  String get pricingConfigSpecialist => 'Consultation spécialisée';
+
+  @override
+  String get pricingConfigGovernmentFunded => 'Financé par l\'État';
+
+  @override
+  String pricingConfigMaterials(Object value) {
+    return 'Matériaux : $value';
+  }
+
+  @override
+  String pricingConfigIncludes(Object value) {
+    return 'Comprend : $value';
+  }
+
+  @override
+  String pricePositive(String value) {
+    return '+ $value';
+  }
+
+  @override
+  String priceNegative(String value) {
+    return '− $value';
+  }
+
+  @override
+  String percent(String value) {
+    return '$value %';
+  }
+
+  @override
+  String get deliveriesTitle => 'Livraisons';
+
+  @override
+  String get deliveriesRefresh => 'Actualiser';
+
+  @override
+  String deliveriesRefreshFailed(String error) {
+    return 'Échec de l\'actualisation : $error';
+  }
+
+  @override
+  String get deliveriesFilters => 'Filtres';
+
+  @override
+  String get deliveriesSearch => 'Rechercher';
+
+  @override
+  String get deliveriesCloseSearch => 'Fermer la recherche';
+
+  @override
+  String get deliveriesSearchHint => 'Rechercher par ID, client, adresse…';
+
+  @override
+  String get deliveriesPhaseActive => 'En cours';
+
+  @override
+  String get deliveriesPhaseInFlight => 'En transit';
+
+  @override
+  String get deliveriesPhaseClosed => 'Clôturées';
+
+  @override
+  String deliveriesPhaseSubtitle(String count, String phase) {
+    return '$count $phase';
+  }
+
+  @override
+  String get deliveriesChipAll => 'Toutes';
+
+  @override
+  String get deliveriesStatusPending => 'En attente';
+
+  @override
+  String get deliveriesStatusProcessing => 'En traitement';
+
+  @override
+  String get deliveriesStatusConfirmed => 'Confirmée';
+
+  @override
+  String get deliveriesStatusShipped => 'Expédiée';
+
+  @override
+  String get deliveriesStatusInTransit => 'En transit';
+
+  @override
+  String get deliveriesStatusOutForDelivery => 'En cours de livraison';
+
+  @override
+  String get deliveriesStatusDelivered => 'Livrée';
+
+  @override
+  String get deliveriesStatusFailed => 'Échouée';
+
+  @override
+  String get deliveriesStatusCancelled => 'Annulée';
+
+  @override
+  String get deliveriesStatusReturned => 'Retournée';
+
+  @override
+  String get deliveriesStatusRefunded => 'Remboursée';
+
+  @override
+  String get deliveriesFilterDueToday => 'Aujourd\'hui';
+
+  @override
+  String get deliveriesFilterDelayed => 'En retard';
+
+  @override
+  String get deliveriesFilterUnassigned => 'Non assignées';
+
+  @override
+  String get deliveriesEmptyActiveTitle => 'Aucune livraison en cours';
+
+  @override
+  String get deliveriesEmptyActiveMessage => 'Les livraisons en attente, en traitement ou confirmées apparaîtront ici.';
+
+  @override
+  String get deliveriesEmptyInFlightTitle => 'Rien n\'est en mouvement';
+
+  @override
+  String get deliveriesEmptyInFlightMessage => 'Les livraisons expédiées, en transit ou en cours de livraison apparaîtront ici.';
+
+  @override
+  String get deliveriesEmptyClosedTitle => 'Aucune livraison clôturée';
+
+  @override
+  String get deliveriesEmptyClosedMessage => 'Les livraisons livrées, échouées, annulées, retournées ou remboursées apparaîtront ici.';
+
+  @override
+  String get deliveriesEmptyGenericTitle => 'Aucune livraison trouvée';
+
+  @override
+  String get deliveriesEmptyGenericMessage => 'Les livraisons apparaîtront ici une fois créées.';
+
+  @override
+  String get deliveriesEmptyFilteredTitle => 'Aucune livraison correspondante';
+
+  @override
+  String get deliveriesEmptyFilteredMessage => 'Essayez d\'effacer le filtre pour en voir plus.';
+
+  @override
+  String get deliveriesEmptyPendingTitle => 'Aucune livraison en attente';
+
+  @override
+  String get deliveriesEmptyPendingMessage => 'Les nouvelles livraisons en attente d\'acceptation apparaîtront ici.';
+
+  @override
+  String get deliveriesEmptyProcessingTitle => 'Aucune livraison en traitement';
+
+  @override
+  String get deliveriesEmptyProcessingMessage => 'Les livraisons en cours de préparation apparaîtront ici.';
+
+  @override
+  String get deliveriesEmptyConfirmedTitle => 'Aucune livraison confirmée';
+
+  @override
+  String get deliveriesEmptyConfirmedMessage => 'Les livraisons prêtes à être prises en charge apparaîtront ici.';
+
+  @override
+  String get deliveriesEmptyShippedTitle => 'Aucune livraison expédiée';
+
+  @override
+  String get deliveriesEmptyShippedMessage => 'Les livraisons remises à un transporteur apparaîtront ici.';
+
+  @override
+  String get deliveriesEmptyInTransitTitle => 'Aucune livraison en transit';
+
+  @override
+  String get deliveriesEmptyInTransitMessage => 'Les livraisons en cours de déplacement apparaîtront ici.';
+
+  @override
+  String get deliveriesEmptyOutForDeliveryTitle => 'Aucune livraison en cours de livraison';
+
+  @override
+  String get deliveriesEmptyOutForDeliveryMessage => 'Les livraisons sur le dernier segment de leur tournée apparaîtront ici.';
+
+  @override
+  String get deliveriesEmptyDeliveredTitle => 'Aucune livraison livrée';
+
+  @override
+  String get deliveriesEmptyDeliveredMessage => 'Les livraisons terminées seront listées ici.';
+
+  @override
+  String get deliveriesEmptyFailedTitle => 'Aucune livraison échouée';
+
+  @override
+  String get deliveriesEmptyFailedMessage => 'Les livraisons qui n\'ont pas pu être terminées apparaîtront ici.';
+
+  @override
+  String get deliveriesEmptyCancelledTitle => 'Aucune livraison annulée';
+
+  @override
+  String get deliveriesEmptyCancelledMessage => 'Les livraisons annulées seront listées ici.';
+
+  @override
+  String get deliveriesEmptyReturnedTitle => 'Aucune livraison retournée';
+
+  @override
+  String get deliveriesEmptyReturnedMessage => 'Les livraisons renvoyées à l\'origine apparaîtront ici.';
+
+  @override
+  String get deliveriesEmptyRefundedTitle => 'Aucune livraison remboursée';
+
+  @override
+  String get deliveriesEmptyRefundedMessage => 'Les livraisons remboursées apparaîtront ici.';
+
+  @override
+  String get posScanNoSupplier => 'Sélectionnez un fournisseur avant de scanner';
+
+  @override
+  String posScanNotFound(String code) {
+    return 'Aucun produit ne correspond au code-barres « $code »';
+  }
+
+  @override
+  String get mapPickerTitle => 'Choisir un emplacement';
+
+  @override
+  String get mapPickerTapHint => 'Touchez la carte pour placer un repère';
+
+  @override
+  String get mapPickerPinDropped => 'Emplacement sélectionné';
+
+  @override
+  String mapPickerCoordinates(String lat, String lng) {
+    return '$lat, $lng';
+  }
+
+  @override
+  String get mapPickerConfirm => 'Confirmer';
+
+  @override
+  String get mapPickerRecenter => 'Ma position';
+
+  @override
+  String get mapPickerLocationUnavailable => 'Impossible de déterminer votre position';
+
+  @override
+  String get pickOnMapMsg => 'Choisir sur la carte';
+
+  @override
+  String get invalidCoordinatesMsg => 'Saisissez des nombres valides';
+
+  @override
+  String get invalidLatitudeMsg => 'La latitude doit être comprise entre −90 et 90';
+
+  @override
+  String get invalidLongitudeMsg => 'La longitude doit être comprise entre −180 et 180';
 }

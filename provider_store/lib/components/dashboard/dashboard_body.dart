@@ -3,6 +3,7 @@ import 'package:event/delivery_change_notifier.dart';
 import 'package:event/extensions/personnel_access_manager.dart';
 import 'package:event/supplier_change_notifier.dart';
 import 'package:event/views/business_ops_notifier.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:verdelia_core/app/ManagementRule.dart';
 import 'package:verdelia_core/business/Product.dart';
@@ -22,6 +23,7 @@ import 'package:provider_store/screens/deliveries_screen.dart';
 import 'package:provider_store/screens/selling_screen.dart';
 import 'package:provider_store/screens/services_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'dashboard_item.dart';
 
 class DashboardBody extends StatelessWidget {
@@ -40,16 +42,17 @@ class DashboardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Guard against an empty items list — `clamp(0, -1)` throws.
+    if (items.isEmpty) return const SizedBox.shrink();
+
     final index = selectedIndex.clamp(0, items.length - 1);
 
-    // ✅ Get data from providers - NO FETCHING HERE
     final personnelNotifier = context.watch<PersonnelNotifier>();
     final supplierNotifier = context.watch<SupplierChangeNotifier>();
     final userNotifier = context.watch<AppUserNotifier>();
 
     final userId = userNotifier.appUser?.idAppUser ?? 0;
 
-    // ✅ Use sync version - NO API CALLS
     final accessManager = PersonnelAccessManager(
       personnelNotifier: personnelNotifier,
       supplierNotifier: supplierNotifier,
@@ -194,8 +197,6 @@ class DashboardBody extends StatelessWidget {
       builder: (context, personnelNotifier, businessNotifier, child) {
         final supplierId = selectedSupplierId;
 
-        // Key on the supplier so switching suppliers rebuilds the screen
-        // (and therefore rebuilds the notifier) with fresh state.
         return BusinessOperationsScreen(
           key: ValueKey('operations_$supplierId'),
           supplierId: supplierId,
@@ -239,11 +240,6 @@ class DashboardBody extends StatelessWidget {
         return FinanceScreen(
           key: ValueKey('finance_$selectedSupplierId'),
           financeNotifier: financeNotifier,
-          // onSupplierChanged: (supplierId) {
-          //   // productNotifier.fetchProducts(providerId: supplierId, reset: true);
-          //   financeNotifier.setProvider(supplierId);
-          //   onSupplierChanged?.call(supplierId);
-          // },
         );
       },
     );
@@ -260,13 +256,30 @@ class DashboardBody extends StatelessWidget {
   ) {
     if (selectedSupplierId <= 0) return const SizedBox.shrink();
 
+    final l10n = AppLocalizations.of(context)!;
+
+    // Resolve the selected supplier. If it's not in the list, fall back
+    // to the first supplier rather than an empty placeholder, but warn
+    // in debug so the mismatch is visible.
     final selectedSupplier = suppliers.firstWhere(
       (s) => s.idProductProvider == selectedSupplierId,
-      orElse: () => suppliers.isNotEmpty ? suppliers.first : Supplier.empty(),
+      orElse: () {
+        assert(() {
+          if (suppliers.isNotEmpty) {
+            debugPrint(
+              'DashboardBody: selectedSupplierId=$selectedSupplierId not in '
+              'suppliers list; falling back to first supplier '
+              '(${suppliers.first.idProductProvider}).',
+            );
+          }
+          return true;
+        }());
+        return suppliers.isNotEmpty ? suppliers.first : Supplier.empty();
+      },
     );
-    final supplierName = selectedSupplier.providerName ?? 'Unnamed Business';
 
-    // 👇 Read the already-computed access type instead of re-checking.
+    final supplierName = selectedSupplier.providerName;
+
     SupplierAccessType accessType = SupplierAccessType.none;
     for (final a in suppliersWithAccess) {
       if (a.id == selectedSupplierId) {
@@ -281,11 +294,13 @@ class DashboardBody extends StatelessWidget {
         userId, selectedSupplierId, 'personnel_manage');
     final canManage = isOwner || hasPriv;
 
-    debugPrint('PERSONNEL canManage=$canManage '
-        '(owner=$isOwner, priv=$hasPriv, accessType=$accessType)');
+    if (kDebugMode) {
+      debugPrint('PERSONNEL canManage=$canManage '
+          '(owner=$isOwner, priv=$hasPriv, accessType=$accessType)');
+    }
 
     return PersonnelManagementScreen(
-      key: ValueKey('personnel_${selectedSupplierId}_${userId}'),
+      key: ValueKey('personnel_${selectedSupplierId}_$userId'),
       supplierId: selectedSupplierId,
       supplierName: supplierName,
       orgId: selectedSupplier.idProviderOrganisation ?? 0,
@@ -327,16 +342,17 @@ class DashboardBody extends StatelessWidget {
   // HELPERS
   // ============================================================
 
-  void _handleBarcodeScan(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Barcode scanning coming soon'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+  Future<String> _handleBarcodeScan(BuildContext context) async {
+    final barcode = await Navigator.pushNamed(
+      context,
+      AppRoutes.productScanPage,
+    ) as String?;
+    return barcode ?? '';
   }
 
   void _handleSearch(BuildContext context, String query) {
-    debugPrint('Searching: $query');
+    if (kDebugMode) {
+      debugPrint('Searching: $query');
+    }
   }
 }

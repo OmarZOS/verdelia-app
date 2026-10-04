@@ -37,8 +37,8 @@ class AppConstants {
   static Color get backgroundColor => const Color(0xFF2ECC71);
   static Color get backgroundDarkColor => const Color(0xFF186A3B);
 
-  static const String apiBaseUrl = 'http://localhost:9000/api/v1';
-  static const String fsBaseUrl = 'http://localhost:9099/fs';
+  static const String apiBaseUrl = 'http://192.168.1.31:9000/api/v1';
+  static const String fsBaseUrl = 'http://192.168.1.31:9099/fs';
 
   static const String postImageEndpoint = '/upload';
 
@@ -62,6 +62,22 @@ class AppConstants {
       '/app_user/update_password';
   static const String searchAppUserEndpoint = '/search/personnel';
   static const String getUserByEmailEndpoint = '/app_user/by-email';
+
+  static const String getPlansEndpoint = '/plans';
+  static const String getPlanEndpoint = '/plans';
+
+// ==================== Subscription endpoints ====================
+//
+// These share the `/api/v1/app_user/{id}/subscription` prefix; the
+// constant stores the prefix and the method body appends the suffix
+// that varies per call. Keeping the prefix in one place means a
+// router rename only changes one line.
+
+  static const String subscriptionBaseEndpoint = '/app_user';
+  static const String subscriptionSuffix = '/subscription';
+  static const String subscriptionStatusSuffix = '/subscription/status';
+  static const String subscriptionInitiateSuffix = '/subscription/initiate';
+  static const String subscriptionLinkFreeSuffix = '/subscription/link-free';
 
   // ==================== Person Endpoints ====================
   static const String personEndpoint = '/person';
@@ -157,7 +173,7 @@ class AppConstants {
   static const String getSupplierSearchByTokenEndpoint =
       '/suppliers/search'; // Adjust
   static const String getSupplierSearchByGeoEndpoint =
-      '/suppliers/search/location';
+      '/search/position/supplier';
   static const String getSupplierByIdEndpoint =
       '/suppliers'; // /suppliers/{provider_id}
   // ==================== Organisation Endpoints ====================

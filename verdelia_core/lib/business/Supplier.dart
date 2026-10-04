@@ -1,5 +1,7 @@
 // lib/business/Supplier.dart
 
+import 'dart:developer' as developer;
+
 import '../app/VerdeliaImage.dart';
 import 'NamingContribution.dart';
 
@@ -31,18 +33,11 @@ class Supplier {
   final VerdeliaImage? supplierImage;
 
   /// Trilingual provider name from
-  /// `product_provider_details.naming_contribution`. Null when the
-  /// backend didn't include it (older rows, or a flattened search
-  /// projection).
-  ///
-  /// The FK lives on the details row in the schema, not on the
-  /// provider — that's why this is parsed from
-  /// `product_provider_details` and not from the top level.
+  /// `product_provider_details.naming_contribution`.
   final NamingContribution? naming;
 
   /// Trilingual organisation name from
-  /// `product_provider_org.naming_contribution`. Null when the org
-  /// block is missing or carries no naming.
+  /// `product_provider_org.naming_contribution`.
   final NamingContribution? organisationNaming;
 
   Supplier({
@@ -82,18 +77,18 @@ class Supplier {
         locationAddressId: 0,
         idLocation: 0,
         idProviderOrganisation: 0,
-        providerName: "",
-        providerContactInfo: "",
+        providerName: '',
+        providerContactInfo: '',
         locationLatitude: 0.0,
         locationLongitude: 0.0,
-        locationName: "",
+        locationName: '',
         supplierImageUrl: null,
-        providerOrganisationName: "",
-        providerOrganisationDesc: "",
-        addressStreet: "",
-        addressCity: "",
-        addressPostalCode: "",
-        addressCountry: "",
+        providerOrganisationName: '',
+        providerOrganisationDesc: '',
+        addressStreet: '',
+        addressCity: '',
+        addressPostalCode: '',
+        addressCountry: '',
         naming: null,
         organisationNaming: null,
       );
@@ -158,241 +153,94 @@ class Supplier {
     );
   }
 
+  /// Parse a deeply-nested supplier JSON as returned by detail endpoints.
+  ///
+  /// Shape:
+  /// ```json
+  /// {
+  ///   "id_product_provider": 1,
+  ///   "product_provider_location": {
+  ///     "id_location": 5,
+  ///     "position_wkt": "POINT(lng lat)",
+  ///     "location_name": "...",
+  ///     "location_address": { ... }
+  ///   },
+  ///   "product_provider_details": {
+  ///     "provider_name": "...",
+  ///     "provider_contact_info": "...",
+  ///     "naming_contribution": { ... }
+  ///   },
+  ///   "product_provider_org": {
+  ///     "provider_organisation_name": "...",
+  ///     "naming_contribution": { ... }
+  ///   },
+  ///   "provider_image": [ { "id_provider_image": 1,
+  ///                         "provider_image_url": "..." } ]
+  /// }
+  /// ```
   factory Supplier.fromJson(Map<String, dynamic> json) {
     try {
-      // Parse coordinates with safety
-      double longitude = 0.0;
-      double latitude = 0.0;
-      String? imageUrl;
-      int? imageId;
+      final locationData = _asMap(json['product_provider_location']);
+      final detailsData = _asMap(json['product_provider_details']);
+      final orgData = _asMap(json['product_provider_org']);
+      final addressData = _asMap(locationData?['location_address']);
 
-      // Safely parse WKT coordinates
-      final locationData = json["product_provider_location"];
-      if (locationData != null && locationData is Map<String, dynamic>) {
-        final wkt = locationData["position_wkt"];
-        if (wkt != null && wkt is String) {
-          final cleaned =
-              wkt.replaceAll("POINT(", "").replaceAll(")", "").trim();
-          final coords = cleaned.split(RegExp(r'\s+'));
-          if (coords.length == 2) {
-            longitude = double.tryParse(coords[0]) ?? 0.0;
-            latitude = double.tryParse(coords[1]) ?? 0.0;
-          }
-        }
-      }
-
-      // Safely parse image
-      final providerImages = json['provider_image'];
-      if (providerImages != null && providerImages is List) {
-        for (final image in providerImages) {
-          if (image is Map<String, dynamic>) {
-            final id = image["id_provider_image"];
-            final url = image["provider_image_url"];
-            if (id != null && url != null && url is String) {
-              imageId = id is int ? id : int.tryParse(id.toString());
-              imageUrl = url;
-              break; // Use the first image
-            }
-          }
-        }
-      }
-
-      // Safely parse organisation + its naming contribution
-      String organisationName = "";
-      String organisationDesc = "";
-      NamingContribution? organisationNaming;
-      final orgData = json['product_provider_org'];
-      if (orgData != null && orgData is Map<String, dynamic>) {
-        organisationName =
-            (orgData["provider_organisation_name"] ?? "").toString();
-        organisationDesc =
-            (orgData["provider_organisation_desc"] ?? "").toString();
-
-        final orgNamingJson = orgData['naming_contribution'];
-        if (orgNamingJson != null) {
-          organisationNaming = NamingContribution.fromJson(orgNamingJson);
-        }
-      }
-
-      // Safely parse details + its naming contribution.
-      // The naming FK lives on the details row, not the provider row.
-      final detailsData = json['product_provider_details'];
-      String providerName = "";
-      String providerContactInfo = "";
-      NamingContribution? providerNaming;
-      if (detailsData != null && detailsData is Map<String, dynamic>) {
-        providerName = (detailsData["provider_name"] ?? "").toString();
-        providerContactInfo =
-            (detailsData["provider_contact_info"] ?? "").toString();
-
-        final detailsNamingJson = detailsData['naming_contribution'];
-        if (detailsNamingJson != null) {
-          providerNaming = NamingContribution.fromJson(detailsNamingJson);
-        }
-      }
-
-      // Safely parse address from location
-      int locationAddressId = 0;
-      String addressStreet = "";
-      String addressCity = "";
-      String addressPostalCode = "";
-      String addressCountry = "";
-
-      if (locationData != null && locationData is Map<String, dynamic>) {
-        final addressData = locationData["location_address"];
-        if (addressData != null && addressData is Map<String, dynamic>) {
-          locationAddressId = _parseInt(addressData["id_address"]);
-          addressStreet = (addressData["address_street"] ?? "").toString();
-          addressCity = (addressData["address_city"] ?? "").toString();
-          addressPostalCode =
-              (addressData["address_postal_code"] ?? "").toString();
-          addressCountry = (addressData["address_country"] ?? "").toString();
-        }
-      }
-
-      // Safely parse location name
-      final locationName =
-          locationData != null && locationData is Map<String, dynamic>
-              ? (locationData['location_name'] ?? "").toString()
-              : "";
+      final coords = _parseWkt(locationData?['position_wkt']);
+      final image = _parseFirstImage(json['provider_image']);
 
       return Supplier(
         idProviderDetails: _parseInt(json['product_provider_details_id']),
         idProductProvider: _parseInt(json['id_product_provider']),
-        idProviderOrganisation: _parseInt(json['product_provider_org_id']),
-        providerOrganisationName: organisationName,
-        providerOrganisationDesc: organisationDesc,
         productProviderDetailsId:
             _parseInt(json['product_provider_details_id']),
-        providerName: providerName,
-        providerContactInfo: providerContactInfo,
+        providerName: _getString(detailsData?['provider_name']),
+        providerContactInfo: _getString(detailsData?['provider_contact_info']),
         productProviderOwnerId: _parseInt(json['product_provider_owner']),
-        locationLatitude: latitude,
-        locationLongitude: longitude,
         productProviderTypeId: _parseInt(json['product_provider_type_id']),
-        locationAddressId: locationAddressId,
-        addressStreet: addressStreet,
-        addressCity: addressCity,
-        addressPostalCode: addressPostalCode,
-        addressCountry: addressCountry,
-        locationName: locationName.isNotEmpty ? locationName : null,
-        idLocation: _parseInt(json["product_provider_location_id"]),
-        supplierImageUrl: imageUrl,
-        supplierImageId: imageId,
-        naming: providerNaming,
-        organisationNaming: organisationNaming,
+        locationLatitude: coords?.$2 ?? 0.0,
+        locationLongitude: coords?.$1 ?? 0.0,
+        locationName: _getStringOrNull(locationData?['location_name']),
+        idLocation: _parseInt(json['product_provider_location_id']),
+        idProviderOrganisation: _parseInt(json['product_provider_org_id']),
+        providerOrganisationName:
+            _getString(orgData?['provider_organisation_name']),
+        providerOrganisationDesc:
+            _getString(orgData?['provider_organisation_desc']),
+        locationAddressId: _parseInt(addressData?['id_address']),
+        addressStreet: _getString(addressData?['address_street']),
+        addressCity: _getString(addressData?['address_city']),
+        addressPostalCode: _getString(addressData?['address_postal_code']),
+        addressCountry: _getString(addressData?['address_country']),
+        supplierImageUrl: image?.$2,
+        supplierImageId: image?.$1,
+        naming: _parseNaming(detailsData?['naming_contribution']),
+        organisationNaming: _parseNaming(orgData?['naming_contribution']),
       );
-    } catch (e, stackTrace) {
-      // log("Error parsing Supplier: $e\n$stackTrace");
+    } catch (e, st) {
+      _logParseError('Supplier.fromJson', e, st);
       return Supplier.empty();
     }
   }
 
+  /// Parse a supplier JSON from the flattened search projection. The
+  /// search endpoints return columns rather than the nested graph, so
+  /// this function reads both shapes and normalizes them.
   factory Supplier.fromSearchJson(Map<String, dynamic> json) {
     try {
-      Map<String, dynamic> provider = {};
-      Map<String, dynamic> org = {};
-      Map<String, dynamic> loc = {};
-      Map<String, dynamic> addr = {};
+      final provider = _resolveProviderMap(json);
+      final org = _resolveOrgMap(json, provider);
+      final loc = _resolveLocationMap(json, provider);
+      final addr = _resolveAddressMap(json, loc);
 
-      // Determine data structure
-      if (json['product_provider'] is List &&
-          (json['product_provider'] as List).isNotEmpty) {
-        final providerList = json['product_provider'] as List;
-        provider = providerList.first is Map<String, dynamic>
-            ? providerList.first as Map<String, dynamic>
-            : {};
-      } else if (json['product_provider'] is Map<String, dynamic>) {
-        provider = json['product_provider'] as Map<String, dynamic>;
-      } else {
-        // Use flat structure
-        provider = json;
-      }
+      final coords = _parseWkt(loc['position_wkt'] ?? json['position_wkt']);
 
-      // Parse organisation
-      if (provider['product_provider_org'] is Map<String, dynamic>) {
-        org = provider['product_provider_org'] as Map<String, dynamic>;
-      } else if (json['product_provider_org'] is Map<String, dynamic>) {
-        org = json['product_provider_org'] as Map<String, dynamic>;
-      }
+      final detailsMap = _resolveDetailsMap(json, provider);
 
-      // Parse location
-      if (provider['product_provider_location'] is Map<String, dynamic>) {
-        loc = provider['product_provider_location'] as Map<String, dynamic>;
-      } else {
-        // Use flat location fields
-        loc = {
-          "id_location": json['id_location'],
-          "position_wkt": json['position_wkt'],
-          "location_name": json['location_name'],
-        };
-      }
-
-      // Parse address
-      if (loc['location_address'] is Map<String, dynamic>) {
-        addr = loc['location_address'] as Map<String, dynamic>;
-      } else {
-        // Use flat address fields
-        addr = {
-          "id_address": json['id_address'],
-          "address_street": json['address_street'],
-          "address_city": json['address_city'],
-          "address_postal_code": json['address_postal_code'],
-          "address_country": json['address_country'],
-        };
-      }
-
-      // Parse coordinates
-      double? latitude;
-      double? longitude;
-      final wkt = loc['position_wkt'] ?? json['position_wkt'];
-      if (wkt != null && wkt is String) {
-        final match =
-            RegExp(r'POINT\(([-\d.]+)\s+([-\d.]+)\)').firstMatch(wkt.trim());
-        if (match != null) {
-          longitude = double.tryParse(match.group(1)!);
-          latitude = double.tryParse(match.group(2)!);
-        }
-      }
-
-      // Resolve the details map — it may be nested under the provider
-      // or flattened onto the top-level search row.
-      final Map<String, dynamic> detailsMap =
-          (provider['product_provider_details'] is Map<String, dynamic>)
-              ? provider['product_provider_details'] as Map<String, dynamic>
-              : (json['product_provider_details'] is Map<String, dynamic>)
-                  ? json['product_provider_details'] as Map<String, dynamic>
-                  : json;
-
-      // Get provider name from multiple possible sources
-      String providerName = _getString(
-        json['provider_name'] ??
-            provider['provider_name'] ??
-            detailsMap['provider_name'],
-      );
-
-      if (providerName.isEmpty) {
-        providerName = 'Unknown Supplier';
-      }
-
-      // Provider naming — on the details map in every shape.
-      NamingContribution? providerNaming;
-      final detailsNamingJson = detailsMap['naming_contribution'];
-      if (detailsNamingJson != null) {
-        providerNaming = NamingContribution.fromJson(detailsNamingJson);
-      }
-
-      // Organisation naming — may be nested under the org map or
-      // flattened at the top level.
-      NamingContribution? organisationNaming;
-      final orgNamingJson = org['naming_contribution'] ??
-          (json['product_provider_org'] is Map<String, dynamic>
-              ? (json['product_provider_org']
-                  as Map<String, dynamic>)['naming_contribution']
-              : null);
-      if (orgNamingJson != null) {
-        organisationNaming = NamingContribution.fromJson(orgNamingJson);
-      }
+      final providerName = _firstNonEmpty([
+        json['provider_name'],
+        provider['provider_name'],
+        detailsMap['provider_name'],
+      ], fallback: 'Unknown Supplier');
 
       return Supplier(
         idProviderDetails: _parseInt(
@@ -401,6 +249,25 @@ class Supplier {
         idProductProvider: _parseInt(
           provider['id_product_provider'] ?? json['id_product_provider'],
         ),
+        productProviderDetailsId:
+            _parseInt(provider['product_provider_details_id']),
+        providerName: providerName,
+        providerContactInfo: _firstNonEmpty([
+          json['provider_contact_info'],
+          provider['provider_contact_info'],
+          detailsMap['provider_contact_info'],
+        ]),
+        productProviderOwnerId: _parseInt(
+          provider['product_provider_owner'] ?? json['product_provider_owner'],
+        ),
+        productProviderTypeId: _parseInt(
+          provider['product_provider_type_id'] ??
+              json['product_provider_type_id'],
+        ),
+        locationLatitude: coords?.$2 ?? 0.0,
+        locationLongitude: coords?.$1 ?? 0.0,
+        locationName: _getStringOrNull(loc['location_name']),
+        idLocation: _parseInt(loc['id_location']),
         idProviderOrganisation: _parseInt(
           org['idprovider_organisation'] ?? json['idprovider_organisation'],
         ),
@@ -408,88 +275,78 @@ class Supplier {
           org['provider_organisation_name'] ??
               json['provider_organisation_name'],
         ),
-        providerOrganisationDesc: _getString(org['provider_organisation_desc']),
-        productProviderDetailsId:
-            _parseInt(provider['product_provider_details_id']),
-        providerName: providerName,
-        providerContactInfo: _getString(
-          json['provider_contact_info'] ??
-              provider['provider_contact_info'] ??
-              detailsMap['provider_contact_info'],
-        ),
-        productProviderOwnerId: _parseInt(json['product_provider_owner']),
-        locationLatitude: latitude ?? 0.0,
-        locationLongitude: longitude ?? 0.0,
-        productProviderTypeId: _parseInt(
-          provider['product_provider_type_id'] ??
-              json['product_provider_type_id'],
+        providerOrganisationDesc: _getString(
+          org['provider_organisation_desc'] ??
+              json['provider_organisation_desc'],
         ),
         locationAddressId: _parseInt(addr['id_address']),
         addressStreet: _getString(addr['address_street']),
         addressCity: _getString(addr['address_city']),
         addressPostalCode: _getString(addr['address_postal_code']),
         addressCountry: _getString(addr['address_country']),
-        locationName: _getString(loc['location_name']),
-        idLocation: _parseInt(loc['id_location']),
-        supplierImageUrl: _getString(json['supplier_image_url']),
-        supplierImageId: _parseInt(json['supplier_image_id']),
-        naming: providerNaming,
-        organisationNaming: organisationNaming,
+        supplierImageUrl: _getStringOrNull(json['supplier_image_url']),
+        supplierImageId: _parseIntOrNull(json['supplier_image_id']),
+        naming: _parseNaming(detailsMap['naming_contribution']),
+        organisationNaming: _parseNaming(
+          org['naming_contribution'] ??
+              _asMap(json['product_provider_org'])?['naming_contribution'],
+        ),
       );
-    } catch (e, stackTrace) {
-      // log("Error parsing Supplier from search: $e\n$stackTrace");
+    } catch (e, st) {
+      _logParseError('Supplier.fromSearchJson', e, st);
       return Supplier.empty();
     }
   }
 
+  /// Serialize to the shape expected by the create / update endpoints.
+  ///
+  /// NOTE: this is intentionally asymmetric with [fromJson] — the
+  /// backend write contract uses `provider` / `image` / `location` as
+  /// top-level keys, while the read contract returns
+  /// `product_provider*`. Do not round-trip `fromJson(toJson())`.
   Map<String, dynamic> toJson() {
     return {
-      "provider": {
+      'provider': {
         'id_product_provider': idProductProvider,
-        "id_provider_owner": productProviderOwnerId,
-        "idprovider_details_id": productProviderDetailsId,
+        'id_provider_owner': productProviderOwnerId,
+        'idprovider_details_id': productProviderDetailsId,
         'id_product_provider_type': productProviderTypeId,
         'id_provider_organisation': idProviderOrganisation,
         'provider_organisation_desc': providerOrganisationDesc,
         'provider_organisation_name': providerOrganisationName,
-        "product_provider_type_desc": "string",
+        'product_provider_type_desc': 'string',
         'provider_name': providerName,
         'provider_contact_info': providerContactInfo,
-        // Echo the provider naming block when present so a save doesn't
-        // strip translations the caller didn't touch.
         if (naming != null) 'naming': naming!.toJson(),
       },
-      "image": {
-        "id_provider_image": supplierImageId ?? 0,
-        "provider_image_url": supplierImageUrl,
-        "provider_ref_id": idProductProvider,
+      'image': {
+        'id_provider_image': supplierImageId ?? 0,
+        'provider_image_url': supplierImageUrl,
+        'provider_ref_id': idProductProvider,
       },
-      "location": {
+      'location': {
         'id_location': idLocation,
         'location_latitude': locationLatitude,
         'location_longitude': locationLongitude,
-        'location_name': locationName ?? "",
-        "location_address_id": locationAddressId,
+        'location_name': locationName ?? '',
+        'location_address_id': locationAddressId,
         'id_address': locationAddressId,
-        "address_street": addressStreet,
-        "address_city": addressCity,
-        "address_postal_code": addressPostalCode,
-        "address_country": addressCountry,
+        'address_street': addressStreet,
+        'address_city': addressCity,
+        'address_postal_code': addressPostalCode,
+        'address_country': addressCountry,
       },
     };
   }
 
   // ==================== Naming accessors ====================
 
-  /// Return the provider's name in [lang]. Prefers the trilingual
-  /// naming contribution; falls back to the flat `providerName`.
   String nameFor(String lang) {
     final resolved = naming?.nameFor(lang) ?? '';
     if (resolved.isNotEmpty) return resolved;
     return providerName;
   }
 
-  /// Return the organisation's name in [lang]. Same fallback rule.
   String organisationNameFor(String lang) {
     final resolved = organisationNaming?.nameFor(lang) ?? '';
     if (resolved.isNotEmpty) return resolved;
@@ -505,13 +362,11 @@ class Supplier {
       addressStreet,
       addressCity,
       addressPostalCode,
-      addressCountry
+      addressCountry,
     ].where((part) => part.isNotEmpty).toList();
     return parts.join(', ');
   }
 
-  /// English-preferring display name. Kept for backward compatibility
-  /// with callers that don't care about the locale-aware path.
   String get displayName {
     if (organisationNaming?.en.isNotEmpty == true) {
       return organisationNaming!.en;
@@ -536,49 +391,168 @@ class Supplier {
   int get hashCode => idProductProvider;
 
   @override
-  String toString() {
-    return 'Supplier(id: $idProductProvider, name: $providerName, location: $hasLocation)';
+  String toString() => 'Supplier(id: $idProductProvider, '
+      'name: $providerName, hasLocation: $hasLocation)';
+
+  // ==================== Parse helpers ====================
+
+  /// Returns the provider sub-map, or the top-level map if the
+  /// response is flat.
+  static Map<String, dynamic> _resolveProviderMap(Map<String, dynamic> json) {
+    final raw = json['product_provider'];
+    if (raw is List && raw.isNotEmpty) {
+      final first = raw.first;
+      if (first is Map<String, dynamic>) return first;
+    }
+    if (raw is Map<String, dynamic>) return raw;
+    return json;
   }
 
-  // ==================== Helpers ====================
+  static Map<String, dynamic> _resolveOrgMap(
+    Map<String, dynamic> json,
+    Map<String, dynamic> provider,
+  ) {
+    final fromProvider = _asMap(provider['product_provider_org']);
+    if (fromProvider != null) return fromProvider;
+    final fromJson = _asMap(json['product_provider_org']);
+    if (fromJson != null) return fromJson;
+    return const {};
+  }
 
-  static int _parseInt(dynamic value) {
-    if (value == null) return 0;
+  static Map<String, dynamic> _resolveLocationMap(
+    Map<String, dynamic> json,
+    Map<String, dynamic> provider,
+  ) {
+    final nested = _asMap(provider['product_provider_location']);
+    if (nested != null) return nested;
+    return {
+      'id_location': json['id_location'],
+      'position_wkt': json['position_wkt'],
+      'location_name': json['location_name'],
+    };
+  }
+
+  static Map<String, dynamic> _resolveAddressMap(
+    Map<String, dynamic> json,
+    Map<String, dynamic> loc,
+  ) {
+    final nested = _asMap(loc['location_address']);
+    if (nested != null) return nested;
+    return {
+      'id_address': json['id_address'],
+      'address_street': json['address_street'],
+      'address_city': json['address_city'],
+      'address_postal_code': json['address_postal_code'],
+      'address_country': json['address_country'],
+    };
+  }
+
+  static Map<String, dynamic> _resolveDetailsMap(
+    Map<String, dynamic> json,
+    Map<String, dynamic> provider,
+  ) {
+    final fromProvider = _asMap(provider['product_provider_details']);
+    if (fromProvider != null) return fromProvider;
+    final fromJson = _asMap(json['product_provider_details']);
+    if (fromJson != null) return fromJson;
+    return json;
+  }
+
+  static Map<String, dynamic>? _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return null;
+  }
+
+  static NamingContribution? _parseNaming(dynamic value) {
+    final map = _asMap(value);
+    if (map == null) return null;
+    return NamingContribution.fromJson(map);
+  }
+
+  /// Parse a WKT POINT into `(longitude, latitude)`, or null when the
+  /// string isn't a valid POINT.
+  static (double, double)? _parseWkt(dynamic value) {
+    if (value is! String) return null;
+    final match =
+        RegExp(r'POINT\s*\(\s*([-\d.]+)\s+([-\d.]+)\s*\)', caseSensitive: false)
+            .firstMatch(value.trim());
+    if (match == null) return null;
+    final lng = double.tryParse(match.group(1)!);
+    final lat = double.tryParse(match.group(2)!);
+    if (lng == null || lat == null) return null;
+    return (lng, lat);
+  }
+
+  /// Extract the first `(imageId, imageUrl)` pair from a list of
+  /// provider images. Returns null when there's nothing usable.
+  static (int, String)? _parseFirstImage(dynamic images) {
+    if (images is! List) return null;
+    for (final image in images) {
+      final map = _asMap(image);
+      if (map == null) continue;
+      final id = _parseIntOrNull(map['id_provider_image']);
+      final url = _getStringOrNull(map['provider_image_url']);
+      if (id != null && url != null && url.isNotEmpty) return (id, url);
+    }
+    return null;
+  }
+
+  /// Return the first non-empty string from [candidates], else
+  /// [fallback] (or the empty string if no fallback was given).
+  static String _firstNonEmpty(
+    List<dynamic> candidates, {
+    String fallback = '',
+  }) {
+    for (final candidate in candidates) {
+      final value = _getString(candidate);
+      if (value.isNotEmpty) return value;
+    }
+    return fallback;
+  }
+
+  static int _parseInt(dynamic value) => _parseIntOrNull(value) ?? 0;
+
+  static int? _parseIntOrNull(dynamic value) {
+    if (value == null) return null;
     if (value is int) return value;
-    if (value is String) return int.tryParse(value) ?? 0;
     if (value is num) return value.toInt();
-    return 0;
+    if (value is String) return int.tryParse(value.trim());
+    return null;
   }
 
-  static String _getString(dynamic value) {
-    if (value == null) return '';
-    if (value is String) return value.trim();
-    return value.toString().trim();
+  static String _getString(dynamic value) => _getStringOrNull(value) ?? '';
+
+  static String? _getStringOrNull(dynamic value) {
+    if (value == null) return null;
+    final trimmed = value is String ? value.trim() : value.toString().trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
-  static double _parseDouble(dynamic value) {
-    if (value == null) return 0.0;
-    if (value is double) return value;
-    if (value is int) return value.toDouble();
-    if (value is String) return double.tryParse(value) ?? 0.0;
-    if (value is num) return value.toDouble();
-    return 0.0;
+  static void _logParseError(
+    String where,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    // Gate on kDebugMode so the log doesn't fire in release builds.
+    assert(() {
+      developer.log(
+        'Error in $where: $error\n$stackTrace',
+        name: 'Supplier',
+      );
+      return true;
+    }());
   }
 }
 
+// ============================================================================
+// SupplierCategory
+// ============================================================================
+
 class SupplierCategory {
-  /// FK to `product_provider_type.id_product_provider_type`.
   final int productProviderTypeId;
-
-  /// Flat English label from `product_provider_type_name`.
-  /// Kept for backward compatibility — prefer [nameFor] or [naming].
   final String productCategoryDesc;
-
-  /// Icon URL from `product_provider_type_icon_url`.
   final String? iconUrl;
-
-  /// Trilingual naming block (fr / ar / en + status + icon).
-  /// Null when the backend returned only the flat shape.
   final NamingContribution? naming;
 
   SupplierCategory({
@@ -610,65 +584,30 @@ class SupplierCategory {
     );
   }
 
-  /// Parse a single provider-type row. Supports both shapes:
-  ///
-  /// New shape (as returned by the provider-type endpoint):
-  /// ```json
-  /// {
-  ///   "id_product_provider_type": 6,
-  ///   "product_provider_type_name": "Distributor",
-  ///   "product_provider_type_icon_url": "https://…/distributor.png",
-  ///   "naming_contribution": {
-  ///     "naming_contribution_fr": "Distributeur",
-  ///     "naming_contribution_ar": "موزّع",
-  ///     "naming_contribution_en": "Distributor",
-  ///     "naming_contribution_status": "APP_TRANSLATED",
-  ///     "naming_contribution_icon_url": "https://…/distributor.png"
-  ///   }
-  /// }
-  /// ```
-  ///
-  /// Legacy shape:
-  /// ```json
-  /// {
-  ///   "id_product_provider_type": 6,
-  ///   "product_provider_type_desc": "Distributor"
-  /// }
-  /// ```
   factory SupplierCategory.fromJson(Map<String, dynamic> json) {
     try {
       final id = Supplier._parseInt(
         json['id_product_provider_type'] ?? json['product_provider_type_id'],
       );
-
-      // Name fallback chain: new name field → old desc field → "".
       final flatName = Supplier._getString(
         json['product_provider_type_name'] ??
             json['product_provider_type_desc'],
       );
-
-      final icon = Supplier._getString(
+      final icon = Supplier._getStringOrNull(
         json['product_provider_type_icon_url'],
       );
-
-      NamingContribution? naming;
-      final namingJson = json['naming_contribution'];
-      if (namingJson != null && namingJson is Map<String, dynamic>) {
-        naming = NamingContribution.fromJson(namingJson);
-      }
 
       return SupplierCategory(
         productProviderTypeId: id,
         productCategoryDesc: flatName,
-        iconUrl: icon.isNotEmpty ? icon : null,
-        naming: naming,
+        iconUrl: icon,
+        naming: Supplier._parseNaming(json['naming_contribution']),
       );
     } catch (_) {
       return SupplierCategory.empty();
     }
   }
 
-  /// Parse a full list returned by the provider-type endpoint.
   static List<SupplierCategory> listFromJson(dynamic json) {
     if (json is! List) return const [];
     return json
@@ -686,27 +625,18 @@ class SupplierCategory {
     };
   }
 
-  // ==================== Naming accessors ====================
-
-  /// Return the category name in [lang]. Prefers the trilingual
-  /// naming contribution; falls back to [productCategoryDesc].
-  ///
-  /// [lang] accepts the usual BCP-47 short codes: `'en'`, `'fr'`, `'ar'`.
   String nameFor(String lang) {
     final resolved = naming?.nameFor(lang) ?? '';
     if (resolved.isNotEmpty) return resolved;
     return productCategoryDesc;
   }
 
-  /// Icon URL preferring the naming block, falling back to the flat
-  /// top-level icon.
   String? get resolvedIconUrl {
     final fromNaming = naming?.iconUrl;
     if (fromNaming != null && fromNaming.isNotEmpty) return fromNaming;
     return iconUrl;
   }
 
-  /// English-preferring display name. Kept for backward compatibility.
   String get displayName {
     if (naming?.en.isNotEmpty == true) return naming!.en;
     return productCategoryDesc;

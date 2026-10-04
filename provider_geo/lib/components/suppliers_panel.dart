@@ -1,11 +1,9 @@
 // lib/provider_geo/components/suppliers_panel.dart
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
-import 'package:app_constants/app_constants.dart';
 import 'package:verdelia_core/business/Supplier.dart';
 import 'package:provider_geo/components/location_filter.dart';
 import 'package:ui/components/supplier/supplier_screen.dart';
@@ -39,30 +37,16 @@ class PanelContent extends StatefulWidget {
 }
 
 class _PanelContentState extends State<PanelContent> {
-  final ValueNotifier<bool>? _localFilterNotifier = ValueNotifier<bool>(false);
+  bool _categoriesFetched = false;
 
   @override
   void initState() {
     super.initState();
-    _localFilterNotifier!.value = widget.selectedLocation != null;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted)
-        context.read<SupplierChangeNotifier>().fetchSupplierCategories();
+      if (!mounted) return;
+      context.read<SupplierChangeNotifier>().fetchSupplierCategories();
+      _categoriesFetched = true;
     });
-  }
-
-  @override
-  void didUpdateWidget(covariant PanelContent oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.selectedLocation != oldWidget.selectedLocation) {
-      _localFilterNotifier?.value = widget.selectedLocation != null;
-    }
-  }
-
-  @override
-  void dispose() {
-    _localFilterNotifier?.dispose();
-    super.dispose();
   }
 
   @override
@@ -81,13 +65,17 @@ class _PanelContentState extends State<PanelContent> {
     );
   }
 
+  // ============================================================
+  // HEADER
+  // ============================================================
+
   Widget _buildHeaderSection(ThemeData theme, AppLocalizations loc) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
+    final active = widget.selectedLocation != null;
+
+    return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
+        color: theme.scaffoldBackgroundColor,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -98,20 +86,17 @@ class _PanelContentState extends State<PanelContent> {
       ),
       child: Column(
         children: [
-          Center(
-            child: Container(
-              width: 60,
-              height: 5,
-              decoration: BoxDecoration(
-                color: theme.dividerColor.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(4),
-              ),
+          // Drag handle
+          Container(
+            width: 60,
+            height: 5,
+            decoration: BoxDecoration(
+              color: theme.dividerColor.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(4),
             ),
           ),
           const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Text(
@@ -122,58 +107,28 @@ class _PanelContentState extends State<PanelContent> {
                     color: theme.colorScheme.onSurface,
                     letterSpacing: -0.5,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              ValueListenableBuilder<bool>(
-                valueListenable: _localFilterNotifier!,
-                builder: (context, isFilterApplied, child) {
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOut,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: widget.selectedLocation != null
-                          ? theme.colorScheme.primary.withOpacity(0.2)
-                          : theme.colorScheme.primary.withOpacity(0.1),
-                    ),
-                    child: IconButton(
-                      onPressed: () => LocationFilterBottomSheet.show(
-                        context,
-                        widget.applyLocationFilter,
-                        widget.selectedLocation,
-                      ),
-                      icon: Icon(
-                        Icons.filter_list_rounded,
-                        color: widget.selectedLocation != null
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.primary.withOpacity(0.7),
-                        size: 24,
-                      ),
-                      // tooltip: loc.filterByLocationTooltip,
-                    ),
-                  );
-                },
-              ),
+              const SizedBox(width: 8),
+              _buildFilterButton(theme, loc),
             ],
           ),
           if (widget.selectedLocation != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Align(
-                alignment: Alignment.centerLeft,
+                alignment: AlignmentDirectional.centerStart,
                 child: InputChip(
                   label: Text(
-                    widget.selectedLocation!["name"],
+                    widget.selectedLocation!['name']?.toString() ?? '',
                     style: TextStyle(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  onDeleted: () {
-                    if (widget.onDeleteLocationFilter != null) {
-                      widget.onDeleteLocationFilter!();
-                    }
-                  },
+                  onDeleted: () => widget.onDeleteLocationFilter?.call(),
                   backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
                   deleteIcon: Icon(
                     Icons.close,
@@ -187,18 +142,29 @@ class _PanelContentState extends State<PanelContent> {
       ),
     );
   }
+  // ============================================================
+  // LIST
+  // ============================================================
 
   Widget _buildSupplierList(
       ThemeData theme, AppLocalizations loc, bool isDarkMode) {
-    if (widget.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+    if (widget.isLoading && widget.suppliers.isEmpty) {
+      return const Expanded(
+        child: Center(child: CircularProgressIndicator()),
+      );
     }
 
     if (widget.suppliers.isEmpty) {
-      return Center(
-        child: Text(
-          loc.notFoundError,
-          style: theme.textTheme.bodyLarge,
+      return Expanded(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              loc.notFoundError,
+              style: theme.textTheme.bodyLarge,
+              textAlign: TextAlign.center,
+            ),
+          ),
         ),
       );
     }
@@ -209,29 +175,12 @@ class _PanelContentState extends State<PanelContent> {
         itemCount: widget.suppliers.length,
         itemBuilder: (context, index) {
           final supplier = widget.suppliers[index];
-          final languageCode = Localizations.localeOf(context).languageCode;
-          final localizations = AppLocalizations.of(context)!;
-          return Selector<SupplierChangeNotifier, String>(
-            selector: (_, notifier) {
-              final matchingCategories = notifier.supplierCategories.where(
-                (category) =>
-                    category.productProviderTypeId ==
-                    supplier.productProviderTypeId,
-              );
-              if (matchingCategories.isEmpty) return '';
-              final category = matchingCategories.first;
-              return localizedCategoryHierarchy(
-                categoryPath: category.productCategoryDesc,
-                localizedLeaf: category.nameFor(languageCode),
-                localizations: localizations,
-              );
-            },
-            builder: (context, categoryName, _) => _buildSupplierItem(
-              supplier,
-              theme,
-              loc,
-              isDarkMode,
-              categoryName,
+          return _SupplierTile(
+            supplier: supplier,
+            isDarkMode: isDarkMode,
+            onFocusLocation: () => widget.focusOnLocation(
+              supplier.locationLatitude,
+              supplier.locationLongitude,
             ),
           );
         },
@@ -239,71 +188,205 @@ class _PanelContentState extends State<PanelContent> {
     );
   }
 
-  Widget _buildSupplierItem(Supplier supplier, ThemeData theme,
-      AppLocalizations loc, bool isDarkMode, String categoryName) {
-    final category = categoryName.isNotEmpty ? categoryName : 'General';
+  Widget _buildFilterButton(ThemeData theme, AppLocalizations loc) {
+    final active = widget.selectedLocation != null;
 
-    return Card(
-      color: isDarkMode
-          ? theme.colorScheme.primaryContainer.withOpacity(0.2)
-          : null,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: _buildSupplierImage(supplier, theme),
-        title: _buildSupplierTitle(supplier, category, theme),
-        subtitle: _buildSupplierSubtitle(supplier, theme, loc),
-        trailing: _buildLocationButton(supplier, theme),
-        onTap: () {
-          Provider.of<SupplierChangeNotifier>(context, listen: false)
-              .selectSupplier(supplier.idProductProvider);
-          showSupplierDetails(context, supplier);
-        },
+    // Explicit min tap target. Material's guideline is 48x48. We give
+    // it 48x48 exactly so hit testing never lands on a partially
+    // animated edge.
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: Material(
+        color: Colors.transparent,
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: theme.colorScheme.primary.withOpacity(active ? 0.2 : 0.1),
+          ),
+          child: InkWell(
+            onTap: () {
+              LocationFilterBottomSheet.show(
+                context,
+                widget.applyLocationFilter,
+                widget.selectedLocation,
+              );
+            },
+            borderRadius: BorderRadius.circular(12),
+            splashColor: theme.colorScheme.primary.withOpacity(0.15),
+            highlightColor: theme.colorScheme.primary.withOpacity(0.08),
+            child: Center(
+              child: Icon(
+                Icons.filter_list_rounded,
+                color: active
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.primary.withOpacity(0.7),
+                size: 24,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
+}
 
-  Widget _buildSupplierImage(Supplier supplier, ThemeData theme) {
-    return CircleAvatar(
-        radius: 40,
-        backgroundColor: theme.colorScheme.primaryContainer,
-        child: Image.network(
-          (supplier.supplierImageUrl ?? ""),
-          width: 40,
-          height: 40,
-          alignment: Alignment.center,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Center(
-              child: CircularProgressIndicator(
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes!
-                    : null,
+// ============================================================================
+// SUPPLIER TILE
+// ============================================================================
+//
+// Extracted into its own widget so the per-supplier Selector lives at a
+// stable widget identity. Rebuilding the parent list doesn't re-subscribe
+// each row.
+
+class _SupplierTile extends StatelessWidget {
+  final Supplier supplier;
+  final bool isDarkMode;
+  final VoidCallback onFocusLocation;
+
+  const _SupplierTile({
+    required this.supplier,
+    required this.isDarkMode,
+    required this.onFocusLocation,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
+    final localeLang = Localizations.localeOf(context).languageCode;
+
+    return Selector<SupplierChangeNotifier, String>(
+      selector: (_, notifier) {
+        for (final category in notifier.supplierCategories) {
+          if (category.productProviderTypeId ==
+              supplier.productProviderTypeId) {
+            return localizedCategoryHierarchy(
+              categoryPath: category.productCategoryDesc,
+              localizedLeaf: category.nameFor(localeLang),
+              localizations: loc,
+            );
+          }
+        }
+        return '';
+      },
+      builder: (context, categoryName, _) {
+        return Card(
+          color: isDarkMode
+              ? theme.colorScheme.primaryContainer.withOpacity(0.2)
+              : null,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            leading: _SupplierAvatar(supplier: supplier),
+            title: _SupplierTitle(
+              supplier: supplier,
+              categoryName: categoryName,
+            ),
+            subtitle: _SupplierSubtitle(supplier: supplier),
+            trailing: IconButton(
+              icon: Icon(
+                FontAwesomeIcons.locationDot,
+                color: supplier.hasLocation
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant.withOpacity(0.4),
               ),
-            );
-          },
-          errorBuilder: (context, error, stackTrace) {
-            return SvgPicture.asset(
-              'assets/icons/${supplier.productProviderTypeId}.svg',
-              package: "provider_geo",
-              width: 30,
-              height: 30,
-              color: Theme.of(context).colorScheme.onSurface,
-            );
-          },
-          key: ValueKey(supplier.supplierImageUrl),
-        ));
+              onPressed: supplier.hasLocation ? onFocusLocation : null,
+            ),
+            onTap: () {
+              context
+                  .read<SupplierChangeNotifier>()
+                  .selectSupplier(supplier.idProductProvider);
+              showSupplierDetails(context, supplier);
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── Avatar ──
+
+class _SupplierAvatar extends StatelessWidget {
+  final Supplier supplier;
+
+  const _SupplierAvatar({required this.supplier});
+
+  bool get _hasValidImage {
+    final url = supplier.supplierImageUrl;
+    return url != null && url.isNotEmpty && url.startsWith('http');
   }
 
-  Widget _buildSupplierTitle(
-      Supplier supplier, String category, ThemeData theme) {
-    // Resolve the supplier name for the ambient locale. `nameFor`
-    // prefers the naming contribution's translation when present and
-    // falls back to the flat provider name otherwise.
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return CircleAvatar(
+      radius: 40,
+      backgroundColor: theme.colorScheme.primaryContainer,
+      child: _hasValidImage
+          ? Image.network(
+              supplier.supplierImageUrl!,
+              width: 40,
+              height: 40,
+              fit: BoxFit.cover,
+              key: ValueKey(supplier.supplierImageUrl),
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                          : null,
+                    ),
+                  ),
+                );
+              },
+              errorBuilder: (_, __, ___) => _fallbackIcon(theme),
+            )
+          : _fallbackIcon(theme),
+    );
+  }
+
+  Widget _fallbackIcon(ThemeData theme) {
+    return SvgPicture.asset(
+      'assets/icons/${supplier.productProviderTypeId}.svg',
+      package: 'provider_geo',
+      width: 30,
+      height: 30,
+      color: theme.colorScheme.onSurface,
+    );
+  }
+}
+
+// ── Title ──
+
+class _SupplierTitle extends StatelessWidget {
+  final Supplier supplier;
+  final String categoryName;
+
+  const _SupplierTitle({
+    required this.supplier,
+    required this.categoryName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final localeLang = Localizations.localeOf(context).languageCode;
     final displayName = supplier.nameFor(localeLang);
+    final category =
+        categoryName.isNotEmpty ? categoryName : _fallbackCategory(context);
 
     return Wrap(
       spacing: 8,
@@ -313,6 +396,8 @@ class _PanelContentState extends State<PanelContent> {
         Text(
           displayName,
           style: theme.textTheme.titleMedium,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -325,34 +410,42 @@ class _PanelContentState extends State<PanelContent> {
             style: theme.textTheme.labelSmall?.copyWith(
               color: theme.colorScheme.onSecondaryContainer,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSupplierSubtitle(
-      Supplier supplier, ThemeData theme, AppLocalizations loc) {
-    // Same treatment for the organisation name.
+  String _fallbackCategory(BuildContext context) {
+    return AppLocalizations.of(context)?.all ?? 'General';
+  }
+}
+
+// ── Subtitle ──
+
+class _SupplierSubtitle extends StatelessWidget {
+  final Supplier supplier;
+
+  const _SupplierSubtitle({required this.supplier});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
     final localeLang = Localizations.localeOf(context).languageCode;
     final organisationName = supplier.organisationNameFor(localeLang);
+
+    if (organisationName.isEmpty) return const SizedBox.shrink();
 
     return Text(
       loc.by_organisation(organisationName),
       style: theme.textTheme.bodyMedium?.copyWith(
         color: theme.colorScheme.onSurface.withOpacity(0.6),
       ),
-    );
-  }
-
-  Widget _buildLocationButton(Supplier supplier, ThemeData theme) {
-    return IconButton(
-      icon: Icon(
-        FontAwesomeIcons.locationDot,
-        color: theme.colorScheme.primary,
-      ),
-      onPressed: () => widget.focusOnLocation(
-          supplier.locationLatitude, supplier.locationLongitude),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }

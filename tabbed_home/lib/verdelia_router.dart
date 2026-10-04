@@ -1,5 +1,6 @@
 import 'package:app_constants/app_routes.dart';
 import 'package:flutter/material.dart';
+import 'package:provider_geo/screens/map_picker_screen.dart';
 import 'package:verdelia_core/app/ManagementRule.dart';
 import 'package:verdelia_core/business/Supplier.dart';
 import 'package:event/order_change_notifier.dart';
@@ -66,6 +67,17 @@ class AppRouter {
                     onBarcodeScanned: (String code) {},
                   ),
                   const ProductCatalogScreen(),
+                );
+
+              case AppRoutes.mapPicker:
+                return _buildGuardedRoute(
+                  isAuthenticated,
+                  MapPicker(
+                    initialPosition: args?['initialPosition'],
+                    initialPin: args?['initialPin'],
+                    initialZoom: args?['initialZoom'] as double? ?? 15.0,
+                  ),
+                  const LoginScreen(),
                 );
 
               case AppRoutes.QRScanPage:

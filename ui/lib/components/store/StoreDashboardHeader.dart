@@ -5,14 +5,13 @@ import 'package:flutter/material.dart';
 /// A simple, non-collapsing header used at the top of dashboard screens.
 ///
 /// Renders a leading icon, a title, an optional subtitle, an optional
-/// trailing action row, and an optional search bar. Everything is laid out
-/// in a `Column` with fixed padding — no `SliverAppBar`, no
-/// `FlexibleSpaceBar`, no transforms.
+/// trailing action row, and an optional search bar.
 ///
-/// This is intentionally not the same thing as a collapsing header: it's
-/// a header that stays put while the content below scrolls. Use it when
-/// the screen has its own scroll view and the header should not participate
-/// in the scroll.
+/// On narrow screens the subtitle is hidden so the title and actions
+/// don't have to fight for the same row. The threshold is 360dp — below
+/// that, header chrome (leading icon + actions + padding) can eat most
+/// of the width, and a second line of text adds vertical noise without
+/// being readable at that size.
 class DashboardHeader extends StatelessWidget {
   final IconData? leadingIcon;
   final String title;
@@ -20,6 +19,11 @@ class DashboardHeader extends StatelessWidget {
   final List<Widget> actions;
   final Widget? searchBar;
   final EdgeInsetsGeometry padding;
+
+  /// Width below which the subtitle is hidden. Override this if a
+  /// particular screen has unusually wide actions and needs a larger
+  /// threshold.
+  final double subtitleHideBreakpoint;
 
   const DashboardHeader({
     super.key,
@@ -29,6 +33,7 @@ class DashboardHeader extends StatelessWidget {
     this.actions = const [],
     this.searchBar,
     this.padding = const EdgeInsets.fromLTRB(20, 12, 20, 8),
+    this.subtitleHideBreakpoint = 360,
   });
 
   @override
@@ -39,45 +44,64 @@ class DashboardHeader extends StatelessWidget {
     return Container(
       color: cs.surface,
       padding: padding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Below the breakpoint, drop the subtitle. The title stays
+          // readable, the actions stay tappable, and the header stays
+          // one line tall.
+          final showSubtitle = subtitle != null &&
+              constraints.maxWidth >= subtitleHideBreakpoint;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (leadingIcon != null) ...[
-                Icon(leadingIcon, size: 22, color: cs.primary),
-                const SizedBox(width: 10),
-              ],
-              Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: cs.onSurface,
+              Row(
+                children: [
+                  if (leadingIcon != null) ...[
+                    Icon(leadingIcon, size: 22, color: cs.primary),
+                    const SizedBox(width: 10),
+                  ],
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurface,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (actions.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Flexible(
+                      flex: 0,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: actions,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              if (showSubtitle) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              ...actions,
+              ],
+              if (searchBar != null) ...[
+                const SizedBox(height: 12),
+                searchBar!,
+              ],
             ],
-          ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 2),
-            Text(
-              subtitle!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: cs.onSurfaceVariant,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-          if (searchBar != null) ...[
-            const SizedBox(height: 12),
-            searchBar!,
-          ],
-        ],
+          );
+        },
       ),
     );
   }

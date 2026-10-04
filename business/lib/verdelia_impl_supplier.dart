@@ -449,19 +449,40 @@ class SupplierServiceImpl extends SupplierService {
     double distance, {
     String? callerKey,
   }) async {
+    // Include every parameter that affects the result. `distance`,
+    // `offset`, and `itemsPerPage` change the response, so they must
+    // change the cache key — otherwise switching the distance slider
+    // would return stale results.
     final key = callerKey ??
-        _getCallerKey('searchSuppliersByGeo',
-            suffix: '${longitude}_${latitude}');
+        _getCallerKey(
+          'searchSuppliersByGeo',
+          suffix:
+              '${longitude}_${latitude}_${distance}_${offset}_$itemsPerPage',
+        );
 
     try {
       final storageService = AppLocator.get<StorageService>();
 
-      final url =
-          '${AppConstants.apiBaseUrl}${AppConstants.getSupplierSearchByGeoEndpoint}/$longitude/$latitude/$distance/$offset/$itemsPerPage';
+      // Query-parameter endpoint. The path portion is only
+      // `/search/position/supplier`; all values travel as query params.
+      final uri = Uri.parse(
+        '${AppConstants.apiBaseUrl}${AppConstants.getSupplierSearchByGeoEndpoint}',
+      ).replace(
+        queryParameters: {
+          'longitude': longitude.toString(),
+          'latitude': latitude.toString(),
+          'distance_km': distance.toString(),
+          'offset': offset.toString(),
+          'limit': itemsPerPage.toString(),
+        },
+      );
+      final url = uri.toString();
 
       developer.log(
-          'Searching suppliers near: ($longitude, $latitude) within ${distance}km',
-          name: 'SupplierServiceImpl');
+        'Searching suppliers near: ($longitude, $latitude) '
+        'within ${distance}km, offset=$offset, limit=$itemsPerPage',
+        name: 'SupplierServiceImpl',
+      );
 
       final responseData = await storageService.getAll(url, callerKey: key);
 
@@ -480,15 +501,15 @@ class SupplierServiceImpl extends SupplierService {
 
       if (responseData is List) {
         suppliers = responseData
-            .map(
-                (item) => Supplier.fromSearchJson(item as Map<String, dynamic>))
+            .whereType<Map<String, dynamic>>()
+            .map(Supplier.fromSearchJson)
             .toList();
       } else if (responseData is Map && responseData.containsKey('data')) {
         final dataList = responseData['data'];
         if (dataList is List) {
           suppliers = dataList
-              .map((item) =>
-                  Supplier.fromSearchJson(item as Map<String, dynamic>))
+              .whereType<Map<String, dynamic>>()
+              .map(Supplier.fromSearchJson)
               .toList();
         }
       }

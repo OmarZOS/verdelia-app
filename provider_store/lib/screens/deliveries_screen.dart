@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:event/delivery_change_notifier.dart';
 import 'package:verdelia_core/business/Delivery.dart';
 import 'package:ui/components/store/StoreDashboardHeader.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 
 // ============================================================================
 // DELIVERY TABBED VIEW
@@ -48,14 +49,15 @@ enum _Phase {
   inFlight,
   closed;
 
-  String get label {
+  /// Localized phase label. Each locale supplies its own string.
+  String label(AppLocalizations l10n) {
     switch (this) {
       case _Phase.active:
-        return 'Active';
+        return l10n.deliveriesPhaseActive;
       case _Phase.inFlight:
-        return 'In flight';
+        return l10n.deliveriesPhaseInFlight;
       case _Phase.closed:
-        return 'Closed';
+        return l10n.deliveriesPhaseClosed;
     }
   }
 
@@ -182,18 +184,19 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: cs.surface,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(theme, cs),
-            _buildPhaseStrip(theme, cs),
-            _buildStatusChips(theme, cs),
-            if (_showFilters) _buildFilterRow(theme, cs),
+            _buildHeader(theme, cs, l10n),
+            _buildPhaseStrip(theme, cs, l10n),
+            _buildStatusChips(theme, cs, l10n),
+            if (_showFilters) _buildFilterRow(theme, cs, l10n),
             const SizedBox(height: 4),
-            Expanded(child: _buildContent()),
+            Expanded(child: _buildContent(l10n)),
           ],
         ),
       ),
@@ -202,13 +205,17 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
 
   // ==================== HEADER ====================
 
-  Widget _buildHeader(ThemeData theme, ColorScheme cs) {
+  Widget _buildHeader(
+    ThemeData theme,
+    ColorScheme cs,
+    AppLocalizations l10n,
+  ) {
     final busy = _isRefreshing || _notifier.isLoading;
 
     return DashboardHeader(
       leadingIcon: Icons.local_shipping_rounded,
-      title: 'Deliveries',
-      subtitle: _subtitleForCurrentPhase(),
+      title: l10n.deliveriesTitle,
+      subtitle: _subtitleForCurrentPhase(l10n),
       actions: [
         _headerAction(
           icon: busy
@@ -219,7 +226,7 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
                 )
               : const Icon(Icons.refresh_rounded),
           onPressed: busy ? null : _refreshData,
-          tooltip: 'Refresh',
+          tooltip: l10n.deliveriesRefresh,
         ),
         _headerAction(
           icon: Icon(
@@ -228,7 +235,7 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
             color: _showFilters ? cs.primary : null,
           ),
           onPressed: _toggleFilters,
-          tooltip: 'Filters',
+          tooltip: l10n.deliveriesFilters,
         ),
         _headerAction(
           icon: Icon(
@@ -237,10 +244,11 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
             color: _showSearch ? cs.primary : null,
           ),
           onPressed: _toggleSearch,
-          tooltip: _showSearch ? 'Close search' : 'Search',
+          tooltip:
+              _showSearch ? l10n.deliveriesCloseSearch : l10n.deliveriesSearch,
         ),
       ],
-      searchBar: _showSearch ? _buildSearchBar(theme, cs) : null,
+      searchBar: _showSearch ? _buildSearchBar(theme, cs, l10n) : null,
     );
   }
 
@@ -259,10 +267,10 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
     );
   }
 
-  String _subtitleForCurrentPhase() {
+  String _subtitleForCurrentPhase(AppLocalizations l10n) {
     final phase = _currentPhase;
     final count = _phaseCount(phase);
-    return '$count ${phase.label.toLowerCase()}';
+    return l10n.deliveriesPhaseSubtitle('$count', phase.label(l10n));
   }
 
   int _phaseCount(_Phase phase) {
@@ -274,7 +282,11 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
 
   // ==================== PHASE STRIP ====================
 
-  Widget _buildPhaseStrip(ThemeData theme, ColorScheme cs) {
+  Widget _buildPhaseStrip(
+    ThemeData theme,
+    ColorScheme cs,
+    AppLocalizations l10n,
+  ) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       padding: const EdgeInsets.all(4),
@@ -283,60 +295,136 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
         borderRadius: BorderRadius.circular(50),
         border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
       ),
-      child: TabBar(
-        controller: _tabController,
-        indicator: BoxDecoration(
-          borderRadius: BorderRadius.circular(50),
-          color: cs.primary,
-          boxShadow: [
-            BoxShadow(
-              color: cs.primary.withOpacity(0.25),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        indicatorSize: TabBarIndicatorSize.tab,
-        indicatorPadding: EdgeInsets.zero,
-        dividerColor: Colors.transparent,
-        splashFactory: NoSplash.splashFactory,
-        overlayColor: WidgetStateProperty.all(Colors.transparent),
-        labelColor: cs.onPrimary,
-        unselectedLabelColor: cs.onSurfaceVariant,
-        labelStyle: theme.textTheme.labelLarge?.copyWith(
-          fontWeight: FontWeight.w700,
-          fontSize: 13,
-        ),
-        unselectedLabelStyle: theme.textTheme.labelLarge?.copyWith(
-          fontWeight: FontWeight.w500,
-          fontSize: 13,
-        ),
-        tabs: _Phase.values.map((phase) {
-          return Tab(
-            height: 40,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(phase.icon, size: 15),
-                const SizedBox(width: 6),
-                Text(phase.label),
-                const SizedBox(width: 6),
-                _CountBubble(count: _phaseCount(phase)),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final showLabels = _phaseLabelsFit(
+            theme: theme,
+            l10n: l10n,
+            constraints: constraints,
+          );
+
+          return TabBar(
+            controller: _tabController,
+            indicator: BoxDecoration(
+              borderRadius: BorderRadius.circular(50),
+              color: cs.primary,
+              boxShadow: [
+                BoxShadow(
+                  color: cs.primary.withOpacity(0.25),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
               ],
             ),
+            indicatorSize: TabBarIndicatorSize.tab,
+            indicatorPadding: EdgeInsets.zero,
+            dividerColor: Colors.transparent,
+            splashFactory: NoSplash.splashFactory,
+            overlayColor: WidgetStateProperty.all(Colors.transparent),
+            labelColor: cs.onPrimary,
+            unselectedLabelColor: cs.onSurfaceVariant,
+            labelStyle: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
+            unselectedLabelStyle: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+            ),
+            tabs: _Phase.values.map((phase) {
+              return _buildPhaseTab(phase, showLabels, l10n);
+            }).toList(),
           );
-        }).toList(),
+        },
+      ),
+    );
+  }
+
+  /// Measures whether all three phase tabs fit with their labels AND
+  /// count bubbles. Returns true when the widest form fits.
+  bool _phaseLabelsFit({
+    required ThemeData theme,
+    required AppLocalizations l10n,
+    required BoxConstraints constraints,
+  }) {
+    if (!constraints.maxWidth.isFinite) return true;
+
+    final style = theme.textTheme.labelLarge?.copyWith(
+      fontWeight: FontWeight.w700,
+      fontSize: 13,
+    );
+    final scaler = MediaQuery.textScalerOf(context);
+
+    // Per tab: 15 (icon) + 6 (gap) + label + 6 (gap) + bubble + 24 (Tab padding)
+    double needed = 0;
+    for (final phase in _Phase.values) {
+      final painter = TextPainter(
+        text: TextSpan(text: phase.label(l10n), style: style),
+        maxLines: 1,
+        textDirection: Directionality.of(context),
+        textScaler: scaler,
+      )..layout();
+
+      final bubbleWidth = _bubbleWidthFor(_phaseCount(phase), scaler);
+      needed += 15 + 6 + painter.width + 6 + bubbleWidth + 24;
+    }
+
+    return needed + 8 <= constraints.maxWidth;
+  }
+
+  double _bubbleWidthFor(int count, TextScaler scaler) {
+    final text = count > 99 ? '99+' : '$count';
+    final painter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+      ),
+      maxLines: 1,
+      textDirection: Directionality.of(context),
+      textScaler: scaler,
+    )..layout();
+    return (painter.width + 12).clamp(18.0, double.infinity);
+  }
+
+  /// Builds a phase tab. When [showLabel] is false, the label is dropped
+  /// but the count bubble stays.
+  Tab _buildPhaseTab(
+    _Phase phase,
+    bool showLabel,
+    AppLocalizations l10n,
+  ) {
+    return Tab(
+      height: 40,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(phase.icon, size: 15),
+          const SizedBox(width: 6),
+          if (showLabel) ...[
+            Flexible(
+              child: Text(
+                phase.label(l10n),
+                maxLines: 1,
+                overflow: TextOverflow.clip,
+                softWrap: false,
+              ),
+            ),
+            const SizedBox(width: 6),
+          ],
+          _CountBubble(count: _phaseCount(phase)),
+        ],
       ),
     );
   }
 
   // ==================== STATUS CHIPS ====================
 
-  /// The chips below the phase strip. Each represents a specific
-  /// status within the current phase, with its own count. Tapping a
-  /// chip filters the list to that status. Tapping the leading "All"
-  /// chip clears the filter.
-  Widget _buildStatusChips(ThemeData theme, ColorScheme cs) {
+  Widget _buildStatusChips(
+    ThemeData theme,
+    ColorScheme cs,
+    AppLocalizations l10n,
+  ) {
     final phase = _currentPhase;
 
     return Padding(
@@ -346,7 +434,7 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
         child: Row(
           children: [
             _statusChip(
-              label: 'All',
+              label: l10n.deliveriesChipAll,
               count: _phaseCount(phase),
               selected: _activeStatusFilter == null,
               onTap: () => setState(() => _activeStatusFilter = null),
@@ -354,7 +442,7 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
             const SizedBox(width: 8),
             for (final status in phase.statuses) ...[
               _statusChip(
-                label: _statusLabel(status),
+                label: _statusLabel(status, l10n),
                 count: _countForStatus(status),
                 selected: _activeStatusFilter == status,
                 onTap: () => setState(() => _activeStatusFilter = status),
@@ -408,6 +496,9 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   color: selected ? accent : cs.onSurfaceVariant,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
               ),
               const SizedBox(width: 6),
               _InlineCount(count: count, active: selected, accent: accent),
@@ -420,7 +511,11 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
 
   // ==================== SEARCH ====================
 
-  Widget _buildSearchBar(ThemeData theme, ColorScheme cs) {
+  Widget _buildSearchBar(
+    ThemeData theme,
+    ColorScheme cs,
+    AppLocalizations l10n,
+  ) {
     return Container(
       height: 44,
       decoration: BoxDecoration(
@@ -435,7 +530,8 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
           prefixIcon: const Icon(Icons.search, size: 20),
-          hintText: 'Search by ID, customer, address…',
+          hintText: l10n.deliveriesSearchHint,
+          hintMaxLines: 1,
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 12),
           suffixIcon: _searchController.text.isNotEmpty
@@ -460,7 +556,11 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
 
   // ==================== FILTERS ====================
 
-  Widget _buildFilterRow(ThemeData theme, ColorScheme cs) {
+  Widget _buildFilterRow(
+    ThemeData theme,
+    ColorScheme cs,
+    AppLocalizations l10n,
+  ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
       child: Row(
@@ -468,7 +568,7 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
           Expanded(
             child: _filterChip(
               icon: Icons.today_rounded,
-              label: 'Due today',
+              label: l10n.deliveriesFilterDueToday,
               onTap: () => _applyQuickFilter('today'),
             ),
           ),
@@ -476,7 +576,7 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
           Expanded(
             child: _filterChip(
               icon: Icons.warning_amber_rounded,
-              label: 'Delayed',
+              label: l10n.deliveriesFilterDelayed,
               onTap: () => _applyQuickFilter('delayed'),
             ),
           ),
@@ -484,7 +584,7 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
           Expanded(
             child: _filterChip(
               icon: Icons.priority_high_rounded,
-              label: 'Unassigned',
+              label: l10n.deliveriesFilterUnassigned,
               onTap: () => _applyQuickFilter('unassigned'),
             ),
           ),
@@ -502,9 +602,15 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
     return OutlinedButton.icon(
       onPressed: onTap,
       icon: Icon(icon, size: 16),
-      label: Text(label, style: const TextStyle(fontSize: 12)),
+      label: Text(
+        label,
+        style: const TextStyle(fontSize: 12),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        softWrap: false,
+      ),
       style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
         ),
@@ -514,30 +620,26 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
   }
 
   void _applyQuickFilter(String key) {
-    // The notifier doesn't yet expose date-range filters; wire them
-    // here when it does, or send them through `onSearch` if the
-    // backend supports query fragments.
     debugPrint('Quick filter → $key');
   }
 
   // ==================== CONTENT ====================
 
-  Widget _buildContent() {
+  Widget _buildContent(AppLocalizations l10n) {
     return TabBarView(
       controller: _tabController,
-      children: _Phase.values.map(_buildPhaseContent).toList(),
+      children: _Phase.values.map((phase) {
+        return _buildPhaseContent(phase, l10n);
+      }).toList(),
     );
   }
 
-  Widget _buildPhaseContent(_Phase phase) {
-    // When a specific status is selected, we filter to that status.
-    // Otherwise we ask the list view for the whole phase, which is
-    // the set of statuses in `phase.statuses`.
+  Widget _buildPhaseContent(_Phase phase, AppLocalizations l10n) {
     final statuses =
         _activeStatusFilter != null ? [_activeStatusFilter!] : phase.statuses;
 
-    final emptyTitle = _emptyTitleFor(phase);
-    final emptyMessage = _emptyMessageFor(phase);
+    final emptyTitle = _emptyTitleFor(phase, l10n);
+    final emptyMessage = _emptyMessageFor(phase, l10n);
 
     return RefreshIndicator(
       onRefresh: _refreshData,
@@ -550,68 +652,60 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
     );
   }
 
-  String _emptyTitleFor(_Phase phase) {
+  String _emptyTitleFor(_Phase phase, AppLocalizations l10n) {
     switch (phase) {
       case _Phase.active:
-        return 'No active deliveries';
+        return l10n.deliveriesEmptyActiveTitle;
       case _Phase.inFlight:
-        return 'Nothing is moving right now';
+        return l10n.deliveriesEmptyInFlightTitle;
       case _Phase.closed:
-        return 'No closed deliveries';
+        return l10n.deliveriesEmptyClosedTitle;
     }
   }
 
-  String _emptyMessageFor(_Phase phase) {
+  String _emptyMessageFor(_Phase phase, AppLocalizations l10n) {
     switch (phase) {
       case _Phase.active:
-        return 'Deliveries that are pending, processing, or confirmed '
-            'will appear here.';
+        return l10n.deliveriesEmptyActiveMessage;
       case _Phase.inFlight:
-        return 'Deliveries that are shipped, in transit, or out for '
-            'delivery will appear here.';
+        return l10n.deliveriesEmptyInFlightMessage;
       case _Phase.closed:
-        return 'Delivered, failed, cancelled, returned, or refunded '
-            'deliveries will appear here.';
+        return l10n.deliveriesEmptyClosedMessage;
     }
   }
 
   // ==================== COUNT HELPERS ====================
 
   int _countForStatus(DeliveryStatus status) {
-    // `_notifier.deliveries` is whatever the last fetch loaded. If the
-    // backend returns per-status counts, prefer those. Otherwise this
-    // is a client-side rollup of the current page.
     return _notifier.deliveries
         .where((d) => d.delivery_status == status)
         .length;
   }
 
-  String _statusLabel(DeliveryStatus status) {
-    // Uses the enum's `label` getter as the source of truth. If you
-    // want localized labels, wire them through `AppLocalizations` here.
+  String _statusLabel(DeliveryStatus status, AppLocalizations l10n) {
     switch (status) {
       case DeliveryStatus.pending:
-        return 'Pending';
+        return l10n.deliveriesStatusPending;
       case DeliveryStatus.processing:
-        return 'Processing';
+        return l10n.deliveriesStatusProcessing;
       case DeliveryStatus.confirmed:
-        return 'Confirmed';
+        return l10n.deliveriesStatusConfirmed;
       case DeliveryStatus.shipped:
-        return 'Shipped';
+        return l10n.deliveriesStatusShipped;
       case DeliveryStatus.inTransit:
-        return 'In transit';
+        return l10n.deliveriesStatusInTransit;
       case DeliveryStatus.outForDelivery:
-        return 'Out for delivery';
+        return l10n.deliveriesStatusOutForDelivery;
       case DeliveryStatus.delivered:
-        return 'Delivered';
+        return l10n.deliveriesStatusDelivered;
       case DeliveryStatus.failed:
-        return 'Failed';
+        return l10n.deliveriesStatusFailed;
       case DeliveryStatus.cancelled:
-        return 'Cancelled';
+        return l10n.deliveriesStatusCancelled;
       case DeliveryStatus.returned:
-        return 'Returned';
+        return l10n.deliveriesStatusReturned;
       case DeliveryStatus.refunded:
-        return 'Refunded';
+        return l10n.deliveriesStatusRefunded;
     }
   }
 
@@ -642,13 +736,7 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
     }
   }
 
-  // ==================== FAB + ACTIONS ====================
-
-  bool _shouldShowFab() {
-    // New deliveries only make sense on the Active phase. You can't
-    // create one that's already shipped or delivered.
-    return _currentPhase == _Phase.active;
-  }
+  // ==================== ACTIONS ====================
 
   Future<void> _refreshData() async {
     if (_isRefreshing) return;
@@ -668,9 +756,10 @@ class _DeliveryTabbedViewState extends State<DeliveryTabbedView>
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Refresh failed: ${e.toString()}'),
+            content: Text(l10n.deliveriesRefreshFailed(e.toString())),
             backgroundColor: Theme.of(context).colorScheme.errorContainer,
             behavior: SnackBarBehavior.floating,
           ),
@@ -741,6 +830,8 @@ class _CountBubble extends StatelessWidget {
             fontWeight: FontWeight.w700,
             color: cs.onSurface,
           ),
+          maxLines: 1,
+          softWrap: false,
         ),
       ),
     );
@@ -779,6 +870,8 @@ class _InlineCount extends StatelessWidget {
           fontWeight: FontWeight.w700,
           color: active ? accent : cs.onSurfaceVariant,
         ),
+        maxLines: 1,
+        softWrap: false,
       ),
     );
   }

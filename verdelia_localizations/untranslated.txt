@@ -1,5 +1,24 @@
 {
+  "ar": [
+    "verificationStatusText",
+    "verifiedLabel",
+    "unverifiedLabel",
+    "unknownLabel",
+    "phoneText",
+    "emailText",
+    "subscriptionInfoText",
+    "subscriptionPlanText",
+    "subscriptionExpiryText",
+    "quotaText"
+  ],
+
   "fr": [
-    "noProductsFoundForQuery"
+    "noProductsFoundForQuery",
+    "phoneText",
+    "emailText",
+    "subscriptionInfoText",
+    "subscriptionPlanText",
+    "subscriptionExpiryText",
+    "quotaText"
   ]
 }

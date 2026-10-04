@@ -1,12 +1,11 @@
 // lib/ui/components/supplier/supplier_details_modal.dart
 
-import 'dart:developer';
+import 'dart:developer' as developer;
 
 import 'package:app_constants/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
-import 'package:app_constants/app_constants.dart';
 import 'package:verdelia_core/business/Product.dart';
 import 'package:verdelia_core/business/Supplier.dart';
 import 'package:event/product_change_notifier.dart';
@@ -20,13 +19,15 @@ import 'package:provider/provider.dart';
 
 void showSupplierDetails(BuildContext context, Supplier supplier) {
   final theme = Theme.of(context);
-  final productNotifier = Provider.of<ProductNotifier>(context, listen: false);
-  final supplierNotifier =
-      Provider.of<SupplierChangeNotifier>(context, listen: false);
+  final productNotifier = context.read<ProductNotifier>();
+  final supplierNotifier = context.read<SupplierChangeNotifier>();
 
-  log('supplier.idProductProvider: ${supplier.idProductProvider}');
+  developer.log(
+    'showSupplierDetails id=${supplier.idProductProvider}',
+    name: 'SupplierDetailsModal',
+  );
 
-  // Fetch fresh supplier data in background
+  // Fetch fresh supplier data in the background.
   supplierNotifier.getSupplierById(supplier.idProductProvider);
 
   final isDarkMode = theme.brightness == Brightness.dark;
@@ -38,22 +39,18 @@ void showSupplierDetails(BuildContext context, Supplier supplier) {
     barrierColor: isDarkMode
         ? Colors.white.withOpacity(0.5)
         : Colors.black.withOpacity(0.5),
-    builder: (context) {
-      return DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.9,
-        maxChildSize: 0.95,
-        minChildSize: 0.5,
-        builder: (context, scrollController) {
-          return _SupplierDetailsModal(
-            supplier: supplier,
-            supplierNotifier: supplierNotifier,
-            productNotifier: productNotifier,
-            scrollController: scrollController,
-          );
-        },
-      );
-    },
+    builder: (_) => DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.9,
+      maxChildSize: 0.95,
+      minChildSize: 0.5,
+      builder: (context, scrollController) => _SupplierDetailsModal(
+        supplier: supplier,
+        supplierNotifier: supplierNotifier,
+        productNotifier: productNotifier,
+        scrollController: scrollController,
+      ),
+    ),
   );
 }
 
@@ -76,70 +73,45 @@ class _SupplierDetailsModal extends StatefulWidget {
 
 class _SupplierDetailsModalState extends State<_SupplierDetailsModal> {
   late Future<List<Product>> _supplierProductsFuture;
+
+  /// Cached products from the notifier, kept around so we can render
+  /// a horizontal list while the fresh fetch is in flight.
   List<Product>? _cachedProducts;
-  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _loadSupplierProducts();
+    _load();
   }
 
-  void _loadSupplierProducts() {
+  void _load() {
     final supplierId = widget.supplier.idProductProvider;
 
     final cached = widget.productNotifier.getCachedSupplierProducts(supplierId);
-    if (cached != null && cached.isNotEmpty) {
-      log('Using cached products: ${cached.length}');
-      _cachedProducts = cached;
-    }
+    _cachedProducts = (cached != null && cached.isNotEmpty) ? cached : null;
 
     _supplierProductsFuture = _fetchSupplierProducts();
   }
 
+  /// Returns the supplier's products. Prefers whatever the notifier
+  /// already has in memory so the sheet paints instantly; only hits
+  /// the network when there's nothing to show.
   Future<List<Product>> _fetchSupplierProducts() async {
     final supplierId = widget.supplier.idProductProvider;
 
-    final existingProducts = widget.productNotifier.products
+    final existing = widget.productNotifier.products
         .where((p) => p.product_provider_id == supplierId)
         .toList();
+    if (existing.isNotEmpty) return existing;
 
-    if (existingProducts.isNotEmpty) {
-      log('Using existing products from notifier: ${existingProducts.length}');
-      return existingProducts;
-    }
+    final cached = widget.productNotifier.getCachedSupplierProducts(supplierId);
+    if (cached != null && cached.isNotEmpty) return cached;
 
-    final cachedProducts =
-        widget.productNotifier.getCachedSupplierProducts(supplierId);
-    if (cachedProducts != null && cachedProducts.isNotEmpty) {
-      log('Using cached products: ${cachedProducts.length}');
-      return cachedProducts;
-    }
-
-    log('Fetching products from API for supplier $supplierId');
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final products =
-          await widget.productNotifier.fetchSupplierProducts(supplierId);
-      log('API returned ${products.length} products');
-      return products;
-    } catch (e) {
-      log('Failed to load supplier products: $e');
-      return [];
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+    return widget.productNotifier.fetchSupplierProducts(supplierId);
   }
 
-  bool _isValidImageUrl(String? url) {
-    return url != null && url.isNotEmpty && url.startsWith('http');
+  void _retry() {
+    setState(_load);
   }
 
   @override
@@ -149,8 +121,6 @@ class _SupplierDetailsModalState extends State<_SupplierDetailsModal> {
     final supplier = widget.supplier;
     final contacts = parseContactInfo(supplier.providerContactInfo);
 
-    // Resolve the display names once for the ambient locale. Used in
-    // the section header and the header wrap.
     final localeLang = Localizations.localeOf(context).languageCode;
     final displayName = supplier.nameFor(localeLang);
 
@@ -168,7 +138,7 @@ class _SupplierDetailsModalState extends State<_SupplierDetailsModal> {
       ),
       child: Column(
         children: [
-          _buildHeader(context, supplier),
+          _buildHeader(context, supplier, loc),
           Expanded(
             child: CustomScrollView(
               controller: widget.scrollController,
@@ -180,10 +150,12 @@ class _SupplierDetailsModalState extends State<_SupplierDetailsModal> {
                       const SizedBox(height: 16),
                       _buildSectionHeader(context, loc.locationText),
                       buildLocationInfo(
-                          context, widget.supplierNotifier, supplier),
+                        context,
+                        widget.supplierNotifier,
+                        supplier,
+                      ),
                       const SizedBox(height: 24),
-                      if (supplier.providerContactInfo != null &&
-                          supplier.providerContactInfo!.isNotEmpty)
+                      if (supplier.providerContactInfo.isNotEmpty)
                         _buildSectionHeader(context, loc.contactInfoMsg),
                       ...contacts.map(
                         (contact) => Padding(
@@ -197,9 +169,6 @@ class _SupplierDetailsModalState extends State<_SupplierDetailsModal> {
                       ),
                       _buildSectionHeader(
                         context,
-                        // Use the locale-resolved supplier name in the
-                        // section title. Falls back to the flat name
-                        // when no naming block is present.
                         loc.productsFromSupplier(displayName),
                       ),
                       const SizedBox(height: 8),
@@ -212,16 +181,19 @@ class _SupplierDetailsModalState extends State<_SupplierDetailsModal> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-            child: FilledButton.tonal(
-              onPressed: () => Navigator.pop(context),
-              style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: double.infinity,
+              child: FilledButton.tonal(
+                onPressed: () => Navigator.pop(context),
+                style: FilledButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
+                child: Text(loc.close),
               ),
-              child: Text(loc.close),
             ),
           ),
         ],
@@ -229,84 +201,30 @@ class _SupplierDetailsModalState extends State<_SupplierDetailsModal> {
     );
   }
 
+  // ============================================================
+  // PRODUCTS
+  // ============================================================
+
   Widget _buildProductSection(
-      BuildContext context, AppLocalizations loc, ThemeData theme) {
+    BuildContext context,
+    AppLocalizations loc,
+    ThemeData theme,
+  ) {
     return SliverToBoxAdapter(
       child: FutureBuilder<List<Product>>(
         future: _supplierProductsFuture,
         builder: (context, snapshot) {
-          final hasCachedProducts =
-              _cachedProducts != null && _cachedProducts!.isNotEmpty;
-          final isLoading =
-              snapshot.connectionState == ConnectionState.waiting || _isLoading;
+          final isLoading = snapshot.connectionState == ConnectionState.waiting;
+          final products = snapshot.data ?? const <Product>[];
+          final cached = _cachedProducts;
 
-          if (hasCachedProducts && isLoading) {
-            return Column(
-              children: [
-                SizedBox(
-                  height: 180,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: _cachedProducts!.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 12),
-                    itemBuilder: (context, index) {
-                      final product = _cachedProducts![index];
-                      return _buildProductCard(context, product);
-                    },
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ),
-              ],
-            );
+          // Fresh data ready.
+          if (snapshot.hasData && products.isNotEmpty) {
+            return _productStrip(context, products);
           }
 
-          if (isLoading) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-
-          if (snapshot.hasError) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Column(
-                children: [
-                  Icon(Icons.error_outline,
-                      color: theme.colorScheme.error, size: 48),
-                  const SizedBox(height: 8),
-                  Text(
-                    loc.failedToLoadProducts,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.error,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _supplierProductsFuture = _fetchSupplierProducts();
-                      });
-                    },
-                    child: Text(loc.retryButton),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final products = snapshot.data ?? [];
-          if (products.isEmpty) {
+          // Fresh data ready but empty.
+          if (snapshot.hasData && products.isEmpty) {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
@@ -315,46 +233,107 @@ class _SupplierDetailsModalState extends State<_SupplierDetailsModal> {
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: theme.colorScheme.onSurface.withOpacity(0.6),
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             );
           }
 
-          return SizedBox(
-            height: 180,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              itemCount: products.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
-              itemBuilder: (context, index) {
-                final product = products[index];
-                return _buildProductCard(context, product);
-              },
-            ),
+          // Error.
+          if (snapshot.hasError) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: theme.colorScheme.error,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    loc.failedToLoadProducts,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: theme.colorScheme.error,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  TextButton(
+                    onPressed: _retry,
+                    child: Text(loc.retryButton),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // Loading. Show cached products if we have any, plus a
+          // small spinner below.
+          if (isLoading && cached != null && cached.isNotEmpty) {
+            return Column(
+              children: [
+                _productStrip(context, cached),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              ],
+            );
+          }
+
+          // Loading with nothing to show.
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: CircularProgressIndicator()),
           );
         },
       ),
     );
   }
 
+  Widget _productStrip(BuildContext context, List<Product> products) {
+    return SizedBox(
+      height: 180,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        itemCount: products.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, index) => _buildProductCard(
+          context,
+          products[index],
+        ),
+      ),
+    );
+  }
+
   Widget _buildProductCard(BuildContext context, Product product) {
+    // Match the card width to the sheet width without hardcoding a
+    // pixel value that breaks on tablets or small phones.
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final cardWidth = (screenWidth * 0.75).clamp(220.0, 360.0);
+
     return InkWell(
       onTap: () {
         Navigator.pushNamed(
           context,
           AppRoutes.productDetails,
-          arguments: {"product": product},
+          arguments: {'product': product},
         );
       },
       borderRadius: BorderRadius.circular(12),
       child: SizedBox(
-        width: 360,
+        width: cardWidth,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: SupplierProductCard(
             product: product,
-            supplierName: product.product_brand ?? "",
+            supplierName: product.product_brand ?? '',
             stockQuantity: product.product_quantity ?? 0,
             minOrderQty: '1',
           ),
@@ -363,11 +342,16 @@ class _SupplierDetailsModalState extends State<_SupplierDetailsModal> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, Supplier supplier) {
-    final theme = Theme.of(context);
-    final loc = AppLocalizations.of(context)!;
+  // ============================================================
+  // HEADER
+  // ============================================================
 
-    // Resolve both names for the ambient locale.
+  Widget _buildHeader(
+    BuildContext context,
+    Supplier supplier,
+    AppLocalizations loc,
+  ) {
+    final theme = Theme.of(context);
     final localeLang = Localizations.localeOf(context).languageCode;
     final displayName = supplier.nameFor(localeLang);
     final organisationName = supplier.organisationNameFor(localeLang);
@@ -392,41 +376,7 @@ class _SupplierDetailsModalState extends State<_SupplierDetailsModal> {
             crossAxisAlignment: WrapCrossAlignment.center,
             alignment: WrapAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 50,
-                backgroundColor: theme.colorScheme.primaryContainer,
-                child: _isValidImageUrl(supplier.supplierImageUrl)
-                    ? ClipOval(
-                        child: Image.network(
-                          supplier.supplierImageUrl!,
-                          fit: BoxFit.cover,
-                          width: 100,
-                          height: 100,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) {
-                            return SvgPicture.asset(
-                              'assets/icons/${supplier.productProviderTypeId}.svg',
-                              package: "provider_geo",
-                              width: 40,
-                              height: 40,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            );
-                          },
-                        ),
-                      )
-                    : SvgPicture.asset(
-                        'assets/icons/${supplier.productProviderTypeId}.svg',
-                        package: "provider_geo",
-                        width: 40,
-                        height: 40,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-              ),
+              _SupplierHeaderAvatar(supplier: supplier),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 200),
                 child: Column(
@@ -481,9 +431,7 @@ class _SupplierDetailsModalState extends State<_SupplierDetailsModal> {
                         Navigator.pushNamed(
                           context,
                           AppRoutes.providerCreate,
-                          arguments: {
-                            "supplier": supplier,
-                          },
+                          arguments: {'supplier': supplier},
                         );
                       },
                       icon: const Icon(Icons.edit_location_alt),
@@ -506,7 +454,62 @@ class _SupplierDetailsModalState extends State<_SupplierDetailsModal> {
               fontWeight: FontWeight.bold,
               color: Theme.of(context).colorScheme.primary,
             ),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
       ),
+    );
+  }
+}
+
+// ============================================================================
+// HEADER AVATAR
+// ============================================================================
+
+class _SupplierHeaderAvatar extends StatelessWidget {
+  final Supplier supplier;
+
+  const _SupplierHeaderAvatar({required this.supplier});
+
+  bool get _hasValidImage {
+    final url = supplier.supplierImageUrl;
+    return url != null && url.isNotEmpty && url.startsWith('http');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return CircleAvatar(
+      radius: 50,
+      backgroundColor: theme.colorScheme.primaryContainer,
+      child: _hasValidImage
+          ? ClipOval(
+              child: Image.network(
+                supplier.supplierImageUrl!,
+                fit: BoxFit.cover,
+                width: 100,
+                height: 100,
+                key: ValueKey(supplier.supplierImageUrl),
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  );
+                },
+                errorBuilder: (_, __, ___) => _fallbackIcon(theme),
+              ),
+            )
+          : _fallbackIcon(theme),
+    );
+  }
+
+  Widget _fallbackIcon(ThemeData theme) {
+    return SvgPicture.asset(
+      'assets/icons/${supplier.productProviderTypeId}.svg',
+      package: 'provider_geo',
+      width: 40,
+      height: 40,
+      color: theme.colorScheme.onSurface,
     );
   }
 }

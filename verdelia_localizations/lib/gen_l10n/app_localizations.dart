@@ -3106,7 +3106,7 @@ abstract class AppLocalizations {
   /// No description provided for @pricing.
   ///
   /// In en, this message translates to:
-  /// **'Pricing'**
+  /// **'Pricing & Costs'**
   String get pricing;
 
   /// No description provided for @newInvoice.
@@ -3670,7 +3670,7 @@ abstract class AppLocalizations {
   /// No description provided for @profitMargin.
   ///
   /// In en, this message translates to:
-  /// **'margin'**
+  /// **'Profit Margin'**
   String get profitMargin;
 
   /// No description provided for @serviceDetails.
@@ -8719,11 +8719,11 @@ abstract class AppLocalizations {
   /// **'Base price is required'**
   String get basePriceRequired;
 
-  /// No description provided for @pricePositive.
+  /// No description provided for @pricePositiveCondition.
   ///
   /// In en, this message translates to:
   /// **'Price must be positive'**
-  String get pricePositive;
+  String get pricePositiveCondition;
 
   /// No description provided for @enterFinalPrice.
   ///
@@ -13686,6 +13686,870 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{rate}/h'**
   String staffHourlyRateLabel(Object rate);
+
+  /// No description provided for @verificationStatusText.
+  ///
+  /// In en, this message translates to:
+  /// **'التحقق'**
+  String get verificationStatusText;
+
+  /// No description provided for @verifiedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'موثّق'**
+  String get verifiedLabel;
+
+  /// No description provided for @unverifiedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'غير موثّق'**
+  String get unverifiedLabel;
+
+  /// No description provided for @unknownLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'غير معروف'**
+  String get unknownLabel;
+
+  /// No description provided for @phoneText.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get phoneText;
+
+  /// No description provided for @emailText.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get emailText;
+
+  /// No description provided for @subscriptionInfoText.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get subscriptionInfoText;
+
+  /// No description provided for @subscriptionPlanText.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get subscriptionPlanText;
+
+  /// No description provided for @subscriptionExpiryText.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires'**
+  String get subscriptionExpiryText;
+
+  /// No description provided for @quotaText.
+  ///
+  /// In en, this message translates to:
+  /// **'Quota'**
+  String get quotaText;
+
+  /// No description provided for @invalidEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address'**
+  String get invalidEmail;
+
+  /// No description provided for @coordinatesText.
+  ///
+  /// In en, this message translates to:
+  /// **'Coordinates'**
+  String get coordinatesText;
+
+  /// No description provided for @subscriptionIdText.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription ID'**
+  String get subscriptionIdText;
+
+  /// No description provided for @subscriptionPaymentText.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment ID'**
+  String get subscriptionPaymentText;
+
+  /// No description provided for @subscriptionQuotaText.
+  ///
+  /// In en, this message translates to:
+  /// **'Quota'**
+  String get subscriptionQuotaText;
+
+  /// No description provided for @subscriptionCreatedText.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribed on'**
+  String get subscriptionCreatedText;
+
+  /// No description provided for @subscriptionStatusText.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get subscriptionStatusText;
+
+  /// No description provided for @subscriptionActiveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get subscriptionActiveLabel;
+
+  /// No description provided for @subscriptionInactiveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get subscriptionInactiveLabel;
+
+  /// No description provided for @walletSectionText.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet'**
+  String get walletSectionText;
+
+  /// No description provided for @walletIdText.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet ID'**
+  String get walletIdText;
+
+  /// No description provided for @walletBalanceText.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get walletBalanceText;
+
+  /// No description provided for @walletStatusText.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get walletStatusText;
+
+  /// No description provided for @walletTypeText.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get walletTypeText;
+
+  /// No description provided for @walletCurrencyText.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get walletCurrencyText;
+
+  /// No description provided for @walletVersionText.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get walletVersionText;
+
+  /// No description provided for @walletStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get walletStatusActive;
+
+  /// No description provided for @walletStatusPendingVerification.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending verification'**
+  String get walletStatusPendingVerification;
+
+  /// No description provided for @walletStatusInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get walletStatusInactive;
+
+  /// No description provided for @walletStatusSuspended.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspended'**
+  String get walletStatusSuspended;
+
+  /// No description provided for @walletStatusClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get walletStatusClosed;
+
+  /// No description provided for @walletTypeUser.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get walletTypeUser;
+
+  /// No description provided for @walletTypeProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get walletTypeProvider;
+
+  /// No description provided for @walletTypeOrganization.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization'**
+  String get walletTypeOrganization;
+
+  /// No description provided for @walletTypeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get walletTypeSystem;
+
+  /// No description provided for @walletTypeVirtual.
+  ///
+  /// In en, this message translates to:
+  /// **'Virtual'**
+  String get walletTypeVirtual;
+
+  /// No description provided for @walletTypeBusiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Business'**
+  String get walletTypeBusiness;
+
+  /// No description provided for @quotaSectionText.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage quota'**
+  String get quotaSectionText;
+
+  /// No description provided for @accountStatusText.
+  ///
+  /// In en, this message translates to:
+  /// **'Account status'**
+  String get accountStatusText;
+
+  /// No description provided for @loginMethodText.
+  ///
+  /// In en, this message translates to:
+  /// **'Login method'**
+  String get loginMethodText;
+
+  /// No description provided for @loginOptionGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Google'**
+  String get loginOptionGoogle;
+
+  /// No description provided for @loginOptionVerdelia.
+  ///
+  /// In en, this message translates to:
+  /// **'Verdelia'**
+  String get loginOptionVerdelia;
+
+  /// No description provided for @userIdText.
+  ///
+  /// In en, this message translates to:
+  /// **'User ID'**
+  String get userIdText;
+
+  /// No description provided for @lastActiveText.
+  ///
+  /// In en, this message translates to:
+  /// **'Last active'**
+  String get lastActiveText;
+
+  /// No description provided for @accountCreatedText.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created'**
+  String get accountCreatedText;
+
+  /// No description provided for @accountUpdatedText.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated'**
+  String get accountUpdatedText;
+
+  /// No description provided for @preferencesText.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get preferencesText;
+
+  /// No description provided for @timezoneText.
+  ///
+  /// In en, this message translates to:
+  /// **'Timezone'**
+  String get timezoneText;
+
+  /// No description provided for @currencyText.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get currencyText;
+
+  /// No description provided for @themeText.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get themeText;
+
+  /// No description provided for @notificationsText.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationsText;
+
+  /// No description provided for @enabledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get enabledLabel;
+
+  /// No description provided for @disabledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get disabledLabel;
+
+  /// No description provided for @dateFormatText.
+  ///
+  /// In en, this message translates to:
+  /// **'Date format'**
+  String get dateFormatText;
+
+  /// No description provided for @contactInfoText.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact information'**
+  String get contactInfoText;
+
+  /// No description provided for @subscriptionNeverExpiresLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get subscriptionNeverExpiresLabel;
+
+  /// No description provided for @subscriptionPriceText.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get subscriptionPriceText;
+
+  /// No description provided for @billingCycleText.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing cycle'**
+  String get billingCycleText;
+
+  /// No description provided for @billingCycleMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get billingCycleMonthly;
+
+  /// No description provided for @billingCycleSemestrial.
+  ///
+  /// In en, this message translates to:
+  /// **'Every 6 months'**
+  String get billingCycleSemestrial;
+
+  /// No description provided for @billingCycleYearly.
+  ///
+  /// In en, this message translates to:
+  /// **'Yearly'**
+  String get billingCycleYearly;
+
+  /// No description provided for @billingCycleLifetime.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifetime'**
+  String get billingCycleLifetime;
+
+  /// No description provided for @pricingConfigAge.
+  ///
+  /// In en, this message translates to:
+  /// **'Age: {value}'**
+  String pricingConfigAge(Object value);
+
+  /// No description provided for @pricingConfigFrequency.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequency: {value}'**
+  String pricingConfigFrequency(Object value);
+
+  /// No description provided for @pricingConfigAgeGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Age Group: {value}'**
+  String pricingConfigAgeGroup(Object value);
+
+  /// No description provided for @pricingConfigSample.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample: {value}'**
+  String pricingConfigSample(Object value);
+
+  /// No description provided for @pricingConfigSpecialist.
+  ///
+  /// In en, this message translates to:
+  /// **'Specialist Consultation'**
+  String get pricingConfigSpecialist;
+
+  /// No description provided for @pricingConfigGovernmentFunded.
+  ///
+  /// In en, this message translates to:
+  /// **'Government Funded'**
+  String get pricingConfigGovernmentFunded;
+
+  /// No description provided for @pricingConfigMaterials.
+  ///
+  /// In en, this message translates to:
+  /// **'Materials: {value}'**
+  String pricingConfigMaterials(Object value);
+
+  /// No description provided for @pricingConfigIncludes.
+  ///
+  /// In en, this message translates to:
+  /// **'Includes: {value}'**
+  String pricingConfigIncludes(Object value);
+
+  /// No description provided for @pricePositive.
+  ///
+  /// In en, this message translates to:
+  /// **'+ {value}'**
+  String pricePositive(String value);
+
+  /// No description provided for @priceNegative.
+  ///
+  /// In en, this message translates to:
+  /// **'− {value}'**
+  String priceNegative(String value);
+
+  /// No description provided for @percent.
+  ///
+  /// In en, this message translates to:
+  /// **'{value}%'**
+  String percent(String value);
+
+  /// No description provided for @deliveriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliveries'**
+  String get deliveriesTitle;
+
+  /// No description provided for @deliveriesRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get deliveriesRefresh;
+
+  /// No description provided for @deliveriesRefreshFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh failed: {error}'**
+  String deliveriesRefreshFailed(String error);
+
+  /// No description provided for @deliveriesFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get deliveriesFilters;
+
+  /// No description provided for @deliveriesSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get deliveriesSearch;
+
+  /// No description provided for @deliveriesCloseSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Close search'**
+  String get deliveriesCloseSearch;
+
+  /// No description provided for @deliveriesSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by ID, customer, address…'**
+  String get deliveriesSearchHint;
+
+  /// No description provided for @deliveriesPhaseActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get deliveriesPhaseActive;
+
+  /// No description provided for @deliveriesPhaseInFlight.
+  ///
+  /// In en, this message translates to:
+  /// **'In flight'**
+  String get deliveriesPhaseInFlight;
+
+  /// No description provided for @deliveriesPhaseClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get deliveriesPhaseClosed;
+
+  /// No description provided for @deliveriesPhaseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} {phase}'**
+  String deliveriesPhaseSubtitle(String count, String phase);
+
+  /// No description provided for @deliveriesChipAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get deliveriesChipAll;
+
+  /// No description provided for @deliveriesStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get deliveriesStatusPending;
+
+  /// No description provided for @deliveriesStatusProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing'**
+  String get deliveriesStatusProcessing;
+
+  /// No description provided for @deliveriesStatusConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get deliveriesStatusConfirmed;
+
+  /// No description provided for @deliveriesStatusShipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipped'**
+  String get deliveriesStatusShipped;
+
+  /// No description provided for @deliveriesStatusInTransit.
+  ///
+  /// In en, this message translates to:
+  /// **'In transit'**
+  String get deliveriesStatusInTransit;
+
+  /// No description provided for @deliveriesStatusOutForDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Out for delivery'**
+  String get deliveriesStatusOutForDelivery;
+
+  /// No description provided for @deliveriesStatusDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get deliveriesStatusDelivered;
+
+  /// No description provided for @deliveriesStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get deliveriesStatusFailed;
+
+  /// No description provided for @deliveriesStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get deliveriesStatusCancelled;
+
+  /// No description provided for @deliveriesStatusReturned.
+  ///
+  /// In en, this message translates to:
+  /// **'Returned'**
+  String get deliveriesStatusReturned;
+
+  /// No description provided for @deliveriesStatusRefunded.
+  ///
+  /// In en, this message translates to:
+  /// **'Refunded'**
+  String get deliveriesStatusRefunded;
+
+  /// No description provided for @deliveriesFilterDueToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Due today'**
+  String get deliveriesFilterDueToday;
+
+  /// No description provided for @deliveriesFilterDelayed.
+  ///
+  /// In en, this message translates to:
+  /// **'Delayed'**
+  String get deliveriesFilterDelayed;
+
+  /// No description provided for @deliveriesFilterUnassigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned'**
+  String get deliveriesFilterUnassigned;
+
+  /// No description provided for @deliveriesEmptyActiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No active deliveries'**
+  String get deliveriesEmptyActiveTitle;
+
+  /// No description provided for @deliveriesEmptyActiveMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliveries that are pending, processing, or confirmed will appear here.'**
+  String get deliveriesEmptyActiveMessage;
+
+  /// No description provided for @deliveriesEmptyInFlightTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is moving right now'**
+  String get deliveriesEmptyInFlightTitle;
+
+  /// No description provided for @deliveriesEmptyInFlightMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliveries that are shipped, in transit, or out for delivery will appear here.'**
+  String get deliveriesEmptyInFlightMessage;
+
+  /// No description provided for @deliveriesEmptyClosedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No closed deliveries'**
+  String get deliveriesEmptyClosedTitle;
+
+  /// No description provided for @deliveriesEmptyClosedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered, failed, cancelled, returned, or refunded deliveries will appear here.'**
+  String get deliveriesEmptyClosedMessage;
+
+  /// No description provided for @deliveriesEmptyGenericTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No deliveries found'**
+  String get deliveriesEmptyGenericTitle;
+
+  /// No description provided for @deliveriesEmptyGenericMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliveries will appear here once they are created.'**
+  String get deliveriesEmptyGenericMessage;
+
+  /// No description provided for @deliveriesEmptyFilteredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No deliveries match'**
+  String get deliveriesEmptyFilteredTitle;
+
+  /// No description provided for @deliveriesEmptyFilteredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Try clearing the filter to see more.'**
+  String get deliveriesEmptyFilteredMessage;
+
+  /// No description provided for @deliveriesEmptyPendingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending deliveries'**
+  String get deliveriesEmptyPendingTitle;
+
+  /// No description provided for @deliveriesEmptyPendingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'New deliveries awaiting acceptance will appear here.'**
+  String get deliveriesEmptyPendingMessage;
+
+  /// No description provided for @deliveriesEmptyProcessingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No deliveries in processing'**
+  String get deliveriesEmptyProcessingTitle;
+
+  /// No description provided for @deliveriesEmptyProcessingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliveries currently being prepared will appear here.'**
+  String get deliveriesEmptyProcessingMessage;
+
+  /// No description provided for @deliveriesEmptyConfirmedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No confirmed deliveries'**
+  String get deliveriesEmptyConfirmedTitle;
+
+  /// No description provided for @deliveriesEmptyConfirmedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliveries ready for pickup by a carrier will appear here.'**
+  String get deliveriesEmptyConfirmedMessage;
+
+  /// No description provided for @deliveriesEmptyShippedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing has shipped yet'**
+  String get deliveriesEmptyShippedTitle;
+
+  /// No description provided for @deliveriesEmptyShippedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliveries handed off to a carrier will appear here.'**
+  String get deliveriesEmptyShippedMessage;
+
+  /// No description provided for @deliveriesEmptyInTransitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing in transit'**
+  String get deliveriesEmptyInTransitTitle;
+
+  /// No description provided for @deliveriesEmptyInTransitMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliveries currently moving will appear here.'**
+  String get deliveriesEmptyInTransitMessage;
+
+  /// No description provided for @deliveriesEmptyOutForDeliveryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing out for delivery'**
+  String get deliveriesEmptyOutForDeliveryTitle;
+
+  /// No description provided for @deliveriesEmptyOutForDeliveryMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliveries on the final leg of their route will appear here.'**
+  String get deliveriesEmptyOutForDeliveryMessage;
+
+  /// No description provided for @deliveriesEmptyDeliveredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No delivered deliveries'**
+  String get deliveriesEmptyDeliveredTitle;
+
+  /// No description provided for @deliveriesEmptyDeliveredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed deliveries will be listed here.'**
+  String get deliveriesEmptyDeliveredMessage;
+
+  /// No description provided for @deliveriesEmptyFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No failed deliveries'**
+  String get deliveriesEmptyFailedTitle;
+
+  /// No description provided for @deliveriesEmptyFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliveries that could not be completed will appear here.'**
+  String get deliveriesEmptyFailedMessage;
+
+  /// No description provided for @deliveriesEmptyCancelledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No cancelled deliveries'**
+  String get deliveriesEmptyCancelledTitle;
+
+  /// No description provided for @deliveriesEmptyCancelledMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled deliveries will be listed here.'**
+  String get deliveriesEmptyCancelledMessage;
+
+  /// No description provided for @deliveriesEmptyReturnedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No returned deliveries'**
+  String get deliveriesEmptyReturnedTitle;
+
+  /// No description provided for @deliveriesEmptyReturnedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliveries sent back to origin will appear here.'**
+  String get deliveriesEmptyReturnedMessage;
+
+  /// No description provided for @deliveriesEmptyRefundedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No refunded deliveries'**
+  String get deliveriesEmptyRefundedTitle;
+
+  /// No description provided for @deliveriesEmptyRefundedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Refunded deliveries will appear here.'**
+  String get deliveriesEmptyRefundedMessage;
+
+  /// No description provided for @posScanNoSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a supplier before scanning'**
+  String get posScanNoSupplier;
+
+  /// No description provided for @posScanNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No product matches barcode \"{code}\"'**
+  String posScanNotFound(String code);
+
+  /// No description provided for @mapPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a location'**
+  String get mapPickerTitle;
+
+  /// No description provided for @mapPickerTapHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap anywhere on the map to drop a pin'**
+  String get mapPickerTapHint;
+
+  /// No description provided for @mapPickerPinDropped.
+  ///
+  /// In en, this message translates to:
+  /// **'Location selected'**
+  String get mapPickerPinDropped;
+
+  /// No description provided for @mapPickerCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'{lat}, {lng}'**
+  String mapPickerCoordinates(String lat, String lng);
+
+  /// No description provided for @mapPickerConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get mapPickerConfirm;
+
+  /// No description provided for @mapPickerRecenter.
+  ///
+  /// In en, this message translates to:
+  /// **'My location'**
+  String get mapPickerRecenter;
+
+  /// No description provided for @mapPickerLocationUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not determine your location'**
+  String get mapPickerLocationUnavailable;
+
+  /// No description provided for @pickOnMapMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick on map'**
+  String get pickOnMapMsg;
+
+  /// No description provided for @invalidCoordinatesMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter valid numbers'**
+  String get invalidCoordinatesMsg;
+
+  /// No description provided for @invalidLatitudeMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Latitude must be between −90 and 90'**
+  String get invalidLatitudeMsg;
+
+  /// No description provided for @invalidLongitudeMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitude must be between −180 and 180'**
+  String get invalidLongitudeMsg;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

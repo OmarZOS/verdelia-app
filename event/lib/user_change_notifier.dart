@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:app_constants/app_constants.dart';
+import 'package:event/components/plan_cache.dart';
 import 'package:event/components/user/auth_crud.dart';
 import 'package:event/components/user/auth_persistence.dart';
 import 'package:event/components/user/auth_response.dart';
@@ -11,6 +13,8 @@ import 'package:flutter/material.dart';
 import 'package:verdelia_core/app/AppUser.dart';
 import 'package:verdelia_core/app/Services/AuthService.dart';
 import 'package:verdelia_core/app/Services/UserService.dart';
+import 'package:verdelia_core/app/finance/Plan.dart';
+import 'package:verdelia_core/app/finance/Subscription.dart';
 import 'package:verdelia_core/mediation/StorageService.dart';
 import 'package:locator/locator.dart';
 
@@ -26,6 +30,15 @@ class AppUserNotifier extends ChangeNotifier {
   late final AuthTokenManager _token;
   late final AuthUserManager _user;
   late final AuthCrudManager _crud;
+  late final PlanCache _planCache;
+
+  // Subscription state — kept here rather than in AuthState because
+  // it's fetched lazily and can be null even for authenticated users.
+  List<Plan> _plans = const [];
+  Subscription? _subscription;
+  bool _isFetchingPlans = false;
+  bool _isFetchingSubscription = false;
+  bool _isSubscriptionActive = false;
 
   AppUserNotifier() {
     _initComponents();
@@ -53,6 +66,15 @@ class AppUserNotifier extends ChangeNotifier {
       tokenManager: _token,
       userManager: _user,
     );
+    _planCache = PlanCache();
+  }
+
+  Plan? planById(int? planId) {
+    if (planId == null || planId <= 0) return null;
+    for (final p in _plans) {
+      if (p.idPlan == planId) return p;
+    }
+    return null;
   }
 
   void _notify() {
@@ -74,17 +96,27 @@ class AppUserNotifier extends ChangeNotifier {
   int get selectedTabIndex => _state.selectedTabIndex;
   bool get isCookingRecipe => _state.isCookingRecipe;
 
+  /// Cached plan catalogue. Empty until [fetchPlans] or [fetchPlan]
+  /// populates it.
+  List<Plan> get plans => List.unmodifiable(_plans);
+  bool get isFetchingPlans => _isFetchingPlans;
+
+  /// Current user's subscription, if fetched. Null is a valid state —
+  /// the user may be on the free tier.
+  Subscription? get subscription => _subscription;
+  bool get isFetchingSubscription => _isFetchingSubscription;
+
+  /// Boolean status from the lightweight endpoint. Defaults to false
+  /// until refreshed.
+  bool get isSubscriptionActive => _isSubscriptionActive;
+
+  /// True when the user has a subscription ref on the user row but the
+  /// full snapshot hasn't been fetched yet.
+  bool get hasPendingSubscriptionFetch =>
+      _state.appUser?.hasSubscription == true && _subscription == null;
+
   // ============ FORCED SIGN-OUT ============
 
-  /// Clears local auth state and persistence after a refresh failure.
-  ///
-  /// Called when the token manager reports that refresh could not succeed —
-  /// the session is unusable, so we drop everything and notify the UI.
-  ///
-  /// Differs from [signOut] in that it:
-  ///   • does not set the loading flag (avoids flickering)
-  ///   • records a `REFRESH_FAILED` response code (not `SIGNOUT_SUCCESS`)
-  ///   • never rethrows (it's a background teardown)
   Future<void> _forceSignOut({
     required String callerKey,
     required String reason,
@@ -98,6 +130,7 @@ class AppUserNotifier extends ChangeNotifier {
     }
 
     _state.reset();
+    _resetSubscriptionState();
 
     _response.storeFailure(
       callerKey,
@@ -108,6 +141,11 @@ class AppUserNotifier extends ChangeNotifier {
     );
 
     _notify();
+  }
+
+  void _resetSubscriptionState() {
+    _subscription = null;
+    _isSubscriptionActive = false;
   }
 
   // ============ INITIALIZATION ============
@@ -132,16 +170,13 @@ class AppUserNotifier extends ChangeNotifier {
       debugPrint('   User Data: ${userData != null ? "YES" : "NO"}');
       debugPrint('   Is Authenticated: $isAuthenticated');
 
-      // Store tokens first if they exist
       if (token != null) _state.token = token;
       if (refreshToken != null) _state.refreshToken = refreshToken;
 
-      // Restore expiry
       if (expiry != null && expiry.isNotEmpty) {
         _state.tokenExpiry = DateTime.tryParse(expiry);
       }
 
-      // Parse user data — but preserve the existing user if parsing fails.
       if (userData != null && userData.isNotEmpty) {
         final user = _persistence.parseUserData(userData);
         if (user != null) {
@@ -161,7 +196,6 @@ class AppUserNotifier extends ChangeNotifier {
         }
       }
 
-      // No token + no user → nothing to restore.
       if (token == null || _state.appUser == null) {
         debugPrint('ℹ️ No valid auth state found');
         _response.storeSuccess(
@@ -175,7 +209,6 @@ class AppUserNotifier extends ChangeNotifier {
         return;
       }
 
-      // We have a token + user; figure out whether the token is usable.
       _state.isAuthenticated = true;
 
       final expired = _state.tokenExpiry != null &&
@@ -201,7 +234,6 @@ class AppUserNotifier extends ChangeNotifier {
         final refreshed = await _token.refresh(callerKey: key);
 
         if (!refreshed) {
-          // Proactive refresh failed — treat as session unusable.
           await _forceSignOut(
             callerKey: key,
             reason: 'Session could not be extended',
@@ -216,7 +248,6 @@ class AppUserNotifier extends ChangeNotifier {
         debugPrint('   Token valid until: ${_state.tokenExpiry}');
       }
 
-      // If we're here, the session is usable.
       if (_state.appUser != null) {
         _response.storeSuccess(
           key,
@@ -225,6 +256,11 @@ class AppUserNotifier extends ChangeNotifier {
           responseCode: 'AUTH_RESTORED',
         );
         debugPrint('✅ Auth state restored: ${_state.appUser?.appUserName}');
+
+        // Kick off a passive subscription status check so the UI
+        // knows whether to show premium features without waiting on a
+        // full subscription fetch.
+        unawaited(_refreshSubscriptionStatusInBackground());
       }
 
       _state.setLoading(false);
@@ -245,13 +281,26 @@ class AppUserNotifier extends ChangeNotifier {
       } catch (_) {}
 
       _state.reset();
+      _resetSubscriptionState();
       _notify();
+    }
+  }
+
+  /// Fire-and-forget status check after auth restore. Never throws,
+  /// never blocks init. If it fails, the UI stays with `false` and
+  /// the next explicit check fixes it.
+  Future<void> _refreshSubscriptionStatusInBackground() async {
+    final userId = _state.appUser?.idAppUser;
+    if (userId == null || userId <= 0) return;
+    try {
+      await fetchSubscriptionStatus(userId.toString());
+    } catch (_) {
+      // Swallowed — status is advisory at this point.
     }
   }
 
   // ============ TOKEN MANAGEMENT ============
 
-  /// Force a token refresh now. If it fails, the session is dropped.
   Future<bool> refreshTokenNow({String? callerKey}) async {
     final key = callerKey ?? _response.generateKey('refreshTokenNow');
 
@@ -270,12 +319,6 @@ class AppUserNotifier extends ChangeNotifier {
     return false;
   }
 
-  /// Ensure the current token is valid, refreshing proactively if needed.
-  ///
-  /// Only forces sign-out when the state is genuinely unusable (no token
-  /// or no user). A failed proactive refresh with a still-valid token is
-  /// not enough to disconnect the user — that would turn transient network
-  /// errors into forced logouts.
   Future<bool> ensureValidToken({String? callerKey}) async {
     final key = callerKey ?? _response.generateKey('ensureValidToken');
 
@@ -286,7 +329,6 @@ class AppUserNotifier extends ChangeNotifier {
       return true;
     }
 
-    // Only force sign-out if we truly have no session left.
     if (_state.token == null || _state.appUser == null) {
       await _forceSignOut(
         callerKey: key,
@@ -421,8 +463,17 @@ class AppUserNotifier extends ChangeNotifier {
         );
         debugPrint('✅ Login successful for user: $username');
 
+        // Reset subscription state on new login — the previous user's
+        // subscription isn't relevant.
+        _resetSubscriptionState();
+
         _state.setLoading(false);
         _notify();
+
+        // Populate the subscription status for the freshly signed-in
+        // user.
+        unawaited(_refreshSubscriptionStatusInBackground());
+
         return true;
       }
 
@@ -492,8 +543,13 @@ class AppUserNotifier extends ChangeNotifier {
       );
       debugPrint('✅ Google sign-in successful');
 
+      _resetSubscriptionState();
+
       _state.setLoading(false);
       _notify();
+
+      unawaited(_refreshSubscriptionStatusInBackground());
+
       return _state.appUser;
     } catch (e) {
       debugPrint('❌ Google sign-in error: $e');
@@ -506,6 +562,7 @@ class AppUserNotifier extends ChangeNotifier {
       );
       _state.setLoading(false);
       _state.reset();
+      _resetSubscriptionState();
       await _persistence.clear();
       _notify();
       rethrow;
@@ -579,6 +636,8 @@ class AppUserNotifier extends ChangeNotifier {
           );
         }
 
+        _resetSubscriptionState();
+
         _response.storeSuccess(
           key,
           result,
@@ -597,6 +656,11 @@ class AppUserNotifier extends ChangeNotifier {
 
       _state.setLoading(false);
       _notify();
+
+      if (_state.appUser?.idAppUser != null) {
+        unawaited(_refreshSubscriptionStatusInBackground());
+      }
+
       return result;
     } catch (e) {
       _response.storeFailure(
@@ -622,6 +686,8 @@ class AppUserNotifier extends ChangeNotifier {
     _state.tokenExpiry = null;
     await _persistence.clear();
 
+    _resetSubscriptionState();
+
     _response.storeSuccess(
       key,
       _state.appUser,
@@ -640,6 +706,7 @@ class AppUserNotifier extends ChangeNotifier {
 
       await _persistence.clear();
       _state.reset();
+      _resetSubscriptionState();
 
       _response.storeSuccess(
         key,
@@ -746,6 +813,432 @@ class AppUserNotifier extends ChangeNotifier {
     }
   }
 
+  // ============ PLANS ============
+
+  /// Fetch the plan catalogue, optionally filtered.
+  ///
+  /// Uses the cache when [forceRefresh] is false and the same filter
+  /// tuple is already populated. The cache lives on the notifier so
+  /// every screen showing pricing hits the same instance.
+  Future<List<Plan>> fetchPlans({
+    String? planType,
+    String? billingCycle,
+    bool forceRefresh = false,
+    String? callerKey,
+  }) async {
+    final key = callerKey ??
+        _response.generateKey(
+          'fetchPlans',
+          suffix: '${planType ?? "_"}_${billingCycle ?? "_"}',
+        );
+
+    if (!forceRefresh) {
+      final cached = _planCache.getList(
+        planType: planType,
+        billingCycle: billingCycle,
+      );
+      if (cached != null && cached.isNotEmpty) {
+        _plans = cached;
+        _response.storeSuccess(
+          key,
+          cached,
+          statusCode: 200,
+          responseCode: 'CACHED',
+        );
+        return cached;
+      }
+    }
+
+    if (_isFetchingPlans) {
+      // Coalesce concurrent callers onto the current list.
+      return _plans;
+    }
+
+    try {
+      _isFetchingPlans = true;
+      _notify();
+
+      final result = await _userService.getPlans(
+        planType: planType,
+        billingCycle: billingCycle,
+        callerKey: key,
+      );
+
+      if (result == null) {
+        _response.storeFailure(
+          key,
+          null,
+          statusCode: 500,
+          errorCode: 'FETCH_PLANS_FAILED',
+          message: 'Failed to fetch plans',
+        );
+        return _plans;
+      }
+
+      _plans = result;
+      _planCache.cacheList(
+        result,
+        planType: planType,
+        billingCycle: billingCycle,
+      );
+
+      _response.storeSuccess(key, result, statusCode: 200);
+      return result;
+    } catch (e) {
+      _response.storeFailure(
+        key,
+        e.toString(),
+        errorCode: 'FETCH_PLANS_ERROR',
+        message: 'Failed to fetch plans',
+      );
+      return _plans;
+    } finally {
+      _isFetchingPlans = false;
+      _notify();
+    }
+  }
+
+  /// Fetch a single plan by id. Returns the cached plan when present
+  /// unless [forceRefresh] is set.
+  Future<Plan?> fetchPlan(
+    int planId, {
+    bool forceRefresh = false,
+    String? callerKey,
+  }) async {
+    final key = callerKey ?? _response.generateKey('fetchPlan', id: '$planId');
+
+    if (!forceRefresh) {
+      final cached = _planCache.getPlan(planId);
+      if (cached != null) {
+        _response.storeSuccess(
+          key,
+          cached,
+          statusCode: 200,
+          responseCode: 'CACHED',
+        );
+        return cached;
+      }
+    }
+
+    try {
+      final plan = await _userService.getPlan(planId, callerKey: key);
+      if (plan == null) {
+        _response.storeFailure(
+          key,
+          null,
+          statusCode: 404,
+          errorCode: 'PLAN_NOT_FOUND',
+        );
+        return null;
+      }
+      _planCache.cachePlan(plan);
+      _response.storeSuccess(key, plan, statusCode: 200);
+      return plan;
+    } catch (e) {
+      _response.storeFailure(
+        key,
+        e.toString(),
+        errorCode: 'FETCH_PLAN_ERROR',
+        message: 'Failed to fetch plan',
+      );
+      return null;
+    }
+  }
+
+  /// Clear the plan cache. Call this after a price change is observed
+  /// on the backend, or when the user pulls to refresh the pricing
+  /// screen.
+  void refreshPlanCache() {
+    _planCache.clear();
+    _plans = const [];
+    _notify();
+  }
+
+  /// Toggle the plan cache on and off. Off disables reads and clears
+  /// what's stored — useful in tests and debug builds.
+  void enablePlanCaching(bool enable) {
+    _planCache.enable(enable);
+    _notify();
+  }
+
+  // ============ SUBSCRIPTION ============
+
+  /// Fetch the current user's subscription.
+  ///
+  /// Returns null when the user has no subscription on file — a normal
+  /// free-tier state. Callers branch on null rather than catching.
+  Future<Subscription?> fetchSubscription({
+    int? userId,
+    bool forceRefresh = false,
+    String? callerKey,
+  }) async {
+    final targetUserId = userId ?? _state.appUser?.idAppUser;
+    if (targetUserId == null || targetUserId <= 0) {
+      return null;
+    }
+
+    final key = callerKey ??
+        _response.generateKey('fetchSubscription', id: '$targetUserId');
+
+    if (!forceRefresh && _subscription != null) {
+      _response.storeSuccess(
+        key,
+        _subscription,
+        statusCode: 200,
+        responseCode: 'CACHED',
+      );
+      return _subscription;
+    }
+
+    if (_isFetchingSubscription) {
+      return _subscription;
+    }
+
+    try {
+      _isFetchingSubscription = true;
+      _notify();
+
+      final result = await _userService.getSubscription(
+        targetUserId,
+        callerKey: key,
+      );
+
+      _subscription = result;
+      _isSubscriptionActive = result?.isActive ?? false;
+
+      if (result != null) {
+        _response.storeSuccess(key, result, statusCode: 200);
+      } else {
+        _response.storeSuccess(
+          key,
+          null,
+          statusCode: 200,
+          responseCode: 'NO_SUBSCRIPTION',
+        );
+      }
+      return result;
+    } catch (e) {
+      _response.storeFailure(
+        key,
+        e.toString(),
+        errorCode: 'FETCH_SUBSCRIPTION_ERROR',
+        message: 'Failed to fetch subscription',
+      );
+      return _subscription;
+    } finally {
+      _isFetchingSubscription = false;
+      _notify();
+    }
+  }
+
+  /// Check just the boolean status. Cheaper than [fetchSubscription]
+  /// — no full payload, only the active flag.
+  Future<bool> fetchSubscriptionStatus(
+    String userId, {
+    String? callerKey,
+  }) async {
+    final key = callerKey ??
+        _response.generateKey('fetchSubscriptionStatus', id: userId);
+
+    final id = int.tryParse(userId);
+    if (id == null || id <= 0) return false;
+
+    try {
+      final active =
+          await _userService.isSubscriptionActive(id, callerKey: key);
+      _isSubscriptionActive = active;
+      _response.storeSuccess(key, active, statusCode: 200);
+      _notify();
+      return active;
+    } catch (e) {
+      _response.storeFailure(
+        key,
+        e.toString(),
+        errorCode: 'SUBSCRIPTION_STATUS_ERROR',
+        message: 'Failed to check subscription status',
+      );
+      return false;
+    }
+  }
+
+  /// Purchase a paid subscription. On success, refreshes the user and
+  /// the subscription state so the UI reflects the new plan
+  /// immediately.
+  Future<SubscriptionPurchaseResult?> initiateSubscription({
+    required int planId,
+    required String paymentMethod,
+    String? notes,
+    String? callerKey,
+  }) async {
+    final userId = _state.appUser?.idAppUser;
+    if (userId == null || userId <= 0) return null;
+
+    final key = callerKey ??
+        _response.generateKey('initiateSubscription',
+            id: '$userId', suffix: 'plan_$planId');
+
+    try {
+      _state.setLoading(true);
+      _notify();
+
+      final result = await _userService.initiateSubscription(
+        userId: userId,
+        planId: planId,
+        paymentMethod: paymentMethod,
+        notes: notes,
+        callerKey: key,
+      );
+
+      if (result == null) {
+        _response.storeFailure(
+          key,
+          null,
+          statusCode: 500,
+          errorCode: 'SUBSCRIPTION_INITIATE_FAILED',
+          message: 'Failed to purchase subscription',
+        );
+        return null;
+      }
+
+      _subscription = result.subscription;
+      _isSubscriptionActive = result.subscription.isActive;
+
+      // Refresh the user row so the FK and quota are up to date.
+      await _user.fetch(userId.toString(), callerKey: key);
+
+      _response.storeSuccess(key, result, statusCode: 201);
+      debugPrint(
+        '✅ Subscription purchased: user=$userId plan=$planId '
+        'sub=${result.subscription.idSubscription}',
+      );
+      return result;
+    } catch (e) {
+      _response.storeFailure(
+        key,
+        e.toString(),
+        errorCode: 'SUBSCRIPTION_INITIATE_ERROR',
+        message: 'Failed to purchase subscription',
+      );
+      return null;
+    } finally {
+      _state.setLoading(false);
+      _notify();
+    }
+  }
+
+  /// Attach a zero-priced plan. Used for the default free tier and
+  /// for comped plans.
+  Future<Subscription?> linkFreePlan({
+    required int planId,
+    String? callerKey,
+  }) async {
+    final userId = _state.appUser?.idAppUser;
+    if (userId == null || userId <= 0) return null;
+
+    final key = callerKey ??
+        _response.generateKey('linkFreePlan',
+            id: '$userId', suffix: 'plan_$planId');
+
+    try {
+      _state.setLoading(true);
+      _notify();
+
+      final result = await _userService.linkFreePlan(
+        userId: userId,
+        planId: planId,
+        callerKey: key,
+      );
+
+      if (result == null) {
+        _response.storeFailure(
+          key,
+          null,
+          statusCode: 400,
+          errorCode: 'LINK_FREE_PLAN_FAILED',
+          message: 'Plan is not free',
+        );
+        return null;
+      }
+
+      _subscription = result;
+      _isSubscriptionActive = result.isActive;
+
+      await _user.fetch(userId.toString(), callerKey: key);
+
+      _response.storeSuccess(key, result, statusCode: 201);
+      return result;
+    } catch (e) {
+      _response.storeFailure(
+        key,
+        e.toString(),
+        errorCode: 'LINK_FREE_PLAN_ERROR',
+        message: 'Failed to link free plan',
+      );
+      return null;
+    } finally {
+      _state.setLoading(false);
+      _notify();
+    }
+  }
+
+  /// Cancel the current user's subscription, optionally refunding.
+  Future<AppUser?> cancelSubscription({
+    int? refundPaymentId,
+    String? callerKey,
+  }) async {
+    final userId = _state.appUser?.idAppUser;
+    if (userId == null || userId <= 0) return null;
+
+    final key =
+        callerKey ?? _response.generateKey('cancelSubscription', id: '$userId');
+
+    try {
+      _state.setLoading(true);
+      _notify();
+
+      final result = await _userService.cancelSubscription(
+        userId: userId,
+        refundPaymentId: refundPaymentId,
+        callerKey: key,
+      );
+
+      if (result == null) {
+        _response.storeFailure(
+          key,
+          null,
+          statusCode: 404,
+          errorCode: 'NO_SUBSCRIPTION',
+          message: 'No subscription to cancel',
+        );
+        return null;
+      }
+
+      _state.setUser(result);
+      _resetSubscriptionState();
+
+      _response.storeSuccess(key, result, statusCode: 200);
+      return result;
+    } catch (e) {
+      _response.storeFailure(
+        key,
+        e.toString(),
+        errorCode: 'CANCEL_SUBSCRIPTION_ERROR',
+        message: 'Failed to cancel subscription',
+      );
+      return null;
+    } finally {
+      _state.setLoading(false);
+      _notify();
+    }
+  }
+
+  /// Clear the cached subscription. Call after a login switch, or when
+  /// you know the backend state has changed out of band.
+  void invalidateSubscription() {
+    _resetSubscriptionState();
+    _notify();
+  }
+
   // ============ UI STATE ============
 
   void setSelectedTabIndex(int index) {
@@ -764,10 +1257,22 @@ class AppUserNotifier extends ChangeNotifier {
   void clearResponse(String key) => _response.clearResponse(key);
   void clearAllResponses() => _response.clearAllResponses();
 
+  // ============ CACHE STATS ============
+
+  Map<String, int> getCacheStats() {
+    return {
+      'planListCache': _planCache.listCacheSize,
+      'planCache': _planCache.planCacheSize,
+    };
+  }
+
   // ============ RESET ============
 
   void reset() {
     _state.reset();
+    _planCache.clear();
+    _plans = const [];
+    _resetSubscriptionState();
     _notify();
   }
 }

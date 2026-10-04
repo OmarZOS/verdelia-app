@@ -23,7 +23,8 @@ class SellingPointScreen extends StatefulWidget {
   final ServiceNotifier serviceNotifier;
   final CartChangeNotifier cartNotifier;
   final ProductNotifier productNotifier;
-  final Function() onScanBarcode;
+  final Future<String> Function() onScanBarcode;
+
   final Function(String) onSearchChanged;
   final Function(int) onSupplierChanged;
 
@@ -48,6 +49,12 @@ class SellingPointScreen extends StatefulWidget {
 class _SellingPointScreenState extends State<SellingPointScreen> {
   late final TextEditingController _searchController;
   String _searchQuery = '';
+
+  /// Guards against rapid re-scans while a lookup is in flight.
+  bool _isScanning = false;
+
+  /// Coalesces repeated "not found" toasts during rapid re-scanning.
+  DateTime? _lastScanFailureAt;
 
   @override
   void initState() {
@@ -82,6 +89,141 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
         widget.serviceNotifier.fetchServices(reset: true);
       }
     });
+  }
+
+  /// Entry point from the app bar's scan button. Pushes the scan page
+  /// via the parent callback, then resolves the code against the
+  /// currently loaded products for the selected provider.
+  Future<void> _handleScanPressed() async {
+    if (_isScanning) return;
+
+    setState(() => _isScanning = true);
+    try {
+      final rawCode = await widget.onScanBarcode();
+      if (!mounted) return;
+
+      final code = rawCode.trim();
+      if (code.isEmpty) return; // user cancelled
+
+      await _handleBarcode(code);
+    } finally {
+      if (mounted) setState(() => _isScanning = false);
+    }
+  }
+
+  /// Look up [rawCode] against the products of the currently selected
+  /// provider. Local match first (instant, no network), then a
+  /// server-side query as fallback (hidden products, non-loaded pages).
+  Future<void> _handleBarcode(String rawCode) async {
+    final providerId = widget.selectedSupplierId ?? 0;
+    if (providerId <= 0) {
+      _showScanFeedback(
+        AppLocalizations.of(context)!.posScanNoSupplier,
+        isError: true,
+      );
+      return;
+    }
+
+    // 1. Local hit — instant.
+    final localMatch = _findByBarcode(
+      rawCode,
+      widget.productNotifier.products,
+    );
+    if (localMatch != null) {
+      _onBarcodeFound(localMatch);
+      return;
+    }
+
+    // 2. Server fallback.
+    try {
+      await widget.productNotifier.searchProducts(rawCode, reset: true);
+    } catch (_) {
+      // Network failure is non-fatal for a scan — fall through to the
+      // not-found path so the user gets feedback and can retry.
+    }
+    if (!mounted) return;
+
+    final serverMatch = _findByBarcode(
+      rawCode,
+      widget.productNotifier.products,
+    );
+
+    if (serverMatch != null) {
+      _onBarcodeFound(serverMatch);
+    } else {
+      // Restore the previous (unfiltered) product list so the POS
+      // isn't left showing "no results" after a bad scan.
+      await widget.productNotifier.fetchProducts(
+        providerId: providerId,
+        reset: true,
+      );
+      if (!mounted) return;
+      _onBarcodeNotFound(rawCode);
+    }
+  }
+
+  /// Match a scanned code against a product's barcode field.
+  ///
+  /// Adjust the candidate list to whatever barcode-ish fields exist on
+  /// your `Product` model. Comparison is case-insensitive and strips
+  /// whitespace plus leading zeros, since scanners disagree on both.
+  Product? _findByBarcode(String rawCode, List<Product> products) {
+    final needle = _normalizeBarcode(rawCode);
+    if (needle.isEmpty) return null;
+
+    for (final product in products) {
+      final candidates = <String?>[
+        product.product_barcode, // ← rename to match your model
+        // product.ean,
+        // product.sku,
+      ];
+
+      for (final candidate in candidates) {
+        if (candidate == null) continue;
+        if (_normalizeBarcode(candidate) == needle) return product;
+      }
+    }
+    return null;
+  }
+
+  String _normalizeBarcode(String input) {
+    final trimmed = input.trim().toUpperCase();
+    return trimmed.replaceFirst(RegExp(r'^0+(?=\d)'), '');
+  }
+
+  void _onBarcodeFound(Product product) {
+    HapticFeedback.lightImpact();
+    _showProductConfiguration(product);
+  }
+
+  void _onBarcodeNotFound(String rawCode) {
+    HapticFeedback.heavyImpact();
+
+    final now = DateTime.now();
+    if (_lastScanFailureAt != null &&
+        now.difference(_lastScanFailureAt!) < const Duration(seconds: 2)) {
+      return;
+    }
+    _lastScanFailureAt = now;
+
+    _showScanFeedback(
+      AppLocalizations.of(context)!.posScanNotFound(rawCode),
+      isError: true,
+    );
+  }
+
+  void _showScanFeedback(String message, {bool isError = false}) {
+    final cs = Theme.of(context).colorScheme;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: isError ? cs.errorContainer : cs.primaryContainer,
+        ),
+      );
   }
 
   void _onSearchChanged() {

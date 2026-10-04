@@ -17,6 +17,8 @@ class AppRoutes {
   static const String QRScanPage = '/qr/scan';
   static const String productCapturePage = '/product/capture';
 
+  static const String mapPicker = '/map-picker';
+
   static const String ingredientManagement = '/ingredient/management';
 
   static const String supplierEntitiesPage = '/suppliers/entities';

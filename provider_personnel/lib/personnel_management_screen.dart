@@ -2,24 +2,24 @@ import 'dart:async';
 
 import 'package:app_constants/app_routes.dart';
 import 'package:event/extensions/personnel_access_manager.dart';
-import 'package:flutter/material.dart';
-import 'package:verdelia_core/app/ManagementRule.dart';
-import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
-import 'package:verdelia_core/app/AppUser.dart';
 import 'package:event/personnel_notifier.dart';
 import 'package:event/user_change_notifier.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:provider_personnel/components/dashboard/add_options_sheet.dart';
+import 'package:provider_personnel/components/dashboard/confirmation_dialogs.dart';
+import 'package:provider_personnel/components/dashboard/privilege_dialog_manager.dart';
+import 'package:provider_personnel/components/dashboard/quick_stats_widget.dart';
 import 'package:provider_personnel/components/pending_tab_content.dart';
 import 'package:provider_personnel/components/personnel_tab_content.dart';
 import 'package:provider_personnel/components/privilege_dialog/privilege_dialog.dart';
 import 'package:provider_personnel/components/search_invite_dialog.dart';
-import 'package:provider_personnel/components/dashboard/add_options_sheet.dart';
-import 'package:provider_personnel/components/dashboard/confirmation_dialogs.dart';
-import 'package:provider_personnel/components/dashboard/privilege_dialog_manager.dart';
-import 'package:ui/utils/qr_utils.dart';
-import 'package:provider_personnel/components/dashboard/quick_stats_widget.dart';
 import 'package:ui/components/search/search_bar_widget.dart';
 import 'package:ui/components/store/StoreDashboardHeader.dart';
-import 'package:provider/provider.dart';
+import 'package:ui/utils/qr_utils.dart';
+import 'package:verdelia_core/app/AppUser.dart';
+import 'package:verdelia_core/app/ManagementRule.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 
 class PersonnelManagementScreen extends StatefulWidget {
   final String supplierName;
@@ -135,8 +135,10 @@ class _PersonnelManagementScreenState extends State<PersonnelManagementScreen>
 
     _debounceTimer = Timer(const Duration(milliseconds: 350), () {
       if (mounted) {
-        _personnelNotifier.searchPersonnel(query,
-            supplierId: widget.supplierId);
+        _personnelNotifier.searchPersonnel(
+          query,
+          supplierId: widget.supplierId,
+        );
       }
     });
   }
@@ -154,192 +156,206 @@ class _PersonnelManagementScreenState extends State<PersonnelManagementScreen>
       floatingActionButton:
           widget.canManagePersonnel ? _buildFAB(cs, l10n) : null,
       floatingActionButtonAnimator: FloatingActionButtonAnimator.scaling,
-      body: Column(
-        children: [
-          // ── Simple header ──
-          DashboardHeader(
-            leadingIcon: Icons.people_rounded,
-            title: widget.supplierName,
-            subtitle: l10n.personnelManagement,
-            searchBar: SearchBarWidget(
-              controller: _searchController,
-              focusNode: _searchFocusNode,
-              tabIndex: _tabController.index,
-              supplierId: widget.supplierId,
-            ),
-          ),
-          // ── Stats ──
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-            child: QuickStatsWidget(supplierId: widget.supplierId),
-          ),
-          // ── Tab bar ──
-          _buildTabBar(theme, cs, l10n),
-
-          // ── Tab content ──
-          Expanded(child: _buildActiveTab()),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader(
-    ThemeData theme,
-    ColorScheme cs,
-    AppLocalizations l10n,
-  ) {
-    return Container(
-      color: cs.surface,
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.people_rounded, size: 22, color: cs.primary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  l10n.personnelManagement,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: cs.onSurface,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+      body: NestedScrollView(
+        // The header scrolls away; the tab bar pins once the stats
+        // reach the top of the viewport.
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverToBoxAdapter(
+              child: DashboardHeader(
+                leadingIcon: Icons.people_rounded,
+                title: widget.supplierName,
+                subtitle: l10n.personnelManagement,
+                searchBar: SearchBarWidget(
+                  controller: _searchController,
+                  focusNode: _searchFocusNode,
+                  tabIndex: _tabController.index,
+                  supplierId: widget.supplierId,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SearchBarWidget(
-            controller: _searchController,
-            focusNode: _searchFocusNode,
-            tabIndex: _tabController.index,
-            supplierId: widget.supplierId,
-          ),
-        ],
+            ),
+            SliverToBoxAdapter(
+              child: QuickStatsWidget(supplierId: widget.supplierId),
+            ),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _TabBarHeaderDelegate(
+                preferredHeight: 56,
+                backgroundColor: cs.surface,
+                child: _buildTabBar(theme, cs, l10n),
+              ),
+            ),
+          ];
+        },
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            PersonnelTabContent(
+              supplierId: widget.supplierId,
+              includePending: true,
+              onRefresh: _refreshData,
+              onShowPrivilegeDialog: _showPrivilegeDialog,
+              onShowRemoveDialog: _showRemoveDialog,
+              onCancelInvitation: _cancelInvitation,
+              canManage: widget.canManagePersonnel,
+            ),
+            PersonnelTabContent(
+              supplierId: widget.supplierId,
+              includePending: false,
+              onRefresh: _refreshData,
+              onShowPrivilegeDialog: _showPrivilegeDialog,
+              onShowRemoveDialog: _showRemoveDialog,
+              onCancelInvitation: _cancelInvitation,
+              canManage: widget.canManagePersonnel,
+            ),
+            PendingTabContent(
+              supplierId: widget.supplierId,
+              supplierName: widget.supplierName,
+              onRefresh: _refreshData,
+              onShowPrivilegeDialog: _showPrivilegeDialog,
+              onShowRemoveDialog: _showRemoveDialog,
+              onCancelInvitation: _cancelInvitation,
+              onShowAddOptions: _showAddOptions,
+              canManage: widget.canManagePersonnel,
+            ),
+          ],
+        ),
       ),
     );
   }
 
   // ==================== TAB BAR ====================
 
-  PreferredSizeWidget _buildTabBar(
+  Widget _buildTabBar(
     ThemeData theme,
     ColorScheme cs,
     AppLocalizations l10n,
   ) {
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(56),
+    return Container(
+      color: cs.surface,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: Container(
-        color: cs.surface,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        child: Container(
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest.withOpacity(0.4),
-            borderRadius: BorderRadius.circular(50),
-            border: Border.all(
-              color: cs.outlineVariant.withOpacity(0.5),
-            ),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest.withOpacity(0.4),
+          borderRadius: BorderRadius.circular(50),
+          border: Border.all(
+            color: cs.outlineVariant.withOpacity(0.5),
           ),
-          padding: const EdgeInsets.all(4),
-          child: TabBar(
-            controller: _tabController,
-            indicator: BoxDecoration(
-              borderRadius: BorderRadius.circular(50),
-              color: cs.primary,
-              boxShadow: [
-                BoxShadow(
-                  color: cs.primary.withOpacity(0.25),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
+        ),
+        padding: const EdgeInsets.all(4),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Measure what the icon-only layout needs vs. the
+            // icon+label layout, then pick whichever fits.
+            final showLabels = _labelsFit(
+              theme: theme,
+              constraints: constraints,
+              l10n: l10n,
+            );
+
+            return TabBar(
+              controller: _tabController,
+              indicator: BoxDecoration(
+                borderRadius: BorderRadius.circular(50),
+                color: cs.primary,
+                boxShadow: [
+                  BoxShadow(
+                    color: cs.primary.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicatorPadding: EdgeInsets.zero,
+              dividerColor: Colors.transparent,
+              splashFactory: NoSplash.splashFactory,
+              overlayColor: WidgetStateProperty.all(Colors.transparent),
+              labelColor: cs.onPrimary,
+              unselectedLabelColor: cs.onSurfaceVariant,
+              labelStyle: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                letterSpacing: 0.1,
+              ),
+              unselectedLabelStyle: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+              ),
+              tabs: [
+                _buildTab(
+                    Icons.all_inclusive_rounded, l10n.allText, showLabels),
+                _buildTab(
+                    Icons.check_circle_rounded, l10n.status_active, showLabels),
+                _buildTab(Icons.schedule_rounded, l10n.pendingTxt, showLabels),
               ],
-            ),
-            indicatorSize: TabBarIndicatorSize.tab,
-            indicatorPadding: EdgeInsets.zero,
-            dividerColor: Colors.transparent,
-            splashFactory: NoSplash.splashFactory,
-            overlayColor: WidgetStateProperty.all(Colors.transparent),
-            labelColor: cs.onPrimary,
-            unselectedLabelColor: cs.onSurfaceVariant,
-            labelStyle: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-              letterSpacing: 0.1,
-            ),
-            unselectedLabelStyle: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w500,
-              fontSize: 13,
-            ),
-            tabs: [
-              _buildTab(Icons.all_inclusive_rounded, l10n.allText),
-              _buildTab(Icons.check_circle_rounded, l10n.status_active),
-              _buildTab(Icons.schedule_rounded, l10n.pendingTxt),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
   }
 
-  Tab _buildTab(IconData icon, String label) {
+  /// Returns true when all three tabs fit with their labels inside
+  /// [constraints]. Uses a rough per-character estimate (labels are
+  /// short, so this is reliable enough and avoids an expensive
+  /// text-measurement pass on every layout).
+  bool _labelsFit({
+    required ThemeData theme,
+    required BoxConstraints constraints,
+    required AppLocalizations l10n,
+  }) {
+    if (!constraints.maxWidth.isFinite) return true; // unbounded → labels
+
+    final style = theme.textTheme.labelLarge?.copyWith(
+      fontWeight: FontWeight.w700,
+      fontSize: 13,
+    );
+    final scaler = MediaQuery.textScalerOf(context);
+    final labels = [l10n.allText, l10n.status_active, l10n.pendingTxt];
+
+    // 17 (icon) + 6 (gap) + label width + 2×12 (Tab internal padding)
+    double needed = 0;
+    for (final label in labels) {
+      final painter = TextPainter(
+        text: TextSpan(text: label, style: style),
+        maxLines: 1,
+        textDirection: TextDirection.ltr,
+        textScaler: scaler,
+      )..layout();
+      needed += 17 + 6 + painter.width + 24;
+    }
+
+    // Small safety margin for the outer container + tab bar padding.
+    return needed + 8 <= constraints.maxWidth;
+  }
+
+  Tab _buildTab(IconData icon, String label, bool showLabel) {
     return Tab(
       height: 40,
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, size: 17),
-          const SizedBox(width: 6),
-          Text(label),
+          if (showLabel) ...[
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow:
+                    TextOverflow.clip, // labels either fit or don't render
+                softWrap: false,
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  // ==================== TAB CONTENT ====================
-
-  Widget _buildActiveTab() {
-    switch (_tabController.index) {
-      case 0:
-        return PersonnelTabContent(
-          supplierId: widget.supplierId,
-          includePending: true,
-          onRefresh: _refreshData,
-          onShowPrivilegeDialog: _showPrivilegeDialog,
-          onShowRemoveDialog: _showRemoveDialog,
-          onCancelInvitation: _cancelInvitation,
-          canManage: widget.canManagePersonnel,
-        );
-
-      case 1:
-        return PersonnelTabContent(
-          supplierId: widget.supplierId,
-          includePending: false,
-          onRefresh: _refreshData,
-          onShowPrivilegeDialog: _showPrivilegeDialog,
-          onShowRemoveDialog: _showRemoveDialog,
-          onCancelInvitation: _cancelInvitation,
-          canManage: widget.canManagePersonnel,
-        );
-
-      case 2:
-        return PendingTabContent(
-          supplierId: widget.supplierId,
-          supplierName: widget.supplierName,
-          onRefresh: _refreshData,
-          onShowPrivilegeDialog: _showPrivilegeDialog,
-          onShowRemoveDialog: _showRemoveDialog,
-          onCancelInvitation: _cancelInvitation,
-          onShowAddOptions: _showAddOptions,
-          canManage: widget.canManagePersonnel,
-        );
-
-      default:
-        return const SizedBox.shrink();
-    }
-  }
+  // ==================== FAB ====================
 
   Widget _buildFAB(ColorScheme colorScheme, AppLocalizations l10n) {
     return FloatingActionButton.extended(
@@ -348,9 +364,7 @@ class _PersonnelManagementScreenState extends State<PersonnelManagementScreen>
       foregroundColor: colorScheme.onPrimary,
       elevation: 3,
       icon: const Icon(Icons.person_add_alt_1, size: 20),
-      label: Text(
-        l10n.addMemberText,
-      ),
+      label: Text(l10n.addMemberText),
     );
   }
 
@@ -500,7 +514,7 @@ class _PersonnelManagementScreenState extends State<PersonnelManagementScreen>
     if (mounted) {
       _showSnackBar(
         success
-            ? 'Removed ${user.personFirstName ?? 'user'}'
+            ? "Removed ${user.personFirstName ?? 'user'}"
             : 'Failed to remove user',
         success,
       );
@@ -542,5 +556,46 @@ class _PersonnelManagementScreenState extends State<PersonnelManagementScreen>
           duration: const Duration(seconds: 2),
         ),
       );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Pinned tab bar delegate
+// ══════════════════════════════════════════════════════════════════
+
+class _TabBarHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final double preferredHeight;
+  final Color backgroundColor;
+  final Widget child;
+
+  const _TabBarHeaderDelegate({
+    required this.preferredHeight,
+    required this.backgroundColor,
+    required this.child,
+  });
+
+  @override
+  double get minExtent => preferredHeight;
+
+  @override
+  double get maxExtent => preferredHeight;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      color: backgroundColor,
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _TabBarHeaderDelegate oldDelegate) {
+    return oldDelegate.preferredHeight != preferredHeight ||
+        oldDelegate.backgroundColor != backgroundColor ||
+        oldDelegate.child != child;
   }
 }

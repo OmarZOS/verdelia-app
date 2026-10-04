@@ -4442,7 +4442,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get basePriceRequired => 'السعر الأساسي مطلوب';
 
   @override
-  String get pricePositive => 'يجب أن يكون السعر موجبًا';
+  String get pricePositiveCondition => 'يجب أن يكون السعر موجبًا';
 
   @override
   String get enterFinalPrice => 'أدخل السعر النهائي';
@@ -7147,4 +7147,462 @@ class AppLocalizationsAr extends AppLocalizations {
   String staffHourlyRateLabel(Object rate) {
     return '$rate/س';
   }
+
+  @override
+  String get verificationStatusText => 'التحقق';
+
+  @override
+  String get verifiedLabel => 'موثّق';
+
+  @override
+  String get unverifiedLabel => 'غير موثّق';
+
+  @override
+  String get unknownLabel => 'غير معروف';
+
+  @override
+  String get phoneText => 'Phone';
+
+  @override
+  String get emailText => 'Email';
+
+  @override
+  String get subscriptionInfoText => 'Subscription';
+
+  @override
+  String get subscriptionPlanText => 'Plan';
+
+  @override
+  String get subscriptionExpiryText => 'Expires';
+
+  @override
+  String get quotaText => 'Quota';
+
+  @override
+  String get invalidEmail => 'أدخل بريدًا إلكترونيًا صالحًا';
+
+  @override
+  String get coordinatesText => 'الإحداثيات';
+
+  @override
+  String get subscriptionIdText => 'معرف الاشتراك';
+
+  @override
+  String get subscriptionPaymentText => 'معرف الدفع';
+
+  @override
+  String get subscriptionQuotaText => 'الحصة';
+
+  @override
+  String get subscriptionCreatedText => 'تاريخ الاشتراك';
+
+  @override
+  String get subscriptionStatusText => 'الحالة';
+
+  @override
+  String get subscriptionActiveLabel => 'نشط';
+
+  @override
+  String get subscriptionInactiveLabel => 'غير نشط';
+
+  @override
+  String get walletSectionText => 'المحفظة';
+
+  @override
+  String get walletIdText => 'معرف المحفظة';
+
+  @override
+  String get walletBalanceText => 'الرصيد';
+
+  @override
+  String get walletStatusText => 'الحالة';
+
+  @override
+  String get walletTypeText => 'النوع';
+
+  @override
+  String get walletCurrencyText => 'العملة';
+
+  @override
+  String get walletVersionText => 'الإصدار';
+
+  @override
+  String get walletStatusActive => 'نشطة';
+
+  @override
+  String get walletStatusPendingVerification => 'في انتظار التحقق';
+
+  @override
+  String get walletStatusInactive => 'غير نشطة';
+
+  @override
+  String get walletStatusSuspended => 'موقوفة';
+
+  @override
+  String get walletStatusClosed => 'مغلقة';
+
+  @override
+  String get walletTypeUser => 'مستخدم';
+
+  @override
+  String get walletTypeProvider => 'مورّد';
+
+  @override
+  String get walletTypeOrganization => 'مؤسسة';
+
+  @override
+  String get walletTypeSystem => 'النظام';
+
+  @override
+  String get walletTypeVirtual => 'افتراضية';
+
+  @override
+  String get walletTypeBusiness => 'تجارية';
+
+  @override
+  String get quotaSectionText => 'حصة الاستخدام';
+
+  @override
+  String get accountStatusText => 'حالة الحساب';
+
+  @override
+  String get loginMethodText => 'طريقة تسجيل الدخول';
+
+  @override
+  String get loginOptionGoogle => 'جوجل';
+
+  @override
+  String get loginOptionVerdelia => 'فيردليا';
+
+  @override
+  String get userIdText => 'معرف المستخدم';
+
+  @override
+  String get lastActiveText => 'آخر نشاط';
+
+  @override
+  String get accountCreatedText => 'تاريخ إنشاء الحساب';
+
+  @override
+  String get accountUpdatedText => 'آخر تحديث';
+
+  @override
+  String get preferencesText => 'التفضيلات';
+
+  @override
+  String get timezoneText => 'المنطقة الزمنية';
+
+  @override
+  String get currencyText => 'العملة';
+
+  @override
+  String get themeText => 'المظهر';
+
+  @override
+  String get notificationsText => 'الإشعارات';
+
+  @override
+  String get enabledLabel => 'مُفعّل';
+
+  @override
+  String get disabledLabel => 'مُعطّل';
+
+  @override
+  String get dateFormatText => 'تنسيق التاريخ';
+
+  @override
+  String get contactInfoText => 'معلومات الاتصال';
+
+  @override
+  String get subscriptionNeverExpiresLabel => 'لا ينتهي';
+
+  @override
+  String get subscriptionPriceText => 'السعر';
+
+  @override
+  String get billingCycleText => 'دورة الفوترة';
+
+  @override
+  String get billingCycleMonthly => 'شهري';
+
+  @override
+  String get billingCycleSemestrial => 'نصف سنوي';
+
+  @override
+  String get billingCycleYearly => 'سنوي';
+
+  @override
+  String get billingCycleLifetime => 'مدى الحياة';
+
+  @override
+  String pricingConfigAge(Object value) {
+    return 'العمر: $value';
+  }
+
+  @override
+  String pricingConfigFrequency(Object value) {
+    return 'التكرار: $value';
+  }
+
+  @override
+  String pricingConfigAgeGroup(Object value) {
+    return 'الفئة العمرية: $value';
+  }
+
+  @override
+  String pricingConfigSample(Object value) {
+    return 'العينة: $value';
+  }
+
+  @override
+  String get pricingConfigSpecialist => 'استشارة متخصص';
+
+  @override
+  String get pricingConfigGovernmentFunded => 'ممول حكومياً';
+
+  @override
+  String pricingConfigMaterials(Object value) {
+    return 'المواد: $value';
+  }
+
+  @override
+  String pricingConfigIncludes(Object value) {
+    return 'يشمل: $value';
+  }
+
+  @override
+  String pricePositive(String value) {
+    return '$value+';
+  }
+
+  @override
+  String priceNegative(String value) {
+    return '$value−';
+  }
+
+  @override
+  String percent(String value) {
+    return '$value٪';
+  }
+
+  @override
+  String get deliveriesTitle => 'التوصيلات';
+
+  @override
+  String get deliveriesRefresh => 'تحديث';
+
+  @override
+  String deliveriesRefreshFailed(String error) {
+    return 'فشل التحديث: $error';
+  }
+
+  @override
+  String get deliveriesFilters => 'الفلاتر';
+
+  @override
+  String get deliveriesSearch => 'بحث';
+
+  @override
+  String get deliveriesCloseSearch => 'إغلاق البحث';
+
+  @override
+  String get deliveriesSearchHint => 'ابحث بالمعرّف أو العميل أو العنوان…';
+
+  @override
+  String get deliveriesPhaseActive => 'قيد التنفيذ';
+
+  @override
+  String get deliveriesPhaseInFlight => 'قيد النقل';
+
+  @override
+  String get deliveriesPhaseClosed => 'مكتملة';
+
+  @override
+  String deliveriesPhaseSubtitle(String count, String phase) {
+    return '$phase $count';
+  }
+
+  @override
+  String get deliveriesChipAll => 'الكل';
+
+  @override
+  String get deliveriesStatusPending => 'قيد الانتظار';
+
+  @override
+  String get deliveriesStatusProcessing => 'قيد المعالجة';
+
+  @override
+  String get deliveriesStatusConfirmed => 'مؤكدة';
+
+  @override
+  String get deliveriesStatusShipped => 'تم الشحن';
+
+  @override
+  String get deliveriesStatusInTransit => 'قيد النقل';
+
+  @override
+  String get deliveriesStatusOutForDelivery => 'خارج للتوصيل';
+
+  @override
+  String get deliveriesStatusDelivered => 'تم التوصيل';
+
+  @override
+  String get deliveriesStatusFailed => 'فشلت';
+
+  @override
+  String get deliveriesStatusCancelled => 'ملغاة';
+
+  @override
+  String get deliveriesStatusReturned => 'مرتجعة';
+
+  @override
+  String get deliveriesStatusRefunded => 'مستردة';
+
+  @override
+  String get deliveriesFilterDueToday => 'مستحقة اليوم';
+
+  @override
+  String get deliveriesFilterDelayed => 'متأخرة';
+
+  @override
+  String get deliveriesFilterUnassigned => 'غير معيّنة';
+
+  @override
+  String get deliveriesEmptyActiveTitle => 'لا توجد توصيلات نشطة';
+
+  @override
+  String get deliveriesEmptyActiveMessage => 'ستظهر هنا التوصيلات قيد الانتظار أو المعالجة أو المؤكدة.';
+
+  @override
+  String get deliveriesEmptyInFlightTitle => 'لا شيء قيد النقل حالياً';
+
+  @override
+  String get deliveriesEmptyInFlightMessage => 'ستظهر هنا التوصيلات المشحونة أو قيد النقل أو الخارجة للتوصيل.';
+
+  @override
+  String get deliveriesEmptyClosedTitle => 'لا توجد توصيلات مكتملة';
+
+  @override
+  String get deliveriesEmptyClosedMessage => 'ستظهر هنا التوصيلات التي تم توصيلها أو فشلت أو أُلغيت أو أُرجعت أو استُردت.';
+
+  @override
+  String get deliveriesEmptyGenericTitle => 'لم يتم العثور على توصيلات';
+
+  @override
+  String get deliveriesEmptyGenericMessage => 'ستظهر التوصيلات هنا بمجرد إنشائها.';
+
+  @override
+  String get deliveriesEmptyFilteredTitle => 'لا توجد توصيلات مطابقة';
+
+  @override
+  String get deliveriesEmptyFilteredMessage => 'حاول مسح الفلتر لرؤية المزيد.';
+
+  @override
+  String get deliveriesEmptyPendingTitle => 'لا توجد توصيلات قيد الانتظار';
+
+  @override
+  String get deliveriesEmptyPendingMessage => 'ستظهر هنا التوصيلات الجديدة التي تنتظر القبول.';
+
+  @override
+  String get deliveriesEmptyProcessingTitle => 'لا توجد توصيلات قيد المعالجة';
+
+  @override
+  String get deliveriesEmptyProcessingMessage => 'ستظهر هنا التوصيلات التي يتم تجهيزها حالياً.';
+
+  @override
+  String get deliveriesEmptyConfirmedTitle => 'لا توجد توصيلات مؤكدة';
+
+  @override
+  String get deliveriesEmptyConfirmedMessage => 'ستظهر هنا التوصيلات الجاهزة للاستلام من قبل الناقل.';
+
+  @override
+  String get deliveriesEmptyShippedTitle => 'لم يتم شحن أي شيء بعد';
+
+  @override
+  String get deliveriesEmptyShippedMessage => 'ستظهر هنا التوصيلات المسلَّمة إلى الناقل.';
+
+  @override
+  String get deliveriesEmptyInTransitTitle => 'لا شيء قيد النقل';
+
+  @override
+  String get deliveriesEmptyInTransitMessage => 'ستظهر هنا التوصيلات المتحركة حالياً.';
+
+  @override
+  String get deliveriesEmptyOutForDeliveryTitle => 'لا شيء خارج للتوصيل';
+
+  @override
+  String get deliveriesEmptyOutForDeliveryMessage => 'ستظهر هنا التوصيلات في المرحلة الأخيرة من مسارها.';
+
+  @override
+  String get deliveriesEmptyDeliveredTitle => 'لا توجد توصيلات تم توصيلها';
+
+  @override
+  String get deliveriesEmptyDeliveredMessage => 'سيتم إدراج التوصيلات المكتملة هنا.';
+
+  @override
+  String get deliveriesEmptyFailedTitle => 'لا توجد توصيلات فاشلة';
+
+  @override
+  String get deliveriesEmptyFailedMessage => 'ستظهر هنا التوصيلات التي لم تكتمل.';
+
+  @override
+  String get deliveriesEmptyCancelledTitle => 'لا توجد توصيلات ملغاة';
+
+  @override
+  String get deliveriesEmptyCancelledMessage => 'سيتم إدراج التوصيلات الملغاة هنا.';
+
+  @override
+  String get deliveriesEmptyReturnedTitle => 'لا توجد توصيلات مرتجعة';
+
+  @override
+  String get deliveriesEmptyReturnedMessage => 'ستظهر هنا التوصيلات المُعادة إلى المصدر.';
+
+  @override
+  String get deliveriesEmptyRefundedTitle => 'لا توجد توصيلات مستردة';
+
+  @override
+  String get deliveriesEmptyRefundedMessage => 'ستظهر هنا التوصيلات المستردة.';
+
+  @override
+  String get posScanNoSupplier => 'اختر مورداً قبل المسح';
+
+  @override
+  String posScanNotFound(String code) {
+    return 'لا يوجد منتج يطابق الباركود \"$code\"';
+  }
+
+  @override
+  String get mapPickerTitle => 'اختر موقعاً';
+
+  @override
+  String get mapPickerTapHint => 'اضغط على الخريطة لوضع علامة';
+
+  @override
+  String get mapPickerPinDropped => 'تم تحديد الموقع';
+
+  @override
+  String mapPickerCoordinates(String lat, String lng) {
+    return '$lat، $lng';
+  }
+
+  @override
+  String get mapPickerConfirm => 'تأكيد';
+
+  @override
+  String get mapPickerRecenter => 'موقعي';
+
+  @override
+  String get mapPickerLocationUnavailable => 'تعذّر تحديد موقعك';
+
+  @override
+  String get pickOnMapMsg => 'اختر من الخريطة';
+
+  @override
+  String get invalidCoordinatesMsg => 'أدخل أرقاماً صحيحة';
+
+  @override
+  String get invalidLatitudeMsg => 'يجب أن يكون خط العرض بين −90 و90';
+
+  @override
+  String get invalidLongitudeMsg => 'يجب أن يكون خط الطول بين −180 و180';
 }
