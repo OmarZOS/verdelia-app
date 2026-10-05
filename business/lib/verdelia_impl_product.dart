@@ -278,6 +278,7 @@ class ProductServiceImpl extends ProductService {
     int userId = 0,
     int providerId = 0,
     int category = 0,
+    String? productBarcode,
     String query = "",
     int offset = 0,
     int limit = 10,
@@ -297,16 +298,20 @@ class ProductServiceImpl extends ProductService {
         );
       }
 
-      final params = <String, String>{
+      var params = <String, String>{
         'user_id': userId.toString(),
         'provider_id': providerId.toString(),
         'category_id': category.toString(),
         'offset': offset.toString(),
         'limit': limit.toString(),
         'include_hidden': includeHidden.toString(),
+        if (productBarcode != null && productBarcode.isNotEmpty)
+          'product_barcode': productBarcode,
         if (domain != null && domain.isNotEmpty) 'domain': domain,
         if (subdomain != null && subdomain.isNotEmpty) 'subdomain': subdomain,
       };
+
+      if (productBarcode != null) {}
 
       final responseData = await _storageService.getAll(
         '${_base()}${AppConstants.getAllProductsEndpoint}',

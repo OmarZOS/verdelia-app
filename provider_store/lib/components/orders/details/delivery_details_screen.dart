@@ -11,6 +11,7 @@
 // notifier, so what the user sees in a modal matches what the screen
 // shows underneath it.
 
+import 'package:app_constants/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:verdelia_core/business/Delivery.dart';
@@ -646,10 +647,30 @@ class _InfoRow extends StatelessWidget {
 // CUSTOMER BLOCK
 // ============================================================================
 
+// ============================================================================
+// CUSTOMER BLOCK
+// ============================================================================
+
 class _CustomerBlock extends StatelessWidget {
   final Order order;
 
   const _CustomerBlock({required this.order});
+
+  /// Push the visitor profile for the order's customer. When the
+  /// order carries no resolved ordering user, this is a no-op — the
+  /// block isn't tappable in that case.
+  void _openCustomerProfile(BuildContext context) {
+    final user = order.orderingUser;
+    if (user == null) return;
+
+    Navigator.pushNamed(
+      context,
+      AppRoutes.profileVisitor,
+      arguments: <String, dynamic>{
+        'user': user,
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -676,82 +697,147 @@ class _CustomerBlock extends StatelessWidget {
       if (user.appUserEmail != null && user.appUserEmail!.isNotEmpty) {
         add(l10n.deliveryDetailFieldEmail, user.appUserEmail!, copyable: true);
       }
-      if (user.appUserType != null) {
-        add(l10n.deliveryDetailFieldUserType, user.appUserType);
-      }
       if (user.personPhone != null && user.personPhone!.isNotEmpty) {
         add(l10n.deliveryDetailFieldPhone, user.personPhone!, copyable: true);
       }
-      add(l10n.deliveryDetailFieldUserId, user.idAppUser, copyable: true);
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: cs.primaryContainer,
-                image: (imageUrl != null && imageUrl.isNotEmpty)
-                    ? DecorationImage(
-                        image: NetworkImage(imageUrl),
-                        fit: BoxFit.cover,
-                        onError: (_, __) {},
-                      )
-                    : null,
-              ),
-              alignment: Alignment.center,
-              child: (imageUrl == null || imageUrl.isEmpty)
-                  ? Text(
-                      initials,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: cs.onPrimaryContainer,
-                      ),
-                    )
-                  : null,
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+    // The tappable header — avatar + name + chevron. When the order
+    // has no resolved user, we render the same layout without the
+    // InkWell, so it looks identical but doesn't pretend to be
+    // tappable.
+    final header = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: Row(
+        children: [
+          _CustomerAvatar(
+            imageUrl: imageUrl,
+            initials: initials,
+            size: 48,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  displayName,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurface,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (user?.appUserName != null &&
+                    user!.appUserName!.isNotEmpty) ...[
+                  const SizedBox(height: 2),
                   Text(
-                    displayName,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: cs.onSurface,
+                    '@${user.appUserName}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (user?.appUserName != null &&
-                      user!.appUserName!.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      '@${user.appUserName}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
                 ],
-              ),
+              ],
+            ),
+          ),
+          if (user != null) ...[
+            const SizedBox(width: 8),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 22,
+              color: cs.onSurfaceVariant.withOpacity(0.6),
             ),
           ],
-        ),
+        ],
+      ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (user != null)
+          Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => _openCustomerProfile(context),
+              borderRadius: BorderRadius.circular(12),
+              child: header,
+            ),
+          )
+        else
+          header,
         if (rows.isNotEmpty) ...[
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           const Divider(height: 1),
           const SizedBox(height: 8),
           ...rows,
         ],
       ],
+    );
+  }
+}
+
+// ── Avatar widget, shared between the customer block and future ──
+//    customer rows elsewhere.
+
+class _CustomerAvatar extends StatelessWidget {
+  final String? imageUrl;
+  final String initials;
+  final double size;
+
+  const _CustomerAvatar({
+    required this.imageUrl,
+    required this.initials,
+    this.size = 48,
+  });
+
+  bool get _hasImage => imageUrl != null && imageUrl!.isNotEmpty;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: cs.primaryContainer,
+      ),
+      alignment: Alignment.center,
+      clipBehavior: Clip.antiAlias,
+      child: _hasImage
+          ? Image.network(
+              imageUrl!,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _fallback(cs),
+              loadingBuilder: (context, child, progress) {
+                if (progress == null) return child;
+                return _fallback(cs);
+              },
+            )
+          : _fallback(cs),
+    );
+  }
+
+  Widget _fallback(ColorScheme cs) {
+    return Center(
+      child: Text(
+        initials,
+        style: TextStyle(
+          fontSize: size * 0.375,
+          fontWeight: FontWeight.w800,
+          color: cs.onPrimaryContainer,
+        ),
+      ),
     );
   }
 }

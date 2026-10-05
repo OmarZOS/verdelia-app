@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:app_constants/app_routes.dart';
 import 'package:event/preferenceChangeNotifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -69,6 +70,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget build(BuildContext context) {
     if (widget.user == null && _isOwner) {
       return Scaffold(
+        floatingActionButton: _isOwner ? const _UpgradePlanFab() : null,
         body: SafeArea(
           top: true,
           bottom: true,
@@ -627,44 +629,39 @@ class _ProfileCoverHeader extends StatelessWidget {
     const buttonOverhang = 18.0;
     final avatarBox = avatarSize * 2 + buttonOverhang;
     const coverHeight = 180.0;
-
-    // How much of the cover the avatar's center sits below the bottom
-    // edge. Positive = the avatar's center is that far below the cover.
-    // Adjust visually — 8dp gives a slight overlap that reads as
-    // intentional, larger values push the avatar further out.
     const avatarDrop = 8.0;
+
+    final showBack = !isOwner;
+
+    // The top inset is how much space the status bar / notch eats.
+    // We extend the cover band upward by this amount so it fills the
+    // area behind the status bar. The identity row stays where it was
+    // relative to the visible cover.
+    final topInset = MediaQuery.paddingOf(context).top;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= _Breakpoint.medium;
-
-        // The cover is 180dp; the identity row starts `avatarBox/2 -
-        // avatarDrop` below the cover's bottom edge. That's the top of
-        // the avatar box. The row's own height (which we don't know
-        // ahead of time) extends below that. Since `Stack` sizes itself
-        // to its largest non-Positioned child by default, we don't
-        // Position the identity row — we let the Stack compute its
-        // height from it.
+        // The visible cover is `coverHeight` tall, but the painted band
+        // extends `topInset` further up so it goes behind the status
+        // bar. The identity row's top position is measured from the
+        // visible cover's top, so `rowTop` is unchanged.
         final rowTop = coverHeight - (avatarBox / 2 - avatarDrop);
+        final totalCoverHeight = coverHeight + topInset;
 
         return Stack(
           clipBehavior: Clip.none,
           children: [
-            // ─── Cover band — Positioned so it doesn't contribute to
-            //     the Stack's height. ───
+            // ─── Cover band — extended upward behind the status bar ───
             Positioned(
-              top: 0,
+              top: -topInset,
               left: 0,
               right: 0,
-              height: coverHeight,
+              height: totalCoverHeight,
               child: _CoverBand(colors: cs),
             ),
 
-            // ─── Identity row — NOT Positioned. It sizes the Stack. ───
-            // Padding pushes it down by `rowTop` so the avatar lands
-            // where we want relative to the cover. Since it's not
-            // Positioned, the Stack grows to fit its full natural
-            // height.
+            // ─── Identity row + inner content ───
             Padding(
               padding: EdgeInsets.only(top: rowTop),
               child: Padding(
@@ -690,9 +687,66 @@ class _ProfileCoverHeader extends StatelessWidget {
                       ),
               ),
             ),
+
+            // ─── Back button — only in visitor mode ───
+            if (showBack)
+              Positioned(
+                top: 0,
+                left: 0,
+                child: Padding(
+                  padding: EdgeInsets.only(top: topInset + 8, left: 8),
+                  child: _BackButton(
+                    onTap: () => _handleBack(context),
+                  ),
+                ),
+              ),
           ],
         );
       },
+    );
+  }
+
+  void _handleBack(BuildContext context) {
+    final navigator = Navigator.of(context);
+    // If this screen is the first route in the stack (deep link, cold
+    // start on a visitor profile), there's nothing to pop. Fall back to
+    // the app's home. If the caller navigated here from a personnel
+    // list, this pops back to that list naturally.
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        AppRoutes.home,
+        (route) => false,
+      );
+    }
+  }
+}
+
+class _BackButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _BackButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withOpacity(0.35),
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: const SizedBox(
+          width: 40,
+          height: 40,
+          child: Icon(
+            Icons.arrow_back_rounded,
+            color: Colors.white,
+            size: 22,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -2099,5 +2153,104 @@ class _StatusBadge extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _UpgradePlanFab extends StatelessWidget {
+  const _UpgradePlanFab();
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
+    return Consumer<AppUserNotifier>(
+      builder: (context, notifier, _) {
+        // "Active" is not the right test here. A Free subscription
+        // is technically active (no expiry, no cancel) but the user
+        // hasn't opted into anything — the FAB should invite them
+        // to pick a plan, not to manage one they never chose.
+        //
+        // `hasPaidSubscription` is the correct predicate: true when
+        // a subscription exists AND its plan has a non-zero price.
+        // Free users get the catalogue. Paid users get the
+        // management screen.
+        final hasPaidSubscription = _hasPaidSubscription(notifier);
+
+        final label =
+            hasPaidSubscription ? loc.managePlanFab : loc.choosePlanFab;
+
+        final icon = hasPaidSubscription
+            ? Icons.workspace_premium_rounded
+            : Icons.rocket_launch_rounded;
+
+        final route = hasPaidSubscription
+            ? AppRoutes.manageSubscription
+            : AppRoutes.plans;
+
+        return FloatingActionButton.extended(
+          heroTag: 'profile_upgrade_plan_fab',
+          onPressed: () => _open(context, route),
+          icon: Icon(icon, size: 20),
+          label: Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
+            ),
+            maxLines: 1,
+            softWrap: false,
+          ),
+          tooltip: label,
+        );
+      },
+    );
+  }
+
+  /// True when the user has a subscription whose plan is paid.
+  ///
+  /// Returns false when:
+  ///   * there is no subscription at all, or
+  ///   * the subscription's plan is the zero-price Free plan, or
+  ///   * the plan catalogue hasn't loaded yet (in which case we
+  ///     fall through to "choose a plan", which is the safe default
+  ///     — a paid user briefly seeing "Choose Plan" is a lesser evil
+  ///     than a Free user seeing "Manage Plan").
+  bool _hasPaidSubscription(AppUserNotifier notifier) {
+    if (!notifier.isSubscriptionActive) return false;
+
+    final sub = notifier.subscription;
+    if (sub == null) return false;
+
+    final planId = sub.subscriptionPlanId;
+    if (planId == null) return false;
+
+    final plan = notifier.planById(planId);
+    if (plan == null) return false;
+
+    return plan.isPaid;
+  }
+
+  Future<void> _open(BuildContext context, String route) async {
+    HapticFeedback.selectionClick();
+    final navigator = Navigator.of(context);
+
+    final changed = await navigator.pushNamed(route);
+
+    if (changed == true && context.mounted) {
+      final loc = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(loc.planUpdatedConfirmation),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(12),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+    }
   }
 }

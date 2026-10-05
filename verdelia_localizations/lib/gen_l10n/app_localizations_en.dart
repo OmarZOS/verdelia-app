@@ -3134,12 +3134,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String items(int cartItemCount, int itemCount, int serviceCount) {
+  String items(num cartItemCount, num itemCount, num serviceCount) {
     String _temp0 = intl.Intl.pluralLogic(
       cartItemCount,
       locale: localeName,
-      other: '# items',
-      one: '# item',
+      other: '$cartItemCount items',
+      one: '$cartItemCount item',
       zero: 'No items',
     );
     String _temp1 = intl.Intl.pluralLogic(
@@ -7628,4 +7628,269 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noInformationAvailable => 'Nothing to show here yet';
+
+  @override
+  String get noPendingInvitationsMessage => 'All invitations have been accepted or no pending invites exist.';
+
+  @override
+  String get inviteNewMember => 'Invite New Member';
+
+  @override
+  String get scheduleCompletePrompt => 'Pick both a date and a time, or turn scheduling off.';
+
+  @override
+  String get cartTitle => 'Your Cart';
+
+  @override
+  String get cartIsEmpty => 'Cart is empty';
+
+  @override
+  String itemCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String lineCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count products',
+      one: '1 product',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get clearCartTitle => 'Clear cart';
+
+  @override
+  String get clearCartConfirmation => 'Are you sure you want to clear all items from the cart?';
+
+  @override
+  String posScanAdded(String name) {
+    return 'Added $name';
+  }
+
+  @override
+  String get choosePlanTitle => 'Choose your plan';
+
+  @override
+  String get choosePlanSubtitle => 'Pick a plan that fits your business. You can change it anytime.';
+
+  @override
+  String get planCurrentBadge => 'CURRENT';
+
+  @override
+  String get planCurrent => 'Your current plan';
+
+  @override
+  String get planSelected => 'Selected — tap Subscribe to continue';
+
+  @override
+  String get planTapToSelect => 'Tap to select this plan';
+
+  @override
+  String get planTapToActivate => 'Tap to activate';
+
+  @override
+  String get planSelectPrompt => 'Select a plan to continue';
+
+  @override
+  String get planAlreadyActive => 'This plan is already active';
+
+  @override
+  String get planSubscribeNow => 'Subscribe now';
+
+  @override
+  String get planActivate => 'Activate plan';
+
+  @override
+  String get planPurchasing => 'Processing…';
+
+  @override
+  String get planFree => 'Free';
+
+  @override
+  String get planSelectedLabel => 'Selected plan';
+
+  @override
+  String get planActivated => 'Plan activated';
+
+  @override
+  String planActivatedMessage(String planName) {
+    return 'You are now subscribed to $planName.';
+  }
+
+  @override
+  String get planPurchaseFailed => 'Could not complete the purchase. Try again.';
+
+  @override
+  String get choosePaymentMethod => 'Choose payment method';
+
+  @override
+  String get noPlansAvailable => 'No plans available';
+
+  @override
+  String get noPlansAvailableMessage => 'Pull down to refresh, or try again later.';
+
+  @override
+  String get choosePlanFab => 'Choose a plan';
+
+  @override
+  String get managePlanFab => 'Manage plan';
+
+  @override
+  String get planUpdatedConfirmation => 'Your subscription has been updated.';
+
+  @override
+  String get manageSubscriptionTitle => 'Manage subscription';
+
+  @override
+  String get subscriptionStatusActive => 'Active';
+
+  @override
+  String get subscriptionStatusInactive => 'Inactive';
+
+  @override
+  String get subscriptionStatusActiveHint => 'Your plan is active and renews automatically.';
+
+  @override
+  String get subscriptionStatusInactiveHint => 'Your subscription is no longer active.';
+
+  @override
+  String subscriptionRenewsOn(String date) {
+    return 'Renews on $date';
+  }
+
+  @override
+  String get subscriptionDetailsSection => 'Plan details';
+
+  @override
+  String get subscriptionBillingSection => 'Billing';
+
+  @override
+  String get subscriptionIdLabel => 'Subscription ID';
+
+  @override
+  String get subscriptionChangePlan => 'Change plan';
+
+  @override
+  String get subscriptionCancel => 'Cancel subscription';
+
+  @override
+  String get cancelSubscriptionTitle => 'Cancel subscription?';
+
+  @override
+  String get cancelSubscriptionConfirmation => 'You will lose access to your plan\'s features at the end of the current billing period. This cannot be undone.';
+
+  @override
+  String get keepSubscription => 'Keep subscription';
+
+  @override
+  String get confirmCancel => 'Cancel subscription';
+
+  @override
+  String get subscriptionCancelled => 'Your subscription has been cancelled.';
+
+  @override
+  String get subscriptionCancelFailed => 'Could not cancel the subscription. Try again.';
+
+  @override
+  String get noActiveSubscriptionTitle => 'No active subscription';
+
+  @override
+  String get noActiveSubscriptionMessage => 'Subscribe to a plan to unlock premium features and higher quotas.';
+
+  @override
+  String get browsePlans => 'Browse plans';
+
+  @override
+  String get plansTabIndividual => 'Individual';
+
+  @override
+  String get plansTabOrganization => 'Business';
+
+  @override
+  String get plansTabAll => 'All';
+
+  @override
+  String get plansIndividualSubtitle => 'Plans for personal use — one account, one operator.';
+
+  @override
+  String get plansOrganizationSubtitle => 'Plans for teams and businesses — multiple users, higher limits.';
+
+  @override
+  String get plansAllSubtitle => 'Every plan in the catalogue.';
+
+  @override
+  String get plansIndividualEmptyTitle => 'No personal plans';
+
+  @override
+  String get plansIndividualEmptyMessage => 'There are no individual plans in the catalogue right now.';
+
+  @override
+  String get plansOrganizationEmptyTitle => 'No business plans';
+
+  @override
+  String get plansOrganizationEmptyMessage => 'There are no business plans in the catalogue right now.';
+
+  @override
+  String get planSectionFeatures => 'Includes';
+
+  @override
+  String get planSectionQuotas => 'Quotas';
+
+  @override
+  String get planLimitOrganizations => 'Organizations';
+
+  @override
+  String get planLimitProviders => 'Suppliers';
+
+  @override
+  String get planLimitProducts => 'Products';
+
+  @override
+  String get planLimitServices => 'Services';
+
+  @override
+  String get planLimitLocations => 'Locations';
+
+  @override
+  String get planLimitCategories => 'Product categories';
+
+  @override
+  String get planLimitCustomers => 'Customers';
+
+  @override
+  String get planLimitOrders => 'Orders / month';
+
+  @override
+  String get planLimitStorage => 'Storage';
+
+  @override
+  String get planAdsLabel => 'Ads';
+
+  @override
+  String get planAdsValueEnabled => 'Yes';
+
+  @override
+  String get planAdsValueDisabled => 'No';
+
+  @override
+  String get savingsMonthsLabel => 'Additional months';
+
+  @override
+  String get plansIndividualSubtitleFree => 'You\'re on the Free plan. Upgrade any time — your data carries over.';
+
+  @override
+  String get plansOrganizationSubtitleFree => 'You\'re on the Free plan. Set up a team when you\'re ready.';
+
+  @override
+  String get plansAllSubtitleFree => 'You\'re on the Free plan. Everything below is available when you need it.';
 }

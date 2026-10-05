@@ -1116,7 +1116,7 @@
   "averageDocument": "المتوسط لكل مستند",
   "stock": "المخزون: {stock}",
   "itemsCount": "العناصر: {count}",
-  "items": "{cartItemCount, plural,  =0 {لا توجد عناصر}  one {عنصر واحد}  other {# عناصر}} ({itemCount, plural,  =0 {لا توجد منتجات}  one {منتج واحد}  other {{itemCount} منتجات}}, {serviceCount, plural,  =0 {لا توجد خدمات}  one {خدمة واحدة}  other {{serviceCount} خدمات}})",
+  "items": "{cartItemCount, plural, =0 {لا عناصر} one {عنصر واحد} two {عنصران} few {{cartItemCount} عناصر} many {{cartItemCount} عنصراً} other {{cartItemCount} عنصر}} ({itemCount, plural, =0 {لا منتجات} one {منتج واحد} two {منتجان} few {{itemCount} منتجات} many {{itemCount} منتجاً} other {{itemCount} منتج}}, {serviceCount, plural, =0 {لا خدمات} one {خدمة واحدة} two {خدمتان} few {{serviceCount} خدمات} many {{serviceCount} خدمة} other {{serviceCount} خدمة}})",
   "itemsText": "العناصر",
   "checkout": "الدفع",
   "orderConfirmed": "تم تأكيد الطلب",
@@ -2690,6 +2690,111 @@
 
   "editProfileLabel": "تعديل الملف الشخصي",
   "shareProfileLabel": "مشاركة",
-  "noInformationAvailable": "لا يوجد شيء لعرضه هنا بعد"
+  "noInformationAvailable": "لا يوجد شيء لعرضه هنا بعد",
+
+  "noPendingInvitationsMessage": "تم قبول جميع الدعوات أو لا توجد دعوات معلّقة.",
+  "inviteNewMember": "دعوة عضو جديد",
+
+  "scheduleCompletePrompt": "اختر التاريخ والوقت، أو أوقف الجدولة.",
+
+  "cartTitle": "سلتك",
+  "cartIsEmpty": "السلة فارغة",
+  "itemCountLabel": "{count, plural, =1{عنصر واحد} other{{count} عناصر}}",
+  "lineCountLabel": "{count, plural, =1{منتج واحد} other{{count} منتجات}}",
+
+  "clearCartTitle": "إفراغ السلة",
+  "clearCartConfirmation": "هل تريد بالتأكيد حذف جميع العناصر من السلة؟",
+
+  "posScanAdded": "إضافة {name}",
+
+  "choosePlanTitle": "اختر خطتك",
+  "choosePlanSubtitle": "اختر خطة تناسب نشاطك التجاري. يمكنك تغييرها في أي وقت.",
+  "planCurrentBadge": "الحالية",
+  "planCurrent": "خطتك الحالية",
+  "planSelected": "محددة — اضغط على «اشترك» للمتابعة",
+  "planTapToSelect": "اضغط لاختيار هذه الخطة",
+  "planTapToActivate": "اضغط للتفعيل",
+  "planSelectPrompt": "اختر خطة للمتابعة",
+  "planAlreadyActive": "هذه الخطة مفعّلة بالفعل",
+  "planSubscribeNow": "اشترك الآن",
+  "planActivate": "تفعيل الخطة",
+  "planPurchasing": "جارٍ المعالجة…",
+  "planFree": "مجاني",
+  "planSelectedLabel": "الخطة المحددة",
+  "planActivated": "تم تفعيل الخطة",
+  "planActivatedMessage": "أنت الآن مشترك في {planName}.",
+  "planPurchaseFailed": "تعذّر إتمام الشراء. حاول مرة أخرى.",
+  "choosePaymentMethod": "اختر طريقة الدفع",
+  "noPlansAvailable": "لا توجد خطط متاحة",
+  "noPlansAvailableMessage": "اسحب للأسفل للتحديث أو حاول لاحقاً.",
+
+  "choosePlanFab": "اختر خطة",
+  "managePlanFab": "إدارة الخطة",
+  "planUpdatedConfirmation": "تم تحديث اشتراكك.",
+
+  "manageSubscriptionTitle": "إدارة الاشتراك",
+  "subscriptionStatusActive": "نشط",
+  "subscriptionStatusInactive": "غير نشط",
+  "subscriptionStatusActiveHint": "خطتك نشطة ويتم تجديدها تلقائياً.",
+  "subscriptionStatusInactiveHint": "لم يعد اشتراكك نشطاً.",
+  "subscriptionRenewsOn": "يتجدد في {date}",
+  "subscriptionDetailsSection": "تفاصيل الخطة",
+  "subscriptionBillingSection": "الفواتير",
+  "subscriptionIdLabel": "معرّف الاشتراك",
+  "subscriptionChangePlan": "تغيير الخطة",
+  "subscriptionCancel": "إلغاء الاشتراك",
+  "cancelSubscriptionTitle": "إلغاء الاشتراك؟",
+  "cancelSubscriptionConfirmation": "ستفقد الوصول إلى ميزات خطتك في نهاية فترة الفوترة الحالية. لا يمكن التراجع عن هذا الإجراء.",
+  "keepSubscription": "الاحتفاظ بالاشتراك",
+  "confirmCancel": "إلغاء الاشتراك",
+  "subscriptionCancelled": "تم إلغاء اشتراكك.",
+  "subscriptionCancelFailed": "تعذّر إلغاء الاشتراك. حاول مرة أخرى.",
+  "noActiveSubscriptionTitle": "لا يوجد اشتراك نشط",
+  "noActiveSubscriptionMessage": "اشترك في خطة لفتح الميزات المميزة وحدود أعلى.",
+  "browsePlans": "تصفّح الخطط",
+
+  "plansTabIndividual": "فردي",
+  "plansTabOrganization": "الشركات",
+  "plansTabAll": "الكل",
+
+  "plansIndividualSubtitle": "خطط للاستخدام الشخصي — حساب واحد ومستخدم واحد.",
+  "plansOrganizationSubtitle": "خطط للفرق والشركات — عدة مستخدمين وحدود أعلى.",
+  "plansAllSubtitle": "جميع الخطط في الكتالوج.",
+
+  "plansIndividualEmptyTitle": "لا توجد خطط فردية",
+  "plansIndividualEmptyMessage": "لا توجد خطط فردية في الكتالوج حالياً.",
+  "plansOrganizationEmptyTitle": "لا توجد خطط للشركات",
+  "plansOrganizationEmptyMessage": "لا توجد خطط للشركات في الكتالوج حالياً.",
+
+  "planSectionFeatures": "يشمل",
+  "planSectionQuotas": "الحصص",
+
+  "planLimitOrganizations": "المؤسسات",
+  "planLimitProviders": "الموردون",
+  "planLimitProducts": "المنتجات",
+  "planLimitServices": "الخدمات",
+  "planLimitLocations": "المواقع",
+  "planLimitCategories": "فئات المنتجات",
+  "planLimitCustomers": "العملاء",
+  "planLimitOrders": "الطلبات / شهر",
+  "planLimitStorage": "التخزين",
+
+  "planNoAds": "بدون إعلانات",
+  "@planNoAds": {
+      "description": "Feature row shown on plans where ads are disabled (ads_enabled == 0)."
+  },
+
+  "savingsMonthsLabel": "شهران مجاناً",
+  "@savingsMonthsLabel": {
+      "description": "Badge suffix on yearly plans. Rendered as '+N months free' in EN; AR uses the dual form directly."
+  },
+
+  "planAdsLabel": "الإعلانات",
+  "planAdsValueEnabled": "نعم",
+  "planAdsValueDisabled": "لا",
+
+  "plansIndividualSubtitleFree": "أنت على الخطة المجانية. يمكنك الترقية في أي وقت — بياناتك محفوظة.",
+  "plansOrganizationSubtitleFree": "أنت على الخطة المجانية. أنشئ فريقاً عندما تكون جاهزاً.",
+  "plansAllSubtitleFree": "أنت على الخطة المجانية. كل ما يلي متاح عندما تحتاجه."
   
 }

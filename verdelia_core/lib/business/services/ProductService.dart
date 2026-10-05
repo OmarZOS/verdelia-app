@@ -28,6 +28,7 @@ abstract class ProductService extends TraceableService {
     int userId = 0,
     int providerId = 0,
     int category = 0,
+    String? productBarcode,
     String query = "",
     int offset = 0,
     int limit = 10,

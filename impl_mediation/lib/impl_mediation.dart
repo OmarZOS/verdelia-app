@@ -216,7 +216,10 @@ class StorageServiceImpl extends StorageService<FormData> {
   Future<int?> delete(String destination, String id,
       {String? callerKey, String? token}) async {
     final key = _getCallerKey(callerKey, 'delete_$id');
-    final url = '$destination/$id';
+    String url = destination;
+    if (id != '') {
+      url += id;
+    }
     _logRequest('DELETE', url, callerKey: key, token: token);
 
     try {

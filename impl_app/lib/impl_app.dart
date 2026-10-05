@@ -785,9 +785,9 @@ class AppUserServiceImpl extends AppUserService {
 
       final result = await _storageService.delete(
         '${AppConstants.apiBaseUrl}'
-        '${AppConstants.subscriptionBaseEndpoint}/$userId'
-        '${AppConstants.subscriptionSuffix}$queryString',
-        userId.toString(),
+            '${AppConstants.subscriptionBaseEndpoint}/$userId'
+            '${AppConstants.subscriptionSuffix}$queryString',
+        '',
         callerKey: key,
       );
 

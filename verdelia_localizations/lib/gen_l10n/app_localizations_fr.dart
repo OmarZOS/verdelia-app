@@ -3134,26 +3134,26 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String items(int cartItemCount, int itemCount, int serviceCount) {
+  String items(num cartItemCount, num itemCount, num serviceCount) {
     String _temp0 = intl.Intl.pluralLogic(
       cartItemCount,
       locale: localeName,
-      other: '# articles',
-      one: '# article',
+      other: '$cartItemCount articles',
+      one: '$cartItemCount article',
       zero: 'Aucun article',
     );
     String _temp1 = intl.Intl.pluralLogic(
       itemCount,
       locale: localeName,
       other: '$itemCount produits',
-      one: 'un produit',
+      one: '$itemCount produit',
       zero: 'aucun produit',
     );
     String _temp2 = intl.Intl.pluralLogic(
       serviceCount,
       locale: localeName,
       other: '$serviceCount services',
-      one: 'un service',
+      one: '$serviceCount service',
       zero: 'aucun service',
     );
     return '$_temp0 ($_temp1, $_temp2)';
@@ -7628,4 +7628,269 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get noInformationAvailable => 'Rien à afficher ici pour le moment';
+
+  @override
+  String get noPendingInvitationsMessage => 'Toutes les invitations ont été acceptées ou aucune invitation n\'est en attente.';
+
+  @override
+  String get inviteNewMember => 'Inviter un nouveau membre';
+
+  @override
+  String get scheduleCompletePrompt => 'Choisissez une date et une heure, ou désactivez la planification.';
+
+  @override
+  String get cartTitle => 'Votre panier';
+
+  @override
+  String get cartIsEmpty => 'Le panier est vide';
+
+  @override
+  String itemCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count articles',
+      one: '1 article',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String lineCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count produits',
+      one: '1 produit',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get clearCartTitle => 'Vider le panier';
+
+  @override
+  String get clearCartConfirmation => 'Voulez-vous vraiment supprimer tous les articles du panier ?';
+
+  @override
+  String posScanAdded(String name) {
+    return 'Ajout de $name';
+  }
+
+  @override
+  String get choosePlanTitle => 'Choisissez votre formule';
+
+  @override
+  String get choosePlanSubtitle => 'Sélectionnez une formule adaptée à votre activité. Vous pouvez en changer à tout moment.';
+
+  @override
+  String get planCurrentBadge => 'ACTUEL';
+
+  @override
+  String get planCurrent => 'Votre formule actuelle';
+
+  @override
+  String get planSelected => 'Sélectionnée — appuyez sur S\'abonner';
+
+  @override
+  String get planTapToSelect => 'Appuyez pour sélectionner cette formule';
+
+  @override
+  String get planTapToActivate => 'Appuyez pour activer';
+
+  @override
+  String get planSelectPrompt => 'Sélectionnez une formule';
+
+  @override
+  String get planAlreadyActive => 'Cette formule est déjà active';
+
+  @override
+  String get planSubscribeNow => 'S\'abonner';
+
+  @override
+  String get planActivate => 'Activer la formule';
+
+  @override
+  String get planPurchasing => 'Traitement…';
+
+  @override
+  String get planFree => 'Gratuit';
+
+  @override
+  String get planSelectedLabel => 'Formule sélectionnée';
+
+  @override
+  String get planActivated => 'Formule activée';
+
+  @override
+  String planActivatedMessage(String planName) {
+    return 'Vous êtes maintenant abonné à $planName.';
+  }
+
+  @override
+  String get planPurchaseFailed => 'Impossible de finaliser l\'achat. Réessayez.';
+
+  @override
+  String get choosePaymentMethod => 'Choisir le mode de paiement';
+
+  @override
+  String get noPlansAvailable => 'Aucune formule disponible';
+
+  @override
+  String get noPlansAvailableMessage => 'Tirez pour rafraîchir ou réessayez plus tard.';
+
+  @override
+  String get choosePlanFab => 'Choisir une formule';
+
+  @override
+  String get managePlanFab => 'Gérer la formule';
+
+  @override
+  String get planUpdatedConfirmation => 'Votre abonnement a été mis à jour.';
+
+  @override
+  String get manageSubscriptionTitle => 'Gérer l\'abonnement';
+
+  @override
+  String get subscriptionStatusActive => 'Actif';
+
+  @override
+  String get subscriptionStatusInactive => 'Inactif';
+
+  @override
+  String get subscriptionStatusActiveHint => 'Votre formule est active et se renouvelle automatiquement.';
+
+  @override
+  String get subscriptionStatusInactiveHint => 'Votre abonnement n\'est plus actif.';
+
+  @override
+  String subscriptionRenewsOn(String date) {
+    return 'Renouvellement le $date';
+  }
+
+  @override
+  String get subscriptionDetailsSection => 'Détails de la formule';
+
+  @override
+  String get subscriptionBillingSection => 'Facturation';
+
+  @override
+  String get subscriptionIdLabel => 'Identifiant d\'abonnement';
+
+  @override
+  String get subscriptionChangePlan => 'Changer de formule';
+
+  @override
+  String get subscriptionCancel => 'Résilier l\'abonnement';
+
+  @override
+  String get cancelSubscriptionTitle => 'Résilier l\'abonnement ?';
+
+  @override
+  String get cancelSubscriptionConfirmation => 'Vous perdrez l\'accès aux fonctionnalités de votre formule à la fin de la période de facturation en cours. Cette action est irréversible.';
+
+  @override
+  String get keepSubscription => 'Conserver l\'abonnement';
+
+  @override
+  String get confirmCancel => 'Résilier';
+
+  @override
+  String get subscriptionCancelled => 'Votre abonnement a été résilié.';
+
+  @override
+  String get subscriptionCancelFailed => 'Impossible de résilier l\'abonnement. Réessayez.';
+
+  @override
+  String get noActiveSubscriptionTitle => 'Aucun abonnement actif';
+
+  @override
+  String get noActiveSubscriptionMessage => 'Abonnez-vous à une formule pour débloquer les fonctionnalités premium et des quotas plus élevés.';
+
+  @override
+  String get browsePlans => 'Voir les formules';
+
+  @override
+  String get plansTabIndividual => 'Individuel';
+
+  @override
+  String get plansTabOrganization => 'Entreprise';
+
+  @override
+  String get plansTabAll => 'Toutes';
+
+  @override
+  String get plansIndividualSubtitle => 'Formules à usage personnel — un compte, un opérateur.';
+
+  @override
+  String get plansOrganizationSubtitle => 'Formules pour équipes et entreprises — plusieurs utilisateurs, limites plus élevées.';
+
+  @override
+  String get plansAllSubtitle => 'Toutes les formules du catalogue.';
+
+  @override
+  String get plansIndividualEmptyTitle => 'Aucune formule individuelle';
+
+  @override
+  String get plansIndividualEmptyMessage => 'Il n\'y a aucune formule individuelle dans le catalogue pour le moment.';
+
+  @override
+  String get plansOrganizationEmptyTitle => 'Aucune formule entreprise';
+
+  @override
+  String get plansOrganizationEmptyMessage => 'Il n\'y a aucune formule entreprise dans le catalogue pour le moment.';
+
+  @override
+  String get planSectionFeatures => 'Inclus';
+
+  @override
+  String get planSectionQuotas => 'Quotas';
+
+  @override
+  String get planLimitOrganizations => 'Organisations';
+
+  @override
+  String get planLimitProviders => 'Fournisseurs';
+
+  @override
+  String get planLimitProducts => 'Produits';
+
+  @override
+  String get planLimitServices => 'Services';
+
+  @override
+  String get planLimitLocations => 'Emplacements';
+
+  @override
+  String get planLimitCategories => 'Catégories de produits';
+
+  @override
+  String get planLimitCustomers => 'Clients';
+
+  @override
+  String get planLimitOrders => 'Commandes / mois';
+
+  @override
+  String get planLimitStorage => 'Stockage';
+
+  @override
+  String get planAdsLabel => 'Publicités';
+
+  @override
+  String get planAdsValueEnabled => 'Oui';
+
+  @override
+  String get planAdsValueDisabled => 'Non';
+
+  @override
+  String get savingsMonthsLabel => 'mois offerts';
+
+  @override
+  String get plansIndividualSubtitleFree => 'Vous êtes sur le plan Gratuit. Passez à un plan supérieur quand vous voulez — vos données sont conservées.';
+
+  @override
+  String get plansOrganizationSubtitleFree => 'Vous êtes sur le plan Gratuit. Créez une équipe quand vous serez prêt.';
+
+  @override
+  String get plansAllSubtitleFree => 'Vous êtes sur le plan Gratuit. Tout ce qui suit est disponible quand vous en aurez besoin.';
 }

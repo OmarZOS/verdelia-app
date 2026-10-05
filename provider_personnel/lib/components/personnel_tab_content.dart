@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:verdelia_core/app/ManagementRule.dart';
 import 'package:provider_personnel/components/supplier_user_card.dart';
 import 'package:event/personnel_notifier.dart';
+import 'package:verdelia_core/app/AppUser.dart';
 import 'package:provider/provider.dart';
 
 class PersonnelTabContent extends StatelessWidget {
@@ -13,6 +14,11 @@ class PersonnelTabContent extends StatelessWidget {
   final Function onCancelInvitation;
   final bool canManage;
 
+  /// Called when the user taps a tile's body (anywhere except the
+  /// trailing action buttons). The parent routes to the visited
+  /// profile. When null, tiles are not tappable.
+  final void Function(AppUser user)? onProfileTap;
+
   const PersonnelTabContent({
     super.key,
     required this.supplierId,
@@ -22,6 +28,7 @@ class PersonnelTabContent extends StatelessWidget {
     required this.onShowRemoveDialog,
     required this.onCancelInvitation,
     this.canManage = true,
+    this.onProfileTap,
   });
 
   @override
@@ -41,30 +48,11 @@ class PersonnelTabContent extends StatelessWidget {
               }).toList();
 
         if (notifier.isLoading && filteredUsers.isEmpty) {
-          return _buildLoadingShimmer();
+          return const _LoadingShimmer();
         }
 
         if (filteredUsers.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    includePending ? Icons.people_outline : Icons.check_circle,
-                    size: 80,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    includePending ? 'No Team Members' : 'No Active Members',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                ],
-              ),
-            ),
-          );
+          return _EmptyState(includePending: includePending);
         }
 
         return RefreshIndicator(
@@ -105,14 +93,13 @@ class PersonnelTabContent extends StatelessWidget {
                     user, isPending, rule?.idManagementRule),
                 onRemove: () =>
                     onShowRemoveDialog(rule?.idManagementRule, user),
-                // onResendInvite:
-                //     isPending ? () => onResendInvitation(user) : null,
                 onCancelInvite: isPending
                     ? canManage
                         ? () => onCancelInvitation(user, rule?.idManagementRule)
                         : null
                     : null,
                 showActions: canManage,
+                onTap: onProfileTap == null ? null : () => onProfileTap!(user),
               );
             },
           ),
@@ -120,8 +107,59 @@ class PersonnelTabContent extends StatelessWidget {
       },
     );
   }
+}
 
-  Widget _buildLoadingShimmer() {
+// ══════════════════════════════════════════════════════════════════
+// Empty state
+// ══════════════════════════════════════════════════════════════════
+
+class _EmptyState extends StatelessWidget {
+  final bool includePending;
+
+  const _EmptyState({required this.includePending});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              includePending ? Icons.people_outline : Icons.check_circle,
+              size: 80,
+              color: cs.onSurfaceVariant,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              includePending ? 'No Team Members' : 'No Active Members',
+              style: theme.textTheme.headlineSmall,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Loading shimmer
+// ══════════════════════════════════════════════════════════════════
+
+class _LoadingShimmer extends StatelessWidget {
+  const _LoadingShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: 3,
@@ -130,7 +168,7 @@ class PersonnelTabContent extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
+            color: cs.surface,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -139,7 +177,7 @@ class PersonnelTabContent extends StatelessWidget {
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceVariant,
+                  color: cs.surfaceVariant,
                   borderRadius: BorderRadius.circular(25),
                 ),
               ),
@@ -151,13 +189,13 @@ class PersonnelTabContent extends StatelessWidget {
                     Container(
                       width: 120,
                       height: 16,
-                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      color: cs.surfaceVariant,
                     ),
                     const SizedBox(height: 8),
                     Container(
                       width: 80,
                       height: 14,
-                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      color: cs.surfaceVariant,
                     ),
                   ],
                 ),

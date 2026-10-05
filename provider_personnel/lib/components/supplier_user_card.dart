@@ -15,6 +15,10 @@ class SupplierUserCard extends StatelessWidget {
   final bool isCompact;
   final bool showActions;
 
+  /// Called when the tile body is tapped (outside the action
+  /// buttons). When null, the card is not tappable.
+  final VoidCallback? onTap;
+
   const SupplierUserCard({
     super.key,
     required this.user,
@@ -26,92 +30,103 @@ class SupplierUserCard extends StatelessWidget {
     this.onCancelInvite,
     this.isCompact = false,
     this.showActions = true,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-    final localizations = AppLocalizations.of(context)!;
 
     final privilegeIds = _getOptimizedPrivilegeIds();
     final hasPrivileges = privilegeIds.isNotEmpty;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isPending
-              ? colorScheme.tertiary.withOpacity(0.2)
-              : colorScheme.outline.withOpacity(0.08),
-          width: isPending ? 1.5 : 1,
-        ),
-        boxShadow: [
-          BoxShadow(
+    // Tappable body — the entire card is a single InkWell so the
+    // ripple spans the rounded rectangle. Action buttons inside
+    // consume their own taps before the InkWell sees them.
+    final card = Material(
+      color: Colors.transparent,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
             color: isPending
-                ? colorScheme.tertiary.withOpacity(0.05)
-                : colorScheme.shadow.withOpacity(0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-            spreadRadius: 0.5,
+                ? colorScheme.tertiary.withOpacity(0.2)
+                : colorScheme.outline.withOpacity(0.08),
+            width: isPending ? 1.5 : 1,
           ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedPadding(
-            duration: const Duration(milliseconds: 300),
-            padding: EdgeInsets.all(isCompact ? 16 : 20),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildAvatar(context),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildUserName(context, localizations),
-                                if (user.appUserName?.isNotEmpty == true &&
-                                    !isCompact)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    child: _buildUserEmail(context),
-                                  ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          _buildUserRole(context, colorScheme, textTheme),
-                        ],
-                      ),
-                      if (hasPrivileges) ...[
-                        const SizedBox(height: 12),
-                        _buildPrivilegeTags(context, privilegeIds),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: isPending
+                  ? colorScheme.tertiary.withOpacity(0.05)
+                  : colorScheme.shadow.withOpacity(0.03),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+              spreadRadius: 0.5,
             ),
+          ],
+        ),
+        child: AnimatedPadding(
+          duration: const Duration(milliseconds: 300),
+          padding: EdgeInsets.all(isCompact ? 16 : 20),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildAvatar(context),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildUserName(context),
+                              if (user.appUserName?.isNotEmpty == true &&
+                                  !isCompact)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: _buildUserEmail(context),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildUserRole(context, colorScheme, theme.textTheme),
+                      ],
+                    ),
+                    if (hasPrivileges) ...[
+                      const SizedBox(height: 12),
+                      _buildPrivilegeTags(context, privilegeIds),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
+
+    if (onTap == null) return card;
+
+    return InkWell(
+      onTap: onTap,
+      // Match the Card's rounded shape so the ripple respects it.
+      borderRadius: BorderRadius.circular(20),
+      child: card,
+    );
   }
+
+  // ==================== AVATAR ====================
 
   Widget _buildAvatar(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -172,8 +187,9 @@ class SupplierUserCard extends StatelessWidget {
       return _buildFallbackAvatar(colorScheme);
     }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(30),
+    // Circle the image with ClipOval; a fixed 30dp radius would
+    // over- or under-clip depending on the avatar size.
+    return ClipOval(
       child: Image.network(
         imageUrl,
         fit: BoxFit.cover,
@@ -207,13 +223,18 @@ class SupplierUserCard extends StatelessWidget {
           fontWeight: FontWeight.w700,
           color: colorScheme.onPrimaryContainer,
         ),
+        maxLines: 1,
+        softWrap: false,
       ),
     );
   }
 
-  Widget _buildUserName(BuildContext context, AppLocalizations localizations) {
+  // ==================== NAME / EMAIL ====================
+
+  Widget _buildUserName(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final localizations = AppLocalizations.of(context)!;
 
     return Row(
       children: [
@@ -244,6 +265,8 @@ class SupplierUserCard extends StatelessWidget {
                 fontSize: 9,
                 fontWeight: FontWeight.w700,
               ),
+              maxLines: 1,
+              softWrap: false,
             ),
           ),
       ],
@@ -264,7 +287,7 @@ class SupplierUserCard extends StatelessWidget {
         const SizedBox(width: 6),
         Expanded(
           child: Text(
-            user.appUserName!,
+            user.appUserName ?? '',
             style: theme.textTheme.bodySmall?.copyWith(
               color: colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
@@ -276,6 +299,8 @@ class SupplierUserCard extends StatelessWidget {
       ],
     );
   }
+
+  // ==================== ROLE BADGE ====================
 
   Widget _buildUserRole(
       BuildContext context, ColorScheme colorScheme, TextTheme textTheme) {
@@ -290,11 +315,11 @@ class SupplierUserCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: roleColor.withOpacity(0.08), // More subtle background
-        borderRadius: BorderRadius.circular(8), // Smaller radius for tag
+        color: roleColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: roleColor.withOpacity(0.15), // More subtle border
-          width: 0.5, // Thinner border
+          color: roleColor.withOpacity(0.15),
+          width: 0.5,
         ),
       ),
       child: Row(
@@ -302,29 +327,34 @@ class SupplierUserCard extends StatelessWidget {
         children: [
           Icon(
             roleIcon,
-            size: isCompact ? 12 : 14, // Slightly smaller
-            color: roleColor.withOpacity(0.8), // Slightly muted
+            size: isCompact ? 12 : 14,
+            color: roleColor.withOpacity(0.8),
           ),
-          const SizedBox(width: 4), // Less spacing
+          const SizedBox(width: 4),
           Text(
             _getRoleText(context),
             style: textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w500, // Lighter weight
-              color: roleColor.withOpacity(0.9), // Slightly muted
-              fontSize: isCompact ? 11 : 12, // Smaller text
-              letterSpacing: -0.2, // Tighter letter spacing for tags
+              fontWeight: FontWeight.w500,
+              color: roleColor.withOpacity(0.9),
+              fontSize: isCompact ? 11 : 12,
+              letterSpacing: -0.2,
             ),
+            maxLines: 1,
+            softWrap: false,
           ),
         ],
       ),
     );
   }
 
+  // ==================== PRIVILEGE TAGS + ACTIONS ====================
+
   Widget _buildPrivilegeTags(BuildContext context, List<String> privilegeIds) {
     final displayCount = isCompact ? 2 : 3;
     final displayedIds = privilegeIds.take(displayCount).toList();
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: Wrap(
@@ -360,126 +390,31 @@ class SupplierUserCard extends StatelessWidget {
             }).toList(),
           ),
         ),
-        if (showActions && isPending) //&& onCancelInvite != null
+        if (showActions && isPending)
           Padding(
             padding: const EdgeInsets.only(left: 12),
-            child: Material(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-              child: InkWell(
-                onTap: onCancelInvite,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color:
-                        Theme.of(context).colorScheme.tertiary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .tertiary
-                          .withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.cancel_rounded,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.tertiary,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        AppLocalizations.of(context)!.actionCancelInvite,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.tertiary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            child: _ActionChip(
+              icon: Icons.cancel_rounded,
+              label: AppLocalizations.of(context)!.actionCancelInvite,
+              color: Theme.of(context).colorScheme.tertiary,
+              onTap: onCancelInvite,
             ),
           ),
         if (showActions && !isPending)
           Padding(
             padding: const EdgeInsets.only(left: 12),
-            child: Material(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-              child: InkWell(
-                onTap: isPending ? onCancelInvite : onManagePrivileges,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isPending
-                        ? Theme.of(context)
-                            .colorScheme
-                            .tertiary
-                            .withOpacity(0.1)
-                        : Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isPending
-                          ? Theme.of(context)
-                              .colorScheme
-                              .tertiary
-                              .withOpacity(0.3)
-                          : Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isPending
-                            ? Icons.cancel_rounded
-                            : Icons.admin_panel_settings_rounded,
-                        size: 16,
-                        color: isPending
-                            ? Theme.of(context).colorScheme.tertiary
-                            : Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        isPending
-                            ? AppLocalizations.of(context)!.actionCancelInvite
-                            : AppLocalizations.of(context)!
-                                .actionManagePermissions,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: isPending
-                              ? Theme.of(context).colorScheme.tertiary
-                              : Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            child: _ActionChip(
+              icon: Icons.admin_panel_settings_rounded,
+              label: AppLocalizations.of(context)!.actionManagePermissions,
+              color: Theme.of(context).colorScheme.primary,
+              onTap: onManagePrivileges,
             ),
-          )
+          ),
       ],
     );
   }
 
-  // ==================== HELPER METHODS ====================
+  // ==================== HELPERS ====================
 
   String _getUserInitials() {
     final firstName = user.personFirstName?.trim() ?? '';
@@ -511,7 +446,6 @@ class SupplierUserCard extends StatelessWidget {
   List<String> _getOptimizedPrivilegeIds() {
     try {
       if (ruleCode > 0) {
-        // final privilegeIds = RoleBitMapper.numberToPrivilegeIds(ruleCode);
         return PrivilegeUIManager.getOptimizedPrivilegeIds(ruleCode);
       }
     } catch (e) {
@@ -569,5 +503,67 @@ class SupplierUserCard extends StatelessWidget {
   }
 }
 
-// Add this near your main app initialization
-// final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+// ══════════════════════════════════════════════════════════════════
+// Action chip — shared between the two action states
+// ══════════════════════════════════════════════════════════════════
+
+class _ActionChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback? onTap;
+
+  const _ActionChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Disabled state: muted colors, no tap. InkWell with a null
+    // onTap is not interactive, so the parent's ripple wins on a tap
+    // in this region. Visually the chip stays but reads as inactive.
+    final enabled = onTap != null;
+    final effectiveColor =
+        enabled ? color : Theme.of(context).colorScheme.onSurfaceVariant;
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: effectiveColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: effectiveColor.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: effectiveColor),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: effectiveColor,
+                ),
+                maxLines: 1,
+                softWrap: false,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

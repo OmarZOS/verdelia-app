@@ -328,15 +328,7 @@ class _LeadingIcon extends StatelessWidget {
   }
 
   IconData _getServiceIcon(int categoryId) {
-    const icons = {
-      1: Icons.medical_services,
-      2: Icons.monitor_heart,
-      3: Icons.medical_services,
-      4: Icons.airline_seat_recline_normal,
-      5: Icons.medication_outlined,
-      6: Icons.science,
-    };
-    return icons[categoryId] ?? Icons.medical_services_outlined;
+    return Icons.handyman_rounded;
   }
 }
 

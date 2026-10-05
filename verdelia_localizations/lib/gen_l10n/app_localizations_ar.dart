@@ -3134,27 +3134,36 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String items(int cartItemCount, int itemCount, int serviceCount) {
+  String items(num cartItemCount, num itemCount, num serviceCount) {
     String _temp0 = intl.Intl.pluralLogic(
       cartItemCount,
       locale: localeName,
-      other: '# عناصر',
+      other: '$cartItemCount عنصر',
+      many: '$cartItemCount عنصراً',
+      few: '$cartItemCount عناصر',
+      two: 'عنصران',
       one: 'عنصر واحد',
-      zero: 'لا توجد عناصر',
+      zero: 'لا عناصر',
     );
     String _temp1 = intl.Intl.pluralLogic(
       itemCount,
       locale: localeName,
-      other: '$itemCount منتجات',
+      other: '$itemCount منتج',
+      many: '$itemCount منتجاً',
+      few: '$itemCount منتجات',
+      two: 'منتجان',
       one: 'منتج واحد',
-      zero: 'لا توجد منتجات',
+      zero: 'لا منتجات',
     );
     String _temp2 = intl.Intl.pluralLogic(
       serviceCount,
       locale: localeName,
-      other: '$serviceCount خدمات',
+      other: '$serviceCount خدمة',
+      many: '$serviceCount خدمة',
+      few: '$serviceCount خدمات',
+      two: 'خدمتان',
       one: 'خدمة واحدة',
-      zero: 'لا توجد خدمات',
+      zero: 'لا خدمات',
     );
     return '$_temp0 ($_temp1, $_temp2)';
   }
@@ -7628,4 +7637,269 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get noInformationAvailable => 'لا يوجد شيء لعرضه هنا بعد';
+
+  @override
+  String get noPendingInvitationsMessage => 'تم قبول جميع الدعوات أو لا توجد دعوات معلّقة.';
+
+  @override
+  String get inviteNewMember => 'دعوة عضو جديد';
+
+  @override
+  String get scheduleCompletePrompt => 'اختر التاريخ والوقت، أو أوقف الجدولة.';
+
+  @override
+  String get cartTitle => 'سلتك';
+
+  @override
+  String get cartIsEmpty => 'السلة فارغة';
+
+  @override
+  String itemCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count عناصر',
+      one: 'عنصر واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String lineCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count منتجات',
+      one: 'منتج واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get clearCartTitle => 'إفراغ السلة';
+
+  @override
+  String get clearCartConfirmation => 'هل تريد بالتأكيد حذف جميع العناصر من السلة؟';
+
+  @override
+  String posScanAdded(String name) {
+    return 'إضافة $name';
+  }
+
+  @override
+  String get choosePlanTitle => 'اختر خطتك';
+
+  @override
+  String get choosePlanSubtitle => 'اختر خطة تناسب نشاطك التجاري. يمكنك تغييرها في أي وقت.';
+
+  @override
+  String get planCurrentBadge => 'الحالية';
+
+  @override
+  String get planCurrent => 'خطتك الحالية';
+
+  @override
+  String get planSelected => 'محددة — اضغط على «اشترك» للمتابعة';
+
+  @override
+  String get planTapToSelect => 'اضغط لاختيار هذه الخطة';
+
+  @override
+  String get planTapToActivate => 'اضغط للتفعيل';
+
+  @override
+  String get planSelectPrompt => 'اختر خطة للمتابعة';
+
+  @override
+  String get planAlreadyActive => 'هذه الخطة مفعّلة بالفعل';
+
+  @override
+  String get planSubscribeNow => 'اشترك الآن';
+
+  @override
+  String get planActivate => 'تفعيل الخطة';
+
+  @override
+  String get planPurchasing => 'جارٍ المعالجة…';
+
+  @override
+  String get planFree => 'مجاني';
+
+  @override
+  String get planSelectedLabel => 'الخطة المحددة';
+
+  @override
+  String get planActivated => 'تم تفعيل الخطة';
+
+  @override
+  String planActivatedMessage(String planName) {
+    return 'أنت الآن مشترك في $planName.';
+  }
+
+  @override
+  String get planPurchaseFailed => 'تعذّر إتمام الشراء. حاول مرة أخرى.';
+
+  @override
+  String get choosePaymentMethod => 'اختر طريقة الدفع';
+
+  @override
+  String get noPlansAvailable => 'لا توجد خطط متاحة';
+
+  @override
+  String get noPlansAvailableMessage => 'اسحب للأسفل للتحديث أو حاول لاحقاً.';
+
+  @override
+  String get choosePlanFab => 'اختر خطة';
+
+  @override
+  String get managePlanFab => 'إدارة الخطة';
+
+  @override
+  String get planUpdatedConfirmation => 'تم تحديث اشتراكك.';
+
+  @override
+  String get manageSubscriptionTitle => 'إدارة الاشتراك';
+
+  @override
+  String get subscriptionStatusActive => 'نشط';
+
+  @override
+  String get subscriptionStatusInactive => 'غير نشط';
+
+  @override
+  String get subscriptionStatusActiveHint => 'خطتك نشطة ويتم تجديدها تلقائياً.';
+
+  @override
+  String get subscriptionStatusInactiveHint => 'لم يعد اشتراكك نشطاً.';
+
+  @override
+  String subscriptionRenewsOn(String date) {
+    return 'يتجدد في $date';
+  }
+
+  @override
+  String get subscriptionDetailsSection => 'تفاصيل الخطة';
+
+  @override
+  String get subscriptionBillingSection => 'الفواتير';
+
+  @override
+  String get subscriptionIdLabel => 'معرّف الاشتراك';
+
+  @override
+  String get subscriptionChangePlan => 'تغيير الخطة';
+
+  @override
+  String get subscriptionCancel => 'إلغاء الاشتراك';
+
+  @override
+  String get cancelSubscriptionTitle => 'إلغاء الاشتراك؟';
+
+  @override
+  String get cancelSubscriptionConfirmation => 'ستفقد الوصول إلى ميزات خطتك في نهاية فترة الفوترة الحالية. لا يمكن التراجع عن هذا الإجراء.';
+
+  @override
+  String get keepSubscription => 'الاحتفاظ بالاشتراك';
+
+  @override
+  String get confirmCancel => 'إلغاء الاشتراك';
+
+  @override
+  String get subscriptionCancelled => 'تم إلغاء اشتراكك.';
+
+  @override
+  String get subscriptionCancelFailed => 'تعذّر إلغاء الاشتراك. حاول مرة أخرى.';
+
+  @override
+  String get noActiveSubscriptionTitle => 'لا يوجد اشتراك نشط';
+
+  @override
+  String get noActiveSubscriptionMessage => 'اشترك في خطة لفتح الميزات المميزة وحدود أعلى.';
+
+  @override
+  String get browsePlans => 'تصفّح الخطط';
+
+  @override
+  String get plansTabIndividual => 'فردي';
+
+  @override
+  String get plansTabOrganization => 'الشركات';
+
+  @override
+  String get plansTabAll => 'الكل';
+
+  @override
+  String get plansIndividualSubtitle => 'خطط للاستخدام الشخصي — حساب واحد ومستخدم واحد.';
+
+  @override
+  String get plansOrganizationSubtitle => 'خطط للفرق والشركات — عدة مستخدمين وحدود أعلى.';
+
+  @override
+  String get plansAllSubtitle => 'جميع الخطط في الكتالوج.';
+
+  @override
+  String get plansIndividualEmptyTitle => 'لا توجد خطط فردية';
+
+  @override
+  String get plansIndividualEmptyMessage => 'لا توجد خطط فردية في الكتالوج حالياً.';
+
+  @override
+  String get plansOrganizationEmptyTitle => 'لا توجد خطط للشركات';
+
+  @override
+  String get plansOrganizationEmptyMessage => 'لا توجد خطط للشركات في الكتالوج حالياً.';
+
+  @override
+  String get planSectionFeatures => 'يشمل';
+
+  @override
+  String get planSectionQuotas => 'الحصص';
+
+  @override
+  String get planLimitOrganizations => 'المؤسسات';
+
+  @override
+  String get planLimitProviders => 'الموردون';
+
+  @override
+  String get planLimitProducts => 'المنتجات';
+
+  @override
+  String get planLimitServices => 'الخدمات';
+
+  @override
+  String get planLimitLocations => 'المواقع';
+
+  @override
+  String get planLimitCategories => 'فئات المنتجات';
+
+  @override
+  String get planLimitCustomers => 'العملاء';
+
+  @override
+  String get planLimitOrders => 'الطلبات / شهر';
+
+  @override
+  String get planLimitStorage => 'التخزين';
+
+  @override
+  String get planAdsLabel => 'الإعلانات';
+
+  @override
+  String get planAdsValueEnabled => 'نعم';
+
+  @override
+  String get planAdsValueDisabled => 'لا';
+
+  @override
+  String get savingsMonthsLabel => 'شهران مجاناً';
+
+  @override
+  String get plansIndividualSubtitleFree => 'أنت على الخطة المجانية. يمكنك الترقية في أي وقت — بياناتك محفوظة.';
+
+  @override
+  String get plansOrganizationSubtitleFree => 'أنت على الخطة المجانية. أنشئ فريقاً عندما تكون جاهزاً.';
+
+  @override
+  String get plansAllSubtitleFree => 'أنت على الخطة المجانية. كل ما يلي متاح عندما تحتاجه.';
 }

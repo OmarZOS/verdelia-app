@@ -1,6 +1,10 @@
 import 'package:app_constants/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:provider_geo/screens/map_picker_screen.dart';
+import 'package:tabbed_home/screens/plans_screen.dart';
+import 'package:tabbed_home/screens/profile_screen.dart';
+import 'package:tabbed_home/screens/subscription_management_screen.dart';
+import 'package:verdelia_core/app/AppUser.dart';
 import 'package:verdelia_core/app/ManagementRule.dart';
 import 'package:verdelia_core/business/Supplier.dart';
 import 'package:event/order_change_notifier.dart';
@@ -27,7 +31,6 @@ import 'package:product_catalog/screens/product_catalog_screen.dart';
 import 'package:product_catalog/screens/product_form_screen.dart';
 import 'package:product_catalog/screens/product_screen.dart';
 import 'package:provider/provider.dart';
-import 'screens/image_upload_screen.dart';
 
 class AppRouter {
   static Route<dynamic>? generateRoute(RouteSettings settings) {
@@ -58,6 +61,43 @@ class AppRouter {
                   isAuthenticated,
                   const ProductFormScreen(),
                   const ProductCatalogScreen(),
+                );
+
+              case AppRoutes.profile:
+                return _buildGuardedRoute(
+                  isAuthenticated,
+                  const ProfileScreen(),
+                  const LoginScreen(),
+                );
+
+              case AppRoutes.profileVisitor:
+                final visitedUser = args?['user'];
+                if (visitedUser is! AppUser) {
+                  // The route contract requires an AppUser. If the argument is
+                  // missing or the wrong type, fall back to the owner profile
+                  // rather than crashing — the caller will see their own profile
+                  // instead of a broken screen.
+                  assert(() {
+                    debugPrint(
+                      'AppRoutes.profileVisitor: expected `user` (AppUser) in '
+                      'arguments, got ${visitedUser.runtimeType}. Falling back to '
+                      'owner profile.',
+                    );
+                    return true;
+                  }());
+                  return _buildGuardedRoute(
+                    isAuthenticated,
+                    const ProfileScreen(),
+                    const LoginScreen(),
+                  );
+                }
+                return _buildGuardedRoute(
+                  isAuthenticated,
+                  ProfileScreen(
+                    mode: ProfileMode.visitor,
+                    user: visitedUser,
+                  ),
+                  const LoginScreen(),
                 );
 
               case AppRoutes.productScanPage:
@@ -196,8 +236,19 @@ class AppRouter {
               case AppRoutes.registration:
                 return const RegistrationForm();
 
-              case AppRoutes.imageUpload:
-                return const UploadImagePage();
+              case AppRoutes.plans:
+                return _buildGuardedRoute(
+                  isAuthenticated,
+                  const PlansScreen(),
+                  const LoginScreen(),
+                );
+
+              case AppRoutes.manageSubscription:
+                return _buildGuardedRoute(
+                  isAuthenticated,
+                  const SubscriptionManagementScreen(),
+                  const LoginScreen(),
+                );
 
               case AppRoutes.productDetails:
                 return const ProductDetailsScreen();

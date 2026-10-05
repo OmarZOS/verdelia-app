@@ -198,6 +198,7 @@ class _PersonnelManagementScreenState extends State<PersonnelManagementScreen>
               onShowRemoveDialog: _showRemoveDialog,
               onCancelInvitation: _cancelInvitation,
               canManage: widget.canManagePersonnel,
+              onProfileTap: _openVisitedProfile,
             ),
             PersonnelTabContent(
               supplierId: widget.supplierId,
@@ -207,6 +208,7 @@ class _PersonnelManagementScreenState extends State<PersonnelManagementScreen>
               onShowRemoveDialog: _showRemoveDialog,
               onCancelInvitation: _cancelInvitation,
               canManage: widget.canManagePersonnel,
+              onProfileTap: _openVisitedProfile,
             ),
             PendingTabContent(
               supplierId: widget.supplierId,
@@ -217,10 +219,21 @@ class _PersonnelManagementScreenState extends State<PersonnelManagementScreen>
               onCancelInvitation: _cancelInvitation,
               onShowAddOptions: _showAddOptions,
               canManage: widget.canManagePersonnel,
+              onProfileTap: _openVisitedProfile,
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _openVisitedProfile(AppUser user) {
+    Navigator.pushNamed(
+      context,
+      AppRoutes.profileVisitor,
+      arguments: <String, dynamic>{
+        'user': user,
+      },
     );
   }
 

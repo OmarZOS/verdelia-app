@@ -30,7 +30,7 @@ class ServicesEmptyState extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              Icons.medical_services_outlined,
+              Icons.handyman_rounded,
               size: 64,
               color: colorScheme.primary,
             ),

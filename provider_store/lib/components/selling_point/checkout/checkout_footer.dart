@@ -6,26 +6,37 @@ import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:event/cart_change_notifier.dart';
 
 class CheckoutFooter extends StatelessWidget {
-  final VoidCallback onCheckoutPressed;
+  /// Called when the user taps the checkout button. When null, the
+  /// button is disabled — greyed out, no ripple, no hit target.
+  final VoidCallback? onCheckoutPressed;
+
+  /// Optional explicit "processing" state. When true, the button is
+  /// disabled and can render a loading indicator (depending on
+  /// [CheckoutButton]'s implementation). When null, the button is
+  /// driven entirely by [onCheckoutPressed]'s nullability.
+  final bool? isLoading;
 
   const CheckoutFooter({
     super.key,
     required this.onCheckoutPressed,
+    this.isLoading,
   });
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: cs.surface,
         border: Border(
           top: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+            color: cs.outlineVariant.withOpacity(0.5),
           ),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: cs.shadow.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -42,7 +53,14 @@ class CheckoutFooter extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          CheckoutButton(onPressed: onCheckoutPressed),
+          CheckoutButton(
+            // Pass the disabled state through. If the caller supplies
+            // an explicit isLoading flag, force-disable even when a
+            // callback is present; otherwise defer to the callback's
+            // nullability.
+            onPressed: (isLoading == true) ? null : onCheckoutPressed,
+            isLoading: isLoading ?? false,
+          ),
         ],
       ),
     );

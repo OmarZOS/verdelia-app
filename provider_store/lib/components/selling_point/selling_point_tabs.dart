@@ -116,6 +116,7 @@ class _SellingItemTabsState extends State<SellingItemTabs>
           padding: const EdgeInsets.all(12),
           gridDelegate: _responsiveGridDelegate(
             availableWidth: constraints.maxWidth,
+            context: context,
           ),
           itemCount: widget.products.length,
           itemBuilder: (context, index) {
@@ -169,6 +170,7 @@ class _SellingItemTabsState extends State<SellingItemTabs>
           padding: const EdgeInsets.all(12),
           gridDelegate: _responsiveGridDelegate(
             availableWidth: constraints.maxWidth,
+            context: context,
           ),
           itemCount: widget.services.length,
           itemBuilder: (context, index) {
@@ -220,6 +222,7 @@ class _SellingItemTabsState extends State<SellingItemTabs>
   /// six-column desktop tile is a compact card.
   SliverGridDelegate _responsiveGridDelegate({
     required double availableWidth,
+    required BuildContext context,
     double maxTileWidth = 220,
     double spacing = 12,
     double padding = 12,
@@ -228,31 +231,34 @@ class _SellingItemTabsState extends State<SellingItemTabs>
     final columns = (usable / (maxTileWidth + spacing)).ceil().clamp(1, 6);
     final tileWidth = (usable - (spacing * (columns - 1))) / columns;
 
-    // The card's minimum viable height:
-    //   - image header: min 60, capped at 130 (40% of tile, but at least
-    //     enough for the icon)
-    //   - info block: ~80px of content (title up to 2 lines + price + stock)
-    //   - controls bar: ~48px when in cart, 0 when not
-    //   - padding: ~24px
-    //
-    // We size for the in-cart case since a tile whose content doesn't fit
-    // when carted is a visible bug the moment a user adds anything.
-    const infoHeight = 80.0;
-    const controlsTotal = 52.0; // bar + insets
-    const paddingTotal = 24.0;
+    // Scale everything by the ambient text scale so tiles stay
+    // proportional when the user cranks font size up.
+    final textScale =
+        MediaQuery.textScalerOf(context).scale(1.0).clamp(0.8, 1.6);
 
-    // Image height scales with width but is bounded.
+    // Image scales with tile width, bounded.
     final imageHeight = (tileWidth * 0.45).clamp(64.0, 120.0);
 
-    final tileHeight = imageHeight + infoHeight + controlsTotal + paddingTotal;
+    // Info block: title (2 lines) + optional brand + price + stock row.
+    // At textScale = 1 this is ~86dp; scale it linearly and add a small
+    // cushion for line-height variation.
+    final infoHeight = (86.0 * textScale).clamp(86.0, 140.0);
 
-    final aspectRatio = tileWidth / tileHeight;
+    // Controls bar (with insets) — only relevant for in-cart tiles, but
+    // we always size for it so the layout doesn't jump when items are
+    // added. If you'd rather cards shrink when out of cart, use the
+    // max of (in-cart, out-of-cart) here and let the card fill.
+    final controlsHeight = (52.0 * textScale).clamp(44.0, 76.0);
+
+    const paddingTotal = 24.0;
+
+    final tileHeight = imageHeight + infoHeight + controlsHeight + paddingTotal;
 
     return SliverGridDelegateWithFixedCrossAxisCount(
       crossAxisCount: columns,
       crossAxisSpacing: spacing,
       mainAxisSpacing: spacing,
-      childAspectRatio: aspectRatio,
+      mainAxisExtent: tileHeight, // ← exact height, no aspect ratio
     );
   }
   // ==================================================================

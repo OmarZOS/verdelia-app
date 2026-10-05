@@ -53,6 +53,11 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
   /// Guards against rapid re-scans while a lookup is in flight.
   bool _isScanning = false;
 
+  /// True while a product config sheet is open — set by the sheet-
+  /// opening path so a scan that arrives mid-sheet doesn't stack
+  /// a second one.
+  bool _sheetOpenFromScan = false;
+
   /// Coalesces repeated "not found" toasts during rapid re-scanning.
   DateTime? _lastScanFailureAt;
 
@@ -91,11 +96,23 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // Scanning
+  // ══════════════════════════════════════════════════════════════════
+
   /// Entry point from the app bar's scan button. Pushes the scan page
   /// via the parent callback, then resolves the code against the
   /// currently loaded products for the selected provider.
   Future<void> _handleScanPressed() async {
     if (_isScanning) return;
+    if (_sheetOpenFromScan) return;
 
     setState(() => _isScanning = true);
     try {
@@ -115,6 +132,8 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
   /// provider. Local match first (instant, no network), then a
   /// server-side query as fallback (hidden products, non-loaded pages).
   Future<void> _handleBarcode(String rawCode) async {
+    if (_sheetOpenFromScan) return;
+
     final providerId = widget.selectedSupplierId ?? 0;
     if (providerId <= 0) {
       _showScanFeedback(
@@ -124,7 +143,7 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
       return;
     }
 
-    // 1. Local hit — instant.
+    // 1. Local hit — instant, no network, no list mutation.
     final localMatch = _findByBarcode(
       rawCode,
       widget.productNotifier.products,
@@ -134,31 +153,74 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
       return;
     }
 
-    // 2. Server fallback.
+    // 2. Server fallback. `searchProducts` mutates the visible product
+    //    list, so we restore the catalog afterward regardless of
+    //    outcome. Otherwise a successful scan leaves the grid narrowed
+    //    to the matched item.
+    bool searchSucceeded = false;
     try {
       await widget.productNotifier.searchProducts(rawCode, reset: true);
+      searchSucceeded = true;
     } catch (_) {
-      // Network failure is non-fatal for a scan — fall through to the
-      // not-found path so the user gets feedback and can retry.
+      // Network failure is non-fatal for a scan.
     }
     if (!mounted) return;
 
-    final serverMatch = _findByBarcode(
-      rawCode,
-      widget.productNotifier.products,
+    final serverMatch = searchSucceeded
+        ? _findByBarcode(rawCode, widget.productNotifier.products)
+        : null;
+
+    // Restore the catalog whether we found the product or not.
+    await widget.productNotifier.fetchProducts(
+      providerId: providerId,
+      reset: true,
     );
+    if (!mounted) return;
 
     if (serverMatch != null) {
       _onBarcodeFound(serverMatch);
     } else {
-      // Restore the previous (unfiltered) product list so the POS
-      // isn't left showing "no results" after a bad scan.
-      await widget.productNotifier.fetchProducts(
-        providerId: providerId,
-        reset: true,
-      );
-      if (!mounted) return;
       _onBarcodeNotFound(rawCode);
+    }
+  }
+
+  /// Called when a scan resolved to a product.
+  ///
+  /// Fast path: if the product has no custom configuration in the
+  /// cart, add one unit directly. Sheet path: if the product already
+  /// has a custom price or notes, open the configuration sheet so
+  /// the user can edit those values.
+  void _onBarcodeFound(Product product) {
+    if (_sheetOpenFromScan) return;
+    HapticFeedback.lightImpact();
+
+    final cartItem = widget.cartNotifier.getProductCartItem(product);
+
+    final needsConfiguration = cartItem?.customPrice != null;
+
+    if (needsConfiguration) {
+      _onBarcodeFoundWithSheet(product);
+      return;
+    }
+
+    widget.cartNotifier.addProduct(product, 1);
+
+    _showScanFeedback(
+      AppLocalizations.of(context)!.posScanAdded(product.product_name ?? ''),
+    );
+  }
+
+  /// Opens the product configuration sheet, holding the
+  /// [_sheetOpenFromScan] flag until it closes so a mid-sheet scan
+  /// can't stack a second one.
+  Future<void> _onBarcodeFoundWithSheet(Product product) async {
+    if (_sheetOpenFromScan) return;
+    _sheetOpenFromScan = true;
+
+    try {
+      await _showProductConfiguration(product);
+    } finally {
+      if (mounted) _sheetOpenFromScan = false;
     }
   }
 
@@ -173,9 +235,7 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
 
     for (final product in products) {
       final candidates = <String?>[
-        product.product_barcode, // ← rename to match your model
-        // product.ean,
-        // product.sku,
+        product.product_barcode,
       ];
 
       for (final candidate in candidates) {
@@ -189,11 +249,6 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
   String _normalizeBarcode(String input) {
     final trimmed = input.trim().toUpperCase();
     return trimmed.replaceFirst(RegExp(r'^0+(?=\d)'), '');
-  }
-
-  void _onBarcodeFound(Product product) {
-    HapticFeedback.lightImpact();
-    _showProductConfiguration(product);
   }
 
   void _onBarcodeNotFound(String rawCode) {
@@ -222,9 +277,17 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
           backgroundColor: isError ? cs.errorContainer : cs.primaryContainer,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(12),
         ),
       );
   }
+
+  // ══════════════════════════════════════════════════════════════════
+  // Search + supplier loading
+  // ══════════════════════════════════════════════════════════════════
 
   void _onSearchChanged() {
     final query = _searchController.text.trim();
@@ -270,12 +333,9 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
     }).toList();
   }
 
-  @override
-  void dispose() {
-    _searchController.removeListener(_onSearchChanged);
-    _searchController.dispose();
-    super.dispose();
-  }
+  // ══════════════════════════════════════════════════════════════════
+  // Build
+  // ══════════════════════════════════════════════════════════════════
 
   @override
   Widget build(BuildContext context) {
@@ -289,7 +349,7 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            SellingPointAppBar(onScanBarcode: widget.onScanBarcode),
+            SellingPointAppBar(onScanBarcode: _handleScanPressed),
             _buildSearchBar(context),
             Expanded(
               child: SellingItemTabs(
@@ -318,11 +378,15 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
     );
   }
 
-  void _showProductConfiguration(Product product) {
+  // ══════════════════════════════════════════════════════════════════
+  // Config sheets
+  // ══════════════════════════════════════════════════════════════════
+
+  Future<void> _showProductConfiguration(Product product) {
     final currentQuantity =
         widget.cartNotifier.getProductCartItem(product)?.quantity ?? 1;
 
-    showModalBottomSheet<void>(
+    return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -330,6 +394,26 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
         product: product,
         cartNotifier: widget.cartNotifier,
         currentQuantity: currentQuantity,
+        onConfirm: ({
+          required int quantity,
+          double? customPrice,
+          String? notes,
+        }) {
+          final existing = widget.cartNotifier.getProductCartItem(product);
+          if (existing != null) {
+            widget.cartNotifier.updateQuantity(
+              product: product,
+              newQuantity: quantity,
+            );
+          } else {
+            widget.cartNotifier.addItem(product, quantity);
+          }
+
+          widget.cartNotifier.cart.updateItemPrice(
+            productId: product.id_product,
+            customPrice: customPrice,
+          );
+        },
       ),
     );
   }
@@ -370,6 +454,10 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
       ),
     );
   }
+
+  // ══════════════════════════════════════════════════════════════════
+  // Supporting UI
+  // ══════════════════════════════════════════════════════════════════
 
   Widget _buildSearchBar(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -433,6 +521,7 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
                     fontWeight: FontWeight.w600,
                     color: colorScheme.onSurface,
                   ),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -450,8 +539,6 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
     );
   }
 
-  /// Returns `null` when the cart is empty so the FAB slot collapses
-  /// instead of being occupied by an invisible Container.
   Widget _buildCartFAB(BuildContext context) {
     final count = widget.cartNotifier.cartItems.length;
     if (count == 0) return const SizedBox.shrink();
@@ -469,7 +556,7 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
       elevation: 3,
       highlightElevation: 6,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(28), // pill, not square
+        borderRadius: BorderRadius.circular(28),
       ),
       icon: const Icon(Icons.shopping_cart_rounded, size: 20),
       label: Row(
@@ -489,6 +576,8 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
                 fontWeight: FontWeight.w800,
                 color: cs.onPrimary,
               ),
+              maxLines: 1,
+              softWrap: false,
             ),
           ),
           const SizedBox(width: 10),
@@ -498,6 +587,8 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
               fontWeight: FontWeight.w700,
               letterSpacing: 0.2,
             ),
+            maxLines: 1,
+            softWrap: false,
           ),
         ],
       ),
@@ -505,11 +596,11 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
   }
 
   void _showCartSheet(BuildContext context) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
+      builder: (_) => DraggableScrollableSheet(
         initialChildSize: 0.85,
         minChildSize: 0.5,
         maxChildSize: 0.95,

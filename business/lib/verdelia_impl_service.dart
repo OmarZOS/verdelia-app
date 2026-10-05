@@ -93,7 +93,7 @@ class ProvidedServiceManagementImpl extends ProvidedServiceManagementService {
     final key = callerKey ??
         _getCallerKey('addProvidedService', suffix: service.name ?? 'unnamed');
     try {
-      // POST /api/v1/business/services
+      // POST /business/services
       final result = await _storageService.insert(
         '${AppConstants.apiBaseUrl}/business/services',
         service.toJson(),
@@ -124,7 +124,7 @@ class ProvidedServiceManagementImpl extends ProvidedServiceManagementService {
       {String? callerKey}) async {
     final key = callerKey ?? _getCallerKey('getProvidedService', id: idService);
     try {
-      // GET /api/v1/business/services/{service_id}
+      // GET /business/services/{service_id}
       final data = await _storageService.get(
         '${AppConstants.apiBaseUrl}/business/services',
         idService,
@@ -168,7 +168,7 @@ class ProvidedServiceManagementImpl extends ProvidedServiceManagementService {
       name: 'ProvidedServiceManagementImpl',
     );
     try {
-      // GET /api/v1/business/services
+      // GET /business/services
       // Query params: category_id, provider_id, active_only, offset, limit
 
       // If there's a search query, use search endpoint
@@ -291,7 +291,7 @@ class ProvidedServiceManagementImpl extends ProvidedServiceManagementService {
         _getCallerKey('updateProvidedService',
             id: updatedService.id?.toString() ?? 'unknown');
     try {
-      // PUT /api/v1/business/services/{service_id}
+      // PUT /business/services/{service_id}
       final result = await _storageService.update(
         '${AppConstants.apiBaseUrl}/business/services',
         updatedService.id?.toString() ?? '',
@@ -324,14 +324,14 @@ class ProvidedServiceManagementImpl extends ProvidedServiceManagementService {
     final key =
         callerKey ?? _getCallerKey('deleteProvidedService', id: serviceId);
     try {
-      // DELETE /api/v1/business/services/{service_id}
+      // DELETE /business/services/{service_id}
       final queryParams = <String, dynamic>{
         if (forceDelete) 'force_delete': forceDelete,
       };
       final queryString = Uri(queryParameters: queryParams).query;
       final url = forceDelete
-          ? '${AppConstants.apiBaseUrl}/api/v1/business/services/$serviceId?$queryString'
-          : '${AppConstants.apiBaseUrl}/api/v1/business/services/$serviceId';
+          ? '${AppConstants.apiBaseUrl}/business/services?$queryString'
+          : '${AppConstants.apiBaseUrl}/business/services';
 
       final result = await _storageService.delete(
         url,
@@ -358,7 +358,7 @@ class ProvidedServiceManagementImpl extends ProvidedServiceManagementService {
   // ==================== TOGGLE STATUS ====================
 
   /// Toggle service active status
-  /// PATCH /api/v1/business/services/{service_id}/toggle
+  /// PATCH /business/services/{service_id}/toggle
   Future<ProvidedService?> toggleServiceStatus(String serviceId, bool isActive,
       {String? callerKey}) async {
     final key = callerKey ??
@@ -366,7 +366,7 @@ class ProvidedServiceManagementImpl extends ProvidedServiceManagementService {
             id: serviceId, suffix: 'active_$isActive');
     try {
       final result = await _storageService.update(
-        '${AppConstants.apiBaseUrl}/api/v1/business/services/$serviceId/toggle',
+        '${AppConstants.apiBaseUrl}/business/services/$serviceId/toggle',
         serviceId,
         {'is_active': isActive},
         {}, // No body needed
@@ -396,7 +396,7 @@ class ProvidedServiceManagementImpl extends ProvidedServiceManagementService {
     final key =
         callerKey ?? _getCallerKey('searchServicesByToken', suffix: token);
     try {
-      // Search endpoint would be: /api/v1/search/service/{token}/{offset}/{limit}
+      // Search endpoint would be: /search/service/{token}/{offset}/{limit}
       // If not available, fallback to filtering from all services
       final allServices = await getAllProvidedServices(
         0, 100, // Get a reasonable amount for search
@@ -429,7 +429,7 @@ class ProvidedServiceManagementImpl extends ProvidedServiceManagementService {
   // ==================== CATEGORY & PROVIDER FILTERS ====================
 
   /// Get services by category
-  /// GET /api/v1/business/services/category/{category_id}
+  /// GET /business/services/category/{category_id}
   Future<List<ProvidedService>?> getServicesByCategory(
       int categoryId, int offset, int limit,
       {String? callerKey}) async {
@@ -443,7 +443,7 @@ class ProvidedServiceManagementImpl extends ProvidedServiceManagementService {
       final queryString = Uri(queryParameters: queryParams).query;
 
       final responseData = await _storageService.getAll(
-        '${AppConstants.apiBaseUrl}/api/v1/business/services/category/$categoryId?$queryString',
+        '${AppConstants.apiBaseUrl}/business/services/category/$categoryId?$queryString',
         callerKey: key,
       );
 
@@ -475,7 +475,7 @@ class ProvidedServiceManagementImpl extends ProvidedServiceManagementService {
   }
 
   /// Get services by provider
-  /// GET /api/v1/business/services/provider/{provider_id}
+  /// GET /business/services/provider/{provider_id}
   Future<List<ProvidedService>?> getServicesByProvider(
       int providerId, bool activeOnly, int offset, int limit,
       {String? callerKey}) async {
@@ -490,7 +490,7 @@ class ProvidedServiceManagementImpl extends ProvidedServiceManagementService {
       final queryString = Uri(queryParameters: queryParams).query;
 
       final responseData = await _storageService.getAll(
-        '${AppConstants.apiBaseUrl}/api/v1/business/services/provider/$providerId?$queryString',
+        '${AppConstants.apiBaseUrl}/business/services/provider/$providerId?$queryString',
         callerKey: key,
       );
 
@@ -529,7 +529,7 @@ class ProvidedServiceManagementImpl extends ProvidedServiceManagementService {
     final key = callerKey ?? _getCallerKey('bulkDeleteServices');
     try {
       final result = await _storageService.insert(
-        '${AppConstants.apiBaseUrl}/api/v1/business/services/bulk/delete',
+        '${AppConstants.apiBaseUrl}/business/services/bulk/delete',
         {
           'service_ids': serviceIds,
           'force_delete': forceDelete,
@@ -554,14 +554,14 @@ class ProvidedServiceManagementImpl extends ProvidedServiceManagementService {
   // ==================== REQUIREMENTS ====================
 
   /// Get service resource requirements
-  /// GET /api/v1/business/services/{service_id}/requirements
+  /// GET /business/services/{service_id}/requirements
   Future<List<Map<String, dynamic>>?> getServiceRequirements(int serviceId,
       {String? callerKey}) async {
     final key = callerKey ??
         _getCallerKey('getServiceRequirements', id: serviceId.toString());
     try {
       final responseData = await _storageService.getAll(
-        '${AppConstants.apiBaseUrl}/api/v1/business/services/$serviceId/requirements',
+        '${AppConstants.apiBaseUrl}/business/services/$serviceId/requirements',
         callerKey: key,
       );
 

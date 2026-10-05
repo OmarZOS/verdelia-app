@@ -1227,14 +1227,7 @@
   "@stock": { "placeholders": { "stock": { "type": "String" } } },
   "itemsCount": "Items: {count}",
   "@itemsCount": { "placeholders": { "count": { "type": "int" } } },
-  "items": "{cartItemCount, plural,  =0 {No items}  one {# item}  other {# items}} ({itemCount, plural,  =0 {no products}  one {one product}  other {{itemCount} products}}, {serviceCount, plural,  =0 {no services}  one {one service}  other {{serviceCount} services}})",
-  "@items": {
-    "placeholders": {
-      "cartItemCount": { "type": "int" },
-      "itemCount": { "type": "int" },
-      "serviceCount": { "type": "int" }
-    }
-  },
+  "items": "{cartItemCount, plural,  =0 {No items}  one {{cartItemCount} item}  other {{cartItemCount} items}} ({itemCount, plural,  =0 {no products}  one {one product}  other {{itemCount} products}}, {serviceCount, plural,  =0 {no services}  one {one service}  other {{serviceCount} services}})",
   "itemsText": "Items",
   "checkout": "Checkout",
   "orderConfirmed": "Order Confirmed",
@@ -3016,7 +3009,120 @@
   },
 
   "editProfileLabel": "Edit profile",
-"shareProfileLabel": "Share",
-"noInformationAvailable": "Nothing to show here yet"
+  "shareProfileLabel": "Share",
+  "noInformationAvailable": "Nothing to show here yet",
+
+  "noPendingInvitationsMessage": "All invitations have been accepted or no pending invites exist.",
+  "inviteNewMember": "Invite New Member",
+
+  "scheduleCompletePrompt": "Pick both a date and a time, or turn scheduling off.",
+
+  "cartTitle": "Your Cart",
+  "cartIsEmpty": "Cart is empty",
+  "itemCountLabel": "{count, plural, =1{1 item} other{{count} items}}",
+  "@itemCountLabel": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "lineCountLabel": "{count, plural, =1{1 product} other{{count} products}}",
+  "@lineCountLabel": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "clearCartTitle": "Clear cart",
+  "clearCartConfirmation": "Are you sure you want to clear all items from the cart?",
+
+  "posScanAdded": "Added {name}",
+  "@posScanAdded": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+
+  "choosePlanTitle": "Choose your plan",
+  "choosePlanSubtitle": "Pick a plan that fits your business. You can change it anytime.",
+  "planCurrentBadge": "CURRENT",
+  "planCurrent": "Your current plan",
+  "planSelected": "Selected — tap Subscribe to continue",
+  "planTapToSelect": "Tap to select this plan",
+  "planTapToActivate": "Tap to activate",
+  "planSelectPrompt": "Select a plan to continue",
+  "planAlreadyActive": "This plan is already active",
+  "planSubscribeNow": "Subscribe now",
+  "planActivate": "Activate plan",
+  "planPurchasing": "Processing…",
+  "planFree": "Free",
+  "planSelectedLabel": "Selected plan",
+  "planActivated": "Plan activated",
+  "planActivatedMessage": "You are now subscribed to {planName}.",
+  "@planActivatedMessage": {
+    "placeholders": { "planName": { "type": "String" } }
+  },
+  "planPurchaseFailed": "Could not complete the purchase. Try again.",
+  "choosePaymentMethod": "Choose payment method",
+  "noPlansAvailable": "No plans available",
+  "noPlansAvailableMessage": "Pull down to refresh, or try again later.",
+
+  "choosePlanFab": "Choose a plan",
+  "managePlanFab": "Manage plan",
+  "planUpdatedConfirmation": "Your subscription has been updated.",
+
+  "manageSubscriptionTitle": "Manage subscription",
+  "subscriptionStatusActive": "Active",
+  "subscriptionStatusInactive": "Inactive",
+  "subscriptionStatusActiveHint": "Your plan is active and renews automatically.",
+  "subscriptionStatusInactiveHint": "Your subscription is no longer active.",
+  "subscriptionRenewsOn": "Renews on {date}",
+  "@subscriptionRenewsOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "subscriptionDetailsSection": "Plan details",
+  "subscriptionBillingSection": "Billing",
+  "subscriptionIdLabel": "Subscription ID",
+  "subscriptionChangePlan": "Change plan",
+  "subscriptionCancel": "Cancel subscription",
+  "cancelSubscriptionTitle": "Cancel subscription?",
+  "cancelSubscriptionConfirmation": "You will lose access to your plan's features at the end of the current billing period. This cannot be undone.",
+  "keepSubscription": "Keep subscription",
+  "confirmCancel": "Cancel subscription",
+  "subscriptionCancelled": "Your subscription has been cancelled.",
+  "subscriptionCancelFailed": "Could not cancel the subscription. Try again.",
+  "noActiveSubscriptionTitle": "No active subscription",
+  "noActiveSubscriptionMessage": "Subscribe to a plan to unlock premium features and higher quotas.",
+  "browsePlans": "Browse plans",
+
+  "plansTabIndividual": "Individual",
+  "plansTabOrganization": "Business",
+  "plansTabAll": "All",
+
+  "plansIndividualSubtitle": "Plans for personal use — one account, one operator.",
+  "plansOrganizationSubtitle": "Plans for teams and businesses — multiple users, higher limits.",
+  "plansAllSubtitle": "Every plan in the catalogue.",
+
+  "plansIndividualEmptyTitle": "No personal plans",
+  "plansIndividualEmptyMessage": "There are no individual plans in the catalogue right now.",
+  "plansOrganizationEmptyTitle": "No business plans",
+  "plansOrganizationEmptyMessage": "There are no business plans in the catalogue right now.",
+
+  "planSectionFeatures": "Includes",
+  "planSectionQuotas": "Quotas",
+
+  "planLimitOrganizations": "Organizations",
+  "planLimitProviders": "Suppliers",
+  "planLimitProducts": "Products",
+  "planLimitServices": "Services",
+  "planLimitLocations": "Locations",
+  "planLimitCategories": "Product categories",
+  "planLimitCustomers": "Customers",
+  "planLimitOrders": "Orders / month",
+  "planLimitStorage": "Storage",
+
+  "planAdsLabel": "Ads",
+  "planAdsValueEnabled": "Yes",
+  "planAdsValueDisabled": "No",
+  "savingsMonthsLabel": "Additional months",
+
+  "plansIndividualSubtitleFree": "You're on the Free plan. Upgrade any time — your data carries over.",
+  "plansOrganizationSubtitleFree": "You're on the Free plan. Set up a team when you're ready.",
+  "plansAllSubtitleFree": "You're on the Free plan. Everything below is available when you need it."
+
+
   
 }

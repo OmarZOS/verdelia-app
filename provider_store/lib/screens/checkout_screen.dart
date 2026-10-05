@@ -1,3 +1,4 @@
+import 'package:app_constants/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_core/app/AppUser.dart';
 import 'package:verdelia_core/app/Person.dart';
@@ -31,7 +32,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   late final CheckoutViewModel _viewModel;
   final _formKey = GlobalKey<FormState>();
 
-  /// Sections are identified by an enum so state and lookup stay consistent.
   final Map<_Section, bool> _expanded = {
     _Section.customer: true,
     _Section.items: true,
@@ -40,6 +40,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _Section.delivery: false,
     _Section.notes: false,
   };
+
+  /// Guards against re-entry: `_processCheckout` may be invoked from
+  /// a race between the button and the keyboard's submit action.
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -60,13 +64,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   // ==================== CHECKOUT FLOW ====================
 
   Future<void> _processCheckout() async {
+    if (_isSubmitting) return;
     if (!(_formKey.currentState?.validate() ?? true)) return;
 
     final cart = context.read<CartChangeNotifier>();
     final user = context.read<AppUserNotifier>();
     final products = context.read<ProductNotifier>();
     final loc = AppLocalizations.of(context)!;
-    final navigator = Navigator.of(context);
 
     if (cart.cart.isEmpty) {
       _showError(loc.cartEmptyError);
@@ -82,33 +86,40 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final confirmed = await _confirm();
     if (confirmed != true || !mounted) return;
 
-    final result = await _viewModel.processCartCheckout(
-      cart: cart.cart,
-      sellingUserId: currentUser.idAppUser ?? 0,
-      providerId: widget.supplierId,
-    );
+    setState(() => _isSubmitting = true);
 
-    if (!mounted) return;
+    try {
+      // Freeze the total before the cart is cleared so the success
+      // dialog shows the amount that was actually paid.
+      final totalAmount = cart.cart.subtotal;
 
-    if (!result.isSuccess) {
-      _showError(result.message);
-      return;
+      final result = await _viewModel.processCartCheckout(
+        cart: cart.cart,
+        sellingUserId: currentUser.idAppUser ?? 0,
+        providerId: widget.supplierId,
+      );
+
+      if (!mounted) return;
+
+      if (!result.isSuccess) {
+        _showError(result.message);
+        return;
+      }
+
+      await products.fetchProducts(
+        providerId: products.currentProviderId,
+        reset: true,
+      );
+      if (!mounted) return;
+
+      cart.clearCart();
+      _viewModel.resetAfterCheckout();
+
+      await _showSuccess(result, totalAmount);
+      if (!mounted) return;
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
-
-    // Order placed — refresh products, clear cart, then show success
-    final totalAmount = cart.cart.subtotal;
-
-    await products.fetchProducts(
-      providerId: products.currentProviderId,
-      reset: true,
-    );
-    cart.clearCart();
-    _viewModel.resetAfterCheckout();
-
-    if (!mounted) return;
-    await _showSuccess(result, totalAmount);
-
-    if (mounted) navigator.pop();
   }
 
   Future<bool?> _confirm() {
@@ -118,7 +129,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     return showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(loc.confirmCheckout),
         content: SingleChildScrollView(
           child: Column(
@@ -177,11 +188,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
             child: Text(loc.cancel),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
             child: Text(loc.confirmAndPay),
           ),
         ],
@@ -195,55 +206,61 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        icon: Icon(
-          Icons.check_circle_rounded,
-          color: Theme.of(dialogContext).colorScheme.primary,
-          size: 48,
-        ),
-        title: Text(loc.orderSuccessful),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              loc.orderPlacedSuccessfully,
-              textAlign: TextAlign.center,
-            ),
-            if (result.orderId != null) ...[
-              const SizedBox(height: 16),
+      builder: (dialogContext) {
+        final cs = Theme.of(dialogContext).colorScheme;
+        return AlertDialog(
+          icon: Icon(
+            Icons.check_circle_rounded,
+            color: cs.primary,
+            size: 48,
+          ),
+          title: Text(loc.orderSuccessful),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               Text(
-                '${loc.orderId}: #${result.orderId}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
+                loc.orderPlacedSuccessfully,
+                textAlign: TextAlign.center,
+              ),
+              if (result.orderId != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  '${loc.orderId}: #${result.orderId}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
+              ],
+              const SizedBox(height: 8),
+              Text(
+                '${loc.total}: ${loc.price(totalAmount.toStringAsFixed(2))}',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                  color: cs.primary,
+                ),
+                textAlign: TextAlign.center,
               ),
             ],
-            const SizedBox(height: 8),
-            Text(
-              '${loc.total}: ${loc.currencySymbol}${totalAmount.toStringAsFixed(2)}',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-                color: Theme.of(dialogContext).colorScheme.primary,
-              ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).popUntil((route) {
+                debugPrint('Route in stack: ${route.settings.name}');
+                return route.settings.name == AppRoutes.storeManage;
+              }),
+              child: Text(loc.continueShopping),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(loc.continueShopping),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   void _showError(String message) {
-    final loc = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
-
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -251,6 +268,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           content: Text(message),
           backgroundColor: scheme.errorContainer,
           behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(12),
         ),
       );
   }
@@ -258,14 +279,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   // ==================== NAME RESOLVERS ====================
 
   String _customerName(CheckoutViewModel vm) {
+    final loc = AppLocalizations.of(context)!;
     if (vm.selectedCustomer != null) {
       final c = vm.selectedCustomer!;
       final name =
           '${c.personFirstName ?? ''} ${c.personLastName ?? ''}'.trim();
-      return name.isEmpty ? AppLocalizations.of(context)!.guest : name;
+      return name.isEmpty ? loc.guest : name;
     }
     if (vm.selectedPerson != null) return vm.selectedPerson!.fullName;
-    return AppLocalizations.of(context)!.guest;
+    return loc.guest;
   }
 
   String _documentName(String type, AppLocalizations loc) {
@@ -315,7 +337,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
 
-    return ChangeNotifierProvider.value(
+    return ChangeNotifierProvider<CheckoutViewModel>.value(
       value: _viewModel,
       child: Scaffold(
         appBar: AppBar(
@@ -350,12 +372,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       child: Column(
         children: [
           _ExpandableSection(
+            sectionKey: const ValueKey('section_customer'),
             title: loc.customer,
             icon: Icons.person_outline_rounded,
             badge: Consumer<CheckoutViewModel>(
               builder: (_, vm, __) => Text(
                 _customerName(vm),
                 overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
             isExpanded: _expanded[_Section.customer]!,
@@ -363,6 +387,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             child: _buildCustomerSection(),
           ),
           _ExpandableSection(
+            sectionKey: const ValueKey('section_items'),
             title: loc.itemsText,
             icon: Icons.shopping_cart_outlined,
             badge: Consumer<CartChangeNotifier>(
@@ -373,6 +398,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   cart.serviceItemCount,
                 ),
                 overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
             isExpanded: _expanded[_Section.items]!,
@@ -380,12 +406,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             child: const OrderItemsSection(),
           ),
           _ExpandableSection(
+            sectionKey: const ValueKey('section_document'),
             title: loc.documentType,
             icon: Icons.description_outlined,
             badge: Consumer<CheckoutViewModel>(
               builder: (_, vm, __) => Text(
                 _documentName(vm.documentType, loc),
                 overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
             isExpanded: _expanded[_Section.document]!,
@@ -398,6 +426,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
           ),
           _ExpandableSection(
+            sectionKey: const ValueKey('section_payment'),
             title: loc.payment,
             icon: Icons.payment_outlined,
             badge: Consumer<CheckoutViewModel>(
@@ -408,6 +437,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     )?.label ??
                     vm.paymentType,
                 overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
             isExpanded: _expanded[_Section.payment]!,
@@ -415,6 +445,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             child: _buildPaymentSection(),
           ),
           _ExpandableSection(
+            sectionKey: const ValueKey('section_delivery'),
             title: loc.delivery,
             icon: Icons.local_shipping_outlined,
             badge: Consumer<CheckoutViewModel>(
@@ -425,6 +456,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     )?.label ??
                     vm.deliveryType,
                 overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
             isExpanded: _expanded[_Section.delivery]!,
@@ -432,6 +464,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             child: _buildDeliverySection(),
           ),
           _ExpandableSection(
+            sectionKey: const ValueKey('section_notes'),
             title: loc.notesParameters,
             icon: Icons.note_add_outlined,
             badge: Consumer<CheckoutViewModel>(
@@ -446,8 +479,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           const SizedBox(height: 16),
           Consumer<CheckoutViewModel>(
             builder: (_, vm, __) => CheckoutFooter(
-              onCheckoutPressed:
-                  vm.isProcessing ? () {} : () => _processCheckout(),
+              onCheckoutPressed: _processCheckout,
+              isLoading: vm.isProcessing || _isSubmitting,
             ),
           ),
         ],
@@ -515,12 +548,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   Widget _buildLoadingOverlay() {
     return Selector<CheckoutViewModel, bool>(
-      selector: (_, vm) => vm.isProcessing,
+      selector: (_, vm) => vm.isProcessing || _isSubmitting,
       builder: (context, isProcessing, _) {
         if (!isProcessing) return const SizedBox.shrink();
-        return ColoredBox(
-          color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.4),
-          child: const Center(child: CircularProgressIndicator.adaptive()),
+        return Positioned.fill(
+          child: AbsorbPointer(
+            child: ColoredBox(
+              color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.4),
+              child: const Center(child: CircularProgressIndicator.adaptive()),
+            ),
+          ),
         );
       },
     );
@@ -537,17 +574,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       appUserImageUrl: '',
       idPerson: 0,
       personDetailsId: 0,
-      personFirstName: loc.guestCustomer ?? 'Guest',
+      personFirstName: loc.guestCustomer,
       personLastName: '',
       personBirthDate: '',
-      appUserEmail: loc.guestEmail ?? 'guest@example.com',
+      appUserEmail: loc.guestEmail,
       personGender: Gender.unspecified,
       personCountryCode: '',
       bloodType: 'B+',
       idLocation: 0,
       locationLatitude: 0.0,
       locationLongitude: 0.0,
-      locationName: loc.guestLocation ?? 'Store',
+      locationName: loc.guestLocation,
       locationAddressId: 0,
       addressStreet: '',
       addressCity: '',
@@ -562,7 +599,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(loc.checkoutHelp),
         content: SingleChildScrollView(
           child: Column(
@@ -604,7 +641,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: Text(loc.gotIt),
           ),
         ],
@@ -615,12 +652,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
 // ==================== SUPPORTING WIDGETS ====================
 
-/// Identifies each collapsible section. Used as a key in the `_expanded` map
-/// and for readability instead of strings or integers.
 enum _Section { customer, items, document, payment, delivery, notes }
 
-/// A collapsible card section with a header row and animated body.
 class _ExpandableSection extends StatelessWidget {
+  final Key? sectionKey;
   final String title;
   final IconData icon;
   final Widget? badge;
@@ -629,6 +664,7 @@ class _ExpandableSection extends StatelessWidget {
   final Widget child;
 
   const _ExpandableSection({
+    this.sectionKey,
     required this.title,
     required this.icon,
     this.badge,
@@ -643,6 +679,7 @@ class _ExpandableSection extends StatelessWidget {
     final scheme = theme.colorScheme;
 
     return Card(
+      key: sectionKey,
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 8),
       color: scheme.surfaceContainerLow,
@@ -653,47 +690,58 @@ class _ExpandableSection extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          ListTile(
+          InkWell(
             onTap: onToggle,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 4,
-            ),
-            leading: Icon(
-              icon,
-              color: isExpanded ? scheme.primary : scheme.onSurfaceVariant,
-            ),
-            title: Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: isExpanded ? scheme.primary : scheme.onSurface,
-              ),
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (badge != null)
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 140),
-                    child: DefaultTextStyle.merge(
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      child: badge!,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+              child: Row(
+                children: [
+                  Icon(
+                    icon,
+                    color:
+                        isExpanded ? scheme.primary : scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          title,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color:
+                                isExpanded ? scheme.primary : scheme.onSurface,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (badge != null) ...[
+                          const SizedBox(height: 2),
+                          DefaultTextStyle.merge(
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            child: badge!,
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                const SizedBox(width: 8),
-                AnimatedRotation(
-                  turns: isExpanded ? 0.5 : 0,
-                  duration: const Duration(milliseconds: 200),
-                  child: Icon(
-                    Icons.expand_more_rounded,
-                    color: scheme.onSurfaceVariant,
+                  const SizedBox(width: 8),
+                  AnimatedRotation(
+                    turns: isExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.expand_more_rounded,
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           AnimatedSize(
@@ -713,7 +761,6 @@ class _ExpandableSection extends StatelessWidget {
   }
 }
 
-/// A row in the confirmation dialog summary.
 class _SummaryRow extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -750,9 +797,18 @@ class _SummaryRow extends StatelessWidget {
         children: [
           Icon(icon, size: 16, color: scheme.onSurfaceVariant),
           const SizedBox(width: 8),
-          Expanded(child: Text('$title:', style: titleStyle)),
+          Expanded(
+            flex: 2,
+            child: Text(
+              '$title:',
+              style: titleStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           const SizedBox(width: 8),
           Expanded(
+            flex: 3,
             child: Text(
               value,
               style: valueStyle,
@@ -767,7 +823,6 @@ class _SummaryRow extends StatelessWidget {
   }
 }
 
-/// A single line in the help dialog.
 class _HelpItem extends StatelessWidget {
   final IconData icon;
   final String title;

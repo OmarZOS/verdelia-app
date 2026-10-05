@@ -178,7 +178,7 @@ class _CartItemRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
-              product != null ? Icons.inventory : Icons.medical_services,
+              product != null ? Icons.inventory : Icons.handyman_rounded,
               color: colorScheme.primary,
               size: 24,
             ),

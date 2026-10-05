@@ -6160,8 +6160,8 @@ abstract class AppLocalizations {
   /// No description provided for @items.
   ///
   /// In en, this message translates to:
-  /// **'{cartItemCount, plural,  =0 {No items}  one {# item}  other {# items}} ({itemCount, plural,  =0 {no products}  one {one product}  other {{itemCount} products}}, {serviceCount, plural,  =0 {no services}  one {one service}  other {{serviceCount} services}})'**
-  String items(int cartItemCount, int itemCount, int serviceCount);
+  /// **'{cartItemCount, plural,  =0 {No items}  one {{cartItemCount} item}  other {{cartItemCount} items}} ({itemCount, plural,  =0 {no products}  one {one product}  other {{itemCount} products}}, {serviceCount, plural,  =0 {no services}  one {one service}  other {{serviceCount} services}})'**
+  String items(num cartItemCount, num itemCount, num serviceCount);
 
   /// No description provided for @itemsText.
   ///
@@ -14592,6 +14592,492 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nothing to show here yet'**
   String get noInformationAvailable;
+
+  /// No description provided for @noPendingInvitationsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'All invitations have been accepted or no pending invites exist.'**
+  String get noPendingInvitationsMessage;
+
+  /// No description provided for @inviteNewMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite New Member'**
+  String get inviteNewMember;
+
+  /// No description provided for @scheduleCompletePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick both a date and a time, or turn scheduling off.'**
+  String get scheduleCompletePrompt;
+
+  /// No description provided for @cartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Cart'**
+  String get cartTitle;
+
+  /// No description provided for @cartIsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Cart is empty'**
+  String get cartIsEmpty;
+
+  /// No description provided for @itemCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item} other{{count} items}}'**
+  String itemCountLabel(int count);
+
+  /// No description provided for @lineCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 product} other{{count} products}}'**
+  String lineCountLabel(int count);
+
+  /// No description provided for @clearCartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear cart'**
+  String get clearCartTitle;
+
+  /// No description provided for @clearCartConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to clear all items from the cart?'**
+  String get clearCartConfirmation;
+
+  /// No description provided for @posScanAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added {name}'**
+  String posScanAdded(String name);
+
+  /// No description provided for @choosePlanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your plan'**
+  String get choosePlanTitle;
+
+  /// No description provided for @choosePlanSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a plan that fits your business. You can change it anytime.'**
+  String get choosePlanSubtitle;
+
+  /// No description provided for @planCurrentBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'CURRENT'**
+  String get planCurrentBadge;
+
+  /// No description provided for @planCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Your current plan'**
+  String get planCurrent;
+
+  /// No description provided for @planSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected — tap Subscribe to continue'**
+  String get planSelected;
+
+  /// No description provided for @planTapToSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to select this plan'**
+  String get planTapToSelect;
+
+  /// No description provided for @planTapToActivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to activate'**
+  String get planTapToActivate;
+
+  /// No description provided for @planSelectPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a plan to continue'**
+  String get planSelectPrompt;
+
+  /// No description provided for @planAlreadyActive.
+  ///
+  /// In en, this message translates to:
+  /// **'This plan is already active'**
+  String get planAlreadyActive;
+
+  /// No description provided for @planSubscribeNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribe now'**
+  String get planSubscribeNow;
+
+  /// No description provided for @planActivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate plan'**
+  String get planActivate;
+
+  /// No description provided for @planPurchasing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing…'**
+  String get planPurchasing;
+
+  /// No description provided for @planFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get planFree;
+
+  /// No description provided for @planSelectedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected plan'**
+  String get planSelectedLabel;
+
+  /// No description provided for @planActivated.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan activated'**
+  String get planActivated;
+
+  /// No description provided for @planActivatedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You are now subscribed to {planName}.'**
+  String planActivatedMessage(String planName);
+
+  /// No description provided for @planPurchaseFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not complete the purchase. Try again.'**
+  String get planPurchaseFailed;
+
+  /// No description provided for @choosePaymentMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose payment method'**
+  String get choosePaymentMethod;
+
+  /// No description provided for @noPlansAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No plans available'**
+  String get noPlansAvailable;
+
+  /// No description provided for @noPlansAvailableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull down to refresh, or try again later.'**
+  String get noPlansAvailableMessage;
+
+  /// No description provided for @choosePlanFab.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a plan'**
+  String get choosePlanFab;
+
+  /// No description provided for @managePlanFab.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage plan'**
+  String get managePlanFab;
+
+  /// No description provided for @planUpdatedConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription has been updated.'**
+  String get planUpdatedConfirmation;
+
+  /// No description provided for @manageSubscriptionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage subscription'**
+  String get manageSubscriptionTitle;
+
+  /// No description provided for @subscriptionStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get subscriptionStatusActive;
+
+  /// No description provided for @subscriptionStatusInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get subscriptionStatusInactive;
+
+  /// No description provided for @subscriptionStatusActiveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your plan is active and renews automatically.'**
+  String get subscriptionStatusActiveHint;
+
+  /// No description provided for @subscriptionStatusInactiveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription is no longer active.'**
+  String get subscriptionStatusInactiveHint;
+
+  /// No description provided for @subscriptionRenewsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Renews on {date}'**
+  String subscriptionRenewsOn(String date);
+
+  /// No description provided for @subscriptionDetailsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan details'**
+  String get subscriptionDetailsSection;
+
+  /// No description provided for @subscriptionBillingSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get subscriptionBillingSection;
+
+  /// No description provided for @subscriptionIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription ID'**
+  String get subscriptionIdLabel;
+
+  /// No description provided for @subscriptionChangePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Change plan'**
+  String get subscriptionChangePlan;
+
+  /// No description provided for @subscriptionCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel subscription'**
+  String get subscriptionCancel;
+
+  /// No description provided for @cancelSubscriptionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel subscription?'**
+  String get cancelSubscriptionTitle;
+
+  /// No description provided for @cancelSubscriptionConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'You will lose access to your plan\'s features at the end of the current billing period. This cannot be undone.'**
+  String get cancelSubscriptionConfirmation;
+
+  /// No description provided for @keepSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep subscription'**
+  String get keepSubscription;
+
+  /// No description provided for @confirmCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel subscription'**
+  String get confirmCancel;
+
+  /// No description provided for @subscriptionCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription has been cancelled.'**
+  String get subscriptionCancelled;
+
+  /// No description provided for @subscriptionCancelFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not cancel the subscription. Try again.'**
+  String get subscriptionCancelFailed;
+
+  /// No description provided for @noActiveSubscriptionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No active subscription'**
+  String get noActiveSubscriptionTitle;
+
+  /// No description provided for @noActiveSubscriptionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribe to a plan to unlock premium features and higher quotas.'**
+  String get noActiveSubscriptionMessage;
+
+  /// No description provided for @browsePlans.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse plans'**
+  String get browsePlans;
+
+  /// No description provided for @plansTabIndividual.
+  ///
+  /// In en, this message translates to:
+  /// **'Individual'**
+  String get plansTabIndividual;
+
+  /// No description provided for @plansTabOrganization.
+  ///
+  /// In en, this message translates to:
+  /// **'Business'**
+  String get plansTabOrganization;
+
+  /// No description provided for @plansTabAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get plansTabAll;
+
+  /// No description provided for @plansIndividualSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Plans for personal use — one account, one operator.'**
+  String get plansIndividualSubtitle;
+
+  /// No description provided for @plansOrganizationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Plans for teams and businesses — multiple users, higher limits.'**
+  String get plansOrganizationSubtitle;
+
+  /// No description provided for @plansAllSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Every plan in the catalogue.'**
+  String get plansAllSubtitle;
+
+  /// No description provided for @plansIndividualEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No personal plans'**
+  String get plansIndividualEmptyTitle;
+
+  /// No description provided for @plansIndividualEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no individual plans in the catalogue right now.'**
+  String get plansIndividualEmptyMessage;
+
+  /// No description provided for @plansOrganizationEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No business plans'**
+  String get plansOrganizationEmptyTitle;
+
+  /// No description provided for @plansOrganizationEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no business plans in the catalogue right now.'**
+  String get plansOrganizationEmptyMessage;
+
+  /// No description provided for @planSectionFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'Includes'**
+  String get planSectionFeatures;
+
+  /// No description provided for @planSectionQuotas.
+  ///
+  /// In en, this message translates to:
+  /// **'Quotas'**
+  String get planSectionQuotas;
+
+  /// No description provided for @planLimitOrganizations.
+  ///
+  /// In en, this message translates to:
+  /// **'Organizations'**
+  String get planLimitOrganizations;
+
+  /// No description provided for @planLimitProviders.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers'**
+  String get planLimitProviders;
+
+  /// No description provided for @planLimitProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Products'**
+  String get planLimitProducts;
+
+  /// No description provided for @planLimitServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get planLimitServices;
+
+  /// No description provided for @planLimitLocations.
+  ///
+  /// In en, this message translates to:
+  /// **'Locations'**
+  String get planLimitLocations;
+
+  /// No description provided for @planLimitCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Product categories'**
+  String get planLimitCategories;
+
+  /// No description provided for @planLimitCustomers.
+  ///
+  /// In en, this message translates to:
+  /// **'Customers'**
+  String get planLimitCustomers;
+
+  /// No description provided for @planLimitOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders / month'**
+  String get planLimitOrders;
+
+  /// No description provided for @planLimitStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get planLimitStorage;
+
+  /// No description provided for @planAdsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Ads'**
+  String get planAdsLabel;
+
+  /// No description provided for @planAdsValueEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get planAdsValueEnabled;
+
+  /// No description provided for @planAdsValueDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get planAdsValueDisabled;
+
+  /// No description provided for @savingsMonthsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional months'**
+  String get savingsMonthsLabel;
+
+  /// No description provided for @plansIndividualSubtitleFree.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re on the Free plan. Upgrade any time — your data carries over.'**
+  String get plansIndividualSubtitleFree;
+
+  /// No description provided for @plansOrganizationSubtitleFree.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re on the Free plan. Set up a team when you\'re ready.'**
+  String get plansOrganizationSubtitleFree;
+
+  /// No description provided for @plansAllSubtitleFree.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re on the Free plan. Everything below is available when you need it.'**
+  String get plansAllSubtitleFree;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

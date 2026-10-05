@@ -36,9 +36,11 @@ class ItemCardWithConfiguration extends StatelessWidget {
         final tileWidth = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : MediaQuery.of(context).size.width / 2;
-        final tileHeight = constraints.maxHeight.isFinite
-            ? constraints.maxHeight
-            : tileWidth / 0.85;
+        // Only use maxHeight when the parent is a bounded grid cell.
+        // In an unbounded context (ListView, Wrap), pass null and let
+        // the card size itself from its contents.
+        final tileHeight =
+            constraints.maxHeight.isFinite ? constraints.maxHeight : null;
 
         final scale = (tileWidth / 180).clamp(0.75, 1.6);
 
@@ -65,7 +67,7 @@ class _CardBody extends StatelessWidget {
   final bool isProduct;
   final int quantity;
   final double scale;
-  final double tileHeight;
+  final double? tileHeight;
   final VoidCallback onAddToCart;
   final VoidCallback onRemoveFromCart;
   final VoidCallback onRemoveAll;
@@ -190,6 +192,8 @@ class _CardBody extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                       height: 1.0,
                     ),
+                    maxLines: 1,
+                    softWrap: false,
                   ),
                 ),
               ),
@@ -256,7 +260,7 @@ class _ItemContent extends StatelessWidget {
   final double scale;
   final double radius;
   final double padding;
-  final double tileHeight;
+  final double? tileHeight;
 
   final double controlsInset;
   final double controlsHeight;
@@ -292,20 +296,25 @@ class _ItemContent extends StatelessWidget {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      // Shrink-wrap vertically when the parent has no bounded height
-      // (e.g. inside a ListView on the services tab). When the parent
-      // *does* provide a bounded tile, this still respects the parent's
-      // height because the children have fixed heights + MainAxisSize.min
-      // collapses to their sum.
       mainAxisSize: MainAxisSize.min,
       children: [
         _buildImageSection(context: context),
-        Padding(
-          padding: EdgeInsets.all(padding),
-          child: isProduct
-              ? _buildProductInfo(context)
-              : _buildServiceInfo(context),
+
+        // The info block is the flexible region. When the tile is
+        // bounded (grid cell) and the content doesn't fit after the
+        // image and controls, this shrinks. Its internal widgets have
+        // maxLines + ellipsis, so shrinking truncates rather than
+        // overflowing.
+        Flexible(
+          fit: FlexFit.loose,
+          child: Padding(
+            padding: EdgeInsets.all(padding),
+            child: isProduct
+                ? _buildProductInfo(context)
+                : _buildServiceInfo(context),
+          ),
         ),
+
         if (hasQuantity)
           Padding(
             padding: EdgeInsets.fromLTRB(
@@ -332,7 +341,11 @@ class _ItemContent extends StatelessWidget {
   Widget _buildImageSection({required BuildContext context}) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    final imageHeight = (tileHeight * 0.35).clamp(64.0, 110.0);
+    // When tileHeight is available (bounded grid cell), size the
+    // image relative to it. When it's null (unbounded ListView), use
+    // a fixed proportional height so the image is never huge.
+    final reference = tileHeight ?? 260.0;
+    final imageHeight = (reference * 0.35).clamp(64.0, 110.0);
     final iconSize = (imageHeight * 0.50).clamp(24.0, 48.0);
 
     final Widget content = isProduct && item is Product
@@ -431,6 +444,8 @@ class _ItemContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Name stays at its natural 2-line height. It's the primary
+        // content and we never want it squeezed.
         Text(
           product.product_name ?? 'Unnamed Product',
           style: theme.textTheme.bodyMedium?.copyWith(
@@ -453,38 +468,56 @@ class _ItemContent extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 6),
-        Text(
-          '${price.toStringAsFixed(2)} ${loc.currencySymbol ?? 'DA'}',
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: colorScheme.primary,
-            fontSize: priceSize,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Row(
-          children: [
-            Container(
-              width: (6 * scale).clamp(5.0, 9.0),
-              height: (6 * scale).clamp(5.0, 9.0),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: stock > 0 ? Colors.green : Colors.red,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                stock > 0 ? loc.inStock(stock) : loc.outOfStock,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: metaSize,
+        // Price + stock is the secondary block. When the info region
+        // is squeezed, this is what gives. If it can't fit either,
+        // FittedBox scales it down rather than painting a stripe.
+        Flexible(
+          fit: FlexFit.loose,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.topLeft,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${price.toStringAsFixed(2)} '
+                  '${loc.currencySymbol ?? 'DA'}',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.primary,
+                    fontSize: priceSize,
+                  ),
+                  maxLines: 1,
+                  softWrap: false,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+                const SizedBox(height: 2),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: (6 * scale).clamp(5.0, 9.0),
+                      height: (6 * scale).clamp(5.0, 9.0),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: stock > 0 ? Colors.green : Colors.red,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      stock > 0 ? loc.inStock(stock) : loc.outOfStock,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: metaSize,
+                      ),
+                      maxLines: 1,
+                      softWrap: false,
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ],
     );
@@ -525,70 +558,67 @@ class _ItemContent extends StatelessWidget {
               color: colorScheme.onSurfaceVariant,
               fontSize: metaSize,
             ),
-            // Exactly one line. Anything that doesn't fit is ellipsised.
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             softWrap: false,
           ),
         ],
         const SizedBox(height: 6),
-        Text(
-          '${service.finalPrice.toStringAsFixed(2)} ${loc.currencySymbol ?? 'DA'}',
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: colorScheme.primary,
-            fontSize: priceSize,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Row(
-          children: [
-            Icon(
-              Icons.schedule_rounded,
-              size: (12 * scale).clamp(10.0, 15.0),
-              color: colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 2),
-            Flexible(
-              child: Text(
-                service.durationFormatted,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: metaSize,
+        Flexible(
+          fit: FlexFit.loose,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.topLeft,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${service.finalPrice.toStringAsFixed(2)} '
+                  '${loc.currencySymbol ?? 'DA'}',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.primary,
+                    fontSize: priceSize,
+                  ),
+                  maxLines: 1,
+                  softWrap: false,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                softWrap: false,
-              ),
+                const SizedBox(height: 2),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.schedule_rounded,
+                      size: (12 * scale).clamp(10.0, 15.0),
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      service.durationFormatted,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: metaSize,
+                      ),
+                      maxLines: 1,
+                      softWrap: false,
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ],
     );
   }
 
-  /// Picks the best one-line subtitle for a service.
-  ///
-  /// Order of preference:
-  ///   1. Category label resolved through [ServiceNotifier] by id —
-  ///      picks up the trilingual naming contribution so
-  ///      `health.diagnostics.diagnostic_imaging` becomes
-  ///      "Diagnostic Imaging" (or its localized equivalent).
-  ///   2. Nested category's own `nameFor`, in case the notifier hasn't
-  ///      loaded yet but the service payload carried the category
-  ///      inline.
-  ///   3. Free-form description as a last resort.
-  ///   4. Empty string — no subtitle row rendered at all.
   String _serviceSubtitle(
     BuildContext context,
     ProvidedService service,
   ) {
     final localeLang = Localizations.localeOf(context).languageCode;
 
-    // Resolve the category through the notifier by id. Wrapped in a
-    // try/catch because the card can be rendered outside the
-    // ServiceNotifier scope (previews, tests). In that case we fall
-    // through to the inline category.
     try {
       final categoryName = context.read<ServiceNotifier>().categoryName(
             service.categoryId,
@@ -635,75 +665,94 @@ class _QuantityControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final labelSize = (15 * (height / 36)).clamp(12.0, 18.0);
-    final dividerHeight = (20 * (height / 36)).clamp(14.0, 26.0);
 
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      alignment: Alignment.center,
-      child: Container(
-        height: height,
-        padding: EdgeInsets.zero,
-        decoration: BoxDecoration(
-          color: colorScheme.primary.withOpacity(0.95),
-          borderRadius: BorderRadius.circular(radius),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: IntrinsicWidth(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _OverlayIconButton(
-                icon: Icons.remove_rounded,
-                onTap: currentQuantity > 0 ? onRemove : null,
-                colorScheme: colorScheme,
-                size: buttonSize,
-                iconSize: iconSize,
-              ),
-              Container(
-                constraints: BoxConstraints(minWidth: buttonSize * 1.2),
-                alignment: Alignment.center,
-                child: Text(
-                  currentQuantity.toString(),
-                  style: TextStyle(
-                    color: colorScheme.onPrimary,
-                    fontSize: labelSize,
-                    fontWeight: FontWeight.w700,
-                  ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final available = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : double.infinity;
+
+        final labelMin = buttonSize * 1.2;
+        final dividerTotal = 1 + 8;
+        final trailingGap = (4 * height / 36).clamp(2.0, 6.0);
+        final fullWidth =
+            buttonSize * 3 + labelMin + dividerTotal + trailingGap + 4;
+
+        final showRemoveAll = available >= fullWidth;
+
+        return FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.center,
+          child: Container(
+            height: height,
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withOpacity(0.95),
+              borderRadius: BorderRadius.circular(radius),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
                 ),
+              ],
+            ),
+            child: IntrinsicWidth(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _OverlayIconButton(
+                    icon: Icons.remove_rounded,
+                    onTap: currentQuantity > 0 ? onRemove : null,
+                    colorScheme: colorScheme,
+                    size: buttonSize,
+                    iconSize: iconSize,
+                  ),
+                  Container(
+                    constraints: BoxConstraints(minWidth: labelMin),
+                    alignment: Alignment.center,
+                    child: Text(
+                      currentQuantity.toString(),
+                      style: TextStyle(
+                        color: colorScheme.onPrimary,
+                        fontSize: (15 * (height / 36)).clamp(12.0, 18.0),
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      softWrap: false,
+                    ),
+                  ),
+                  _OverlayIconButton(
+                    icon: Icons.add_rounded,
+                    onTap: onAdd,
+                    colorScheme: colorScheme,
+                    size: buttonSize,
+                    iconSize: iconSize,
+                  ),
+                  if (showRemoveAll) ...[
+                    Container(
+                      width: 1,
+                      height: (20 * (height / 36)).clamp(14.0, 26.0),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      color: colorScheme.onPrimary.withOpacity(0.3),
+                    ),
+                    _OverlayIconButton(
+                      icon: Icons.delete_outline_rounded,
+                      onTap: onRemoveAll,
+                      colorScheme: colorScheme,
+                      tint: colorScheme.error,
+                      size: buttonSize,
+                      iconSize: iconSize,
+                    ),
+                    SizedBox(width: trailingGap),
+                  ] else ...[
+                    SizedBox(width: trailingGap),
+                  ],
+                ],
               ),
-              _OverlayIconButton(
-                icon: Icons.add_rounded,
-                onTap: onAdd,
-                colorScheme: colorScheme,
-                size: buttonSize,
-                iconSize: iconSize,
-              ),
-              Container(
-                width: 1,
-                height: dividerHeight,
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                color: colorScheme.onPrimary.withOpacity(0.3),
-              ),
-              _OverlayIconButton(
-                icon: Icons.delete_outline_rounded,
-                onTap: onRemoveAll,
-                colorScheme: colorScheme,
-                tint: colorScheme.error,
-                size: buttonSize,
-                iconSize: iconSize,
-              ),
-              SizedBox(width: (4 * height / 36).clamp(2.0, 6.0)),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

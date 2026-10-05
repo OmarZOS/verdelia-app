@@ -99,6 +99,9 @@ class AppUserNotifier extends ChangeNotifier {
   /// Cached plan catalogue. Empty until [fetchPlans] or [fetchPlan]
   /// populates it.
   List<Plan> get plans => List.unmodifiable(_plans);
+
+  Future<List<Plan>>? _plansInFlight;
+
   bool get isFetchingPlans => _isFetchingPlans;
 
   /// Current user's subscription, if fetched. Null is a valid state —
@@ -146,6 +149,106 @@ class AppUserNotifier extends ChangeNotifier {
   void _resetSubscriptionState() {
     _subscription = null;
     _isSubscriptionActive = false;
+  }
+
+  Future<List<Plan>> ensurePlansLoaded({
+    String? planType,
+    String? billingCycle,
+    bool forceRefresh = false,
+    String? callerKey,
+  }) async {
+    // Fast path: cache is warm and we're not forcing.
+    if (!forceRefresh) {
+      final cached = _planCache.getList(
+        planType: planType,
+        billingCycle: billingCycle,
+      );
+      if (cached != null && cached.isNotEmpty) {
+        _plans = cached;
+        return cached;
+      }
+    }
+
+    // Coalesce onto an in-flight request when one exists and matches.
+    // A forced refresh skips the in-flight future if the caller asked
+    // for it — they want a *new* fetch, not the pending one.
+    final inFlight = _plansInFlight;
+    if (inFlight != null && !forceRefresh) {
+      return inFlight;
+    }
+
+    final request = _fetchPlansInternal(
+      planType: planType,
+      billingCycle: billingCycle,
+      forceRefresh: forceRefresh,
+      callerKey: callerKey,
+    );
+    _plansInFlight = request;
+    try {
+      return await request;
+    } finally {
+      if (identical(_plansInFlight, request)) {
+        _plansInFlight = null;
+      }
+    }
+  }
+
+  Future<List<Plan>> _fetchPlansInternal({
+    String? planType,
+    String? billingCycle,
+    required bool forceRefresh,
+    String? callerKey,
+  }) async {
+    final key = callerKey ??
+        _response.generateKey(
+          'fetchPlans',
+          suffix: '${planType ?? "_"}_${billingCycle ?? "_"}',
+        );
+
+    try {
+      _isFetchingPlans = true;
+      _notify();
+
+      final result = await _userService.getPlans(
+        planType: planType,
+        billingCycle: billingCycle,
+        callerKey: key,
+      );
+
+      if (result == null) {
+        _response.storeFailure(
+          key,
+          null,
+          statusCode: 500,
+          errorCode: 'FETCH_PLANS_FAILED',
+          message: 'Failed to fetch plans',
+        );
+      }
+      if (result != null) {
+        _plans = result;
+        _planCache.cacheList(
+          result,
+          planType: planType,
+          billingCycle: billingCycle,
+        );
+        _response.storeSuccess(key, result, statusCode: 200);
+        return result;
+      }
+      return [];
+    } catch (e) {
+      _response.storeFailure(
+        key,
+        e.toString(),
+        errorCode: 'FETCH_PLANS_ERROR',
+        message: 'Failed to fetch plans',
+      );
+      // Rethrow so awaiting callers know the fetch failed. Non-awaiting
+      // callers still see the failure in the response manager.
+      rethrow;
+    } finally {
+      _isFetchingPlans = false;
+      _notify();
+    }
   }
 
   // ============ INITIALIZATION ============
@@ -1065,7 +1168,7 @@ class AppUserNotifier extends ChangeNotifier {
   /// the subscription state so the UI reflects the new plan
   /// immediately.
   Future<SubscriptionPurchaseResult?> initiateSubscription({
-    required int planId,
+    required int? planId,
     required String paymentMethod,
     String? notes,
     String? callerKey,
@@ -1083,7 +1186,7 @@ class AppUserNotifier extends ChangeNotifier {
 
       final result = await _userService.initiateSubscription(
         userId: userId,
-        planId: planId,
+        planId: planId ?? 0,
         paymentMethod: paymentMethod,
         notes: notes,
         callerKey: key,

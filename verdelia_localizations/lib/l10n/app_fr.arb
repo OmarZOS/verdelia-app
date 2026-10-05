@@ -1117,7 +1117,7 @@
   "averageDocument": "Moyenne par document",
   "stock": "Stock : {stock}",
   "itemsCount": "Articles : {count}",
-  "items": "{cartItemCount, plural,  =0 {Aucun article}  one {# article}  other {# articles}} ({itemCount, plural,  =0 {aucun produit}  one {un produit}  other {{itemCount} produits}}, {serviceCount, plural,  =0 {aucun service}  one {un service}  other {{serviceCount} services}})",
+  "items": "{cartItemCount, plural, =0 {Aucun article} one {{cartItemCount} article} other {{cartItemCount} articles}} ({itemCount, plural, =0 {aucun produit} one {{itemCount} produit} other {{itemCount} produits}}, {serviceCount, plural, =0 {aucun service} one {{serviceCount} service} other {{serviceCount} services}})",
   "itemsText": "Articles",
   "checkout": "Paiement",
   "orderConfirmed": "Commande confirmée",
@@ -2694,6 +2694,111 @@
 
   "editProfileLabel": "Modifier le profil",
   "shareProfileLabel": "Partager",
-  "noInformationAvailable": "Rien à afficher ici pour le moment"
+  "noInformationAvailable": "Rien à afficher ici pour le moment",
+
+  "noPendingInvitationsMessage": "Toutes les invitations ont été acceptées ou aucune invitation n'est en attente.",
+  "inviteNewMember": "Inviter un nouveau membre",
+
+  "scheduleCompletePrompt": "Choisissez une date et une heure, ou désactivez la planification.",
+
+  "cartTitle": "Votre panier",
+  "cartIsEmpty": "Le panier est vide",
+  "itemCountLabel": "{count, plural, =1{1 article} other{{count} articles}}",
+  "lineCountLabel": "{count, plural, =1{1 produit} other{{count} produits}}",
+
+  "clearCartTitle": "Vider le panier",
+  "clearCartConfirmation": "Voulez-vous vraiment supprimer tous les articles du panier ?",
+
+  "posScanAdded": "Ajout de {name}",
+
+  "choosePlanTitle": "Choisissez votre formule",
+  "choosePlanSubtitle": "Sélectionnez une formule adaptée à votre activité. Vous pouvez en changer à tout moment.",
+  "planCurrentBadge": "ACTUEL",
+  "planCurrent": "Votre formule actuelle",
+  "planSelected": "Sélectionnée — appuyez sur S'abonner",
+  "planTapToSelect": "Appuyez pour sélectionner cette formule",
+  "planTapToActivate": "Appuyez pour activer",
+  "planSelectPrompt": "Sélectionnez une formule",
+  "planAlreadyActive": "Cette formule est déjà active",
+  "planSubscribeNow": "S'abonner",
+  "planActivate": "Activer la formule",
+  "planPurchasing": "Traitement…",
+  "planFree": "Gratuit",
+  "planSelectedLabel": "Formule sélectionnée",
+  "planActivated": "Formule activée",
+  "planActivatedMessage": "Vous êtes maintenant abonné à {planName}.",
+  "planPurchaseFailed": "Impossible de finaliser l'achat. Réessayez.",
+  "choosePaymentMethod": "Choisir le mode de paiement",
+  "noPlansAvailable": "Aucune formule disponible",
+  "noPlansAvailableMessage": "Tirez pour rafraîchir ou réessayez plus tard.",
+
+  "choosePlanFab": "Choisir une formule",
+  "managePlanFab": "Gérer la formule",
+  "planUpdatedConfirmation": "Votre abonnement a été mis à jour.",
+
+  "manageSubscriptionTitle": "Gérer l'abonnement",
+  "subscriptionStatusActive": "Actif",
+  "subscriptionStatusInactive": "Inactif",
+  "subscriptionStatusActiveHint": "Votre formule est active et se renouvelle automatiquement.",
+  "subscriptionStatusInactiveHint": "Votre abonnement n'est plus actif.",
+  "subscriptionRenewsOn": "Renouvellement le {date}",
+  "subscriptionDetailsSection": "Détails de la formule",
+  "subscriptionBillingSection": "Facturation",
+  "subscriptionIdLabel": "Identifiant d'abonnement",
+  "subscriptionChangePlan": "Changer de formule",
+  "subscriptionCancel": "Résilier l'abonnement",
+  "cancelSubscriptionTitle": "Résilier l'abonnement ?",
+  "cancelSubscriptionConfirmation": "Vous perdrez l'accès aux fonctionnalités de votre formule à la fin de la période de facturation en cours. Cette action est irréversible.",
+  "keepSubscription": "Conserver l'abonnement",
+  "confirmCancel": "Résilier",
+  "subscriptionCancelled": "Votre abonnement a été résilié.",
+  "subscriptionCancelFailed": "Impossible de résilier l'abonnement. Réessayez.",
+  "noActiveSubscriptionTitle": "Aucun abonnement actif",
+  "noActiveSubscriptionMessage": "Abonnez-vous à une formule pour débloquer les fonctionnalités premium et des quotas plus élevés.",
+  "browsePlans": "Voir les formules",
+
+  "plansTabIndividual": "Individuel",
+  "plansTabOrganization": "Entreprise",
+  "plansTabAll": "Toutes",
+
+  "plansIndividualSubtitle": "Formules à usage personnel — un compte, un opérateur.",
+  "plansOrganizationSubtitle": "Formules pour équipes et entreprises — plusieurs utilisateurs, limites plus élevées.",
+  "plansAllSubtitle": "Toutes les formules du catalogue.",
+
+  "plansIndividualEmptyTitle": "Aucune formule individuelle",
+  "plansIndividualEmptyMessage": "Il n'y a aucune formule individuelle dans le catalogue pour le moment.",
+  "plansOrganizationEmptyTitle": "Aucune formule entreprise",
+  "plansOrganizationEmptyMessage": "Il n'y a aucune formule entreprise dans le catalogue pour le moment.",
+
+  "planSectionFeatures": "Inclus",
+  "planSectionQuotas": "Quotas",
+
+  "planLimitOrganizations": "Organisations",
+  "planLimitProviders": "Fournisseurs",
+  "planLimitProducts": "Produits",
+  "planLimitServices": "Services",
+  "planLimitLocations": "Emplacements",
+  "planLimitCategories": "Catégories de produits",
+  "planLimitCustomers": "Clients",
+  "planLimitOrders": "Commandes / mois",
+  "planLimitStorage": "Stockage",
+
+  "planNoAds": "Sans publicité",
+  "@planNoAds": {
+      "description": "Feature row shown on plans where ads are disabled (ads_enabled == 0)."
+  },
+
+  "savingsMonthsLabel": "mois offerts",
+  "@savingsMonthsLabel": {
+      "description": "Badge suffix on yearly plans, e.g. '+2 mois offerts'."
+  },
+
+  "planAdsLabel": "Publicités",
+  "planAdsValueEnabled": "Oui",
+  "planAdsValueDisabled": "Non",
+
+  "plansIndividualSubtitleFree": "Vous êtes sur le plan Gratuit. Passez à un plan supérieur quand vous voulez — vos données sont conservées.",
+  "plansOrganizationSubtitleFree": "Vous êtes sur le plan Gratuit. Créez une équipe quand vous serez prêt.",
+  "plansAllSubtitleFree": "Vous êtes sur le plan Gratuit. Tout ce qui suit est disponible quand vous en aurez besoin."
     
 }
