@@ -1,3 +1,6 @@
+// lib/provider_store/components/delivery/DeliveryCard.dart
+
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_core/business/Delivery.dart';
 import 'package:event/delivery_change_notifier.dart';
@@ -36,7 +39,7 @@ class DeliveryCard extends StatelessWidget {
     // Title = city + country (or street as fallback).
     // Subtitle = postal code (or street when postal is missing).
     final title =
-        hasAddress ? _titleFrom(addr) : l10n.deliveryCardNoDestination;
+        hasAddress ? _titleFrom(addr, l10n) : l10n.deliveryCardNoDestination;
     final subtitle = hasAddress ? _subtitleFrom(addr) : null;
 
     return Padding(
@@ -172,6 +175,9 @@ class DeliveryCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
+                        // `Delivery.delivery_fee` is `Decimal?` after
+                        // the Delivery migration. `_FeeBlock` accepts
+                        // `Decimal`.
                         if (delivery.delivery_fee != null)
                           _FeeBlock(amount: delivery.delivery_fee!),
                         const Spacer(),
@@ -230,14 +236,18 @@ class DeliveryCard extends StatelessWidget {
   // ── Title and subtitle extraction ──
 
   /// Title: city + country, joined. Falls back to street if city missing.
-  String _titleFrom(DeliveryAddress addr) {
+  ///
+  /// [l10n] is passed in rather than threaded through a static
+  /// context — the previous implementation held a `static BuildContext?`
+  /// that was never populated, so the fallback threw a null-check
+  /// error whenever an address had a street but no city.
+  String _titleFrom(DeliveryAddress addr, AppLocalizations l10n) {
     final parts = <String>[];
     if (_hasText(addr.addressCity)) parts.add(addr.addressCity!.trim());
     if (_hasText(addr.addressCountry)) parts.add(addr.addressCountry!.trim());
     if (parts.isNotEmpty) return parts.join(', ');
     if (_hasText(addr.addressStreet)) return addr.addressStreet!.trim();
-    return AppLocalizations.of(_ctx)?.deliveryCardNoDestination ??
-        'No destination';
+    return l10n.deliveryCardNoDestination;
   }
 
   /// Subtitle: street + postal code. Falls back to postal code alone.
@@ -251,14 +261,7 @@ class DeliveryCard extends StatelessWidget {
     return parts.join(' · ');
   }
 
-  // Context accessor so _titleFrom can read localizations without
-  // threading a context through every helper. Set during build.
-  BuildContext get _ctx => _deliveryCardContext!;
-  static BuildContext? _deliveryCardContext;
-
   bool _hasText(String? value) => value != null && value.trim().isNotEmpty;
-
-  static void _bind(BuildContext c) => _deliveryCardContext = c;
 }
 
 // ============================================================================
@@ -430,8 +433,6 @@ class _TimestampText extends StatelessWidget {
   }
 }
 
-/// Soft circular badge holding the destination icon. Colour-keyed to
-/// the delivery status so the card's visual fingerprint matches the pill.
 class _LocationBadge extends StatelessWidget {
   final Color color;
 
@@ -456,8 +457,6 @@ class _LocationBadge extends StatelessWidget {
   }
 }
 
-/// Row of small chips: packages, weight, shipping method.
-/// Chips that have no value are simply not rendered.
 class _MetaRow extends StatelessWidget {
   final Delivery delivery;
   final AppLocalizations l10n;
@@ -486,13 +485,15 @@ class _MetaRow extends StatelessWidget {
       ));
     }
 
-    if (delivery.delivery_total_weight != null &&
-        delivery.delivery_total_weight! > 0) {
+    // `Delivery.delivery_total_weight` is `Decimal?` after the
+    // Delivery migration. `> Decimal.zero` replaces the old `> 0`
+    // comparison; `toStringAsFixed(2)` produces the same two-decimal
+    // string `double.toStringAsFixed(2)` did.
+    final Decimal? weight = delivery.delivery_total_weight;
+    if (weight != null && weight > Decimal.zero) {
       chips.add(_InfoChip(
         icon: Icons.monitor_weight_outlined,
-        label: l10n.deliveryDetailWeightKg(
-          delivery.delivery_total_weight!.toStringAsFixed(2),
-        ),
+        label: l10n.deliveryDetailWeightKg(weight.toStringAsFixed(2)),
         color: cs.tertiary,
       ));
     }
@@ -573,9 +574,6 @@ class _InfoChip extends StatelessWidget {
   }
 }
 
-/// Full-width row for the goods description, tucked at the bottom of
-/// the card. Padded the same as the meta chips so it reads as part of
-/// the same cluster.
 class _GoodsLine extends StatelessWidget {
   final String text;
 
@@ -616,7 +614,8 @@ class _GoodsLine extends StatelessWidget {
 
 /// Right-aligned price block with a small caption above the amount.
 class _FeeBlock extends StatelessWidget {
-  final double amount;
+  /// Delivery fee, in [Decimal].
+  final Decimal amount;
 
   const _FeeBlock({required this.amount});
 

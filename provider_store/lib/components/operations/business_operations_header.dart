@@ -1,5 +1,6 @@
 // lib/ui/components/business_operations/business_operations_header.dart
 
+import 'package:decimal/decimal.dart';
 import 'package:event/views/business_ops_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
@@ -99,9 +100,14 @@ class _TopSuppliers extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     // Sort by grand_total desc, take 3.
+    //
+    // `grandTotal` is `Decimal?` after the business_operation.dart
+    // migration; `?? Decimal.zero` gives a comparable fallback.
+    // `Decimal.compareTo` works directly (Decimal is `Comparable`), so
+    // no `toDouble()` conversion is needed.
     final entries = buckets.entries.toList()
-      ..sort((a, b) =>
-          (b.value.grandTotal ?? 0).compareTo(a.value.grandTotal ?? 0));
+      ..sort((a, b) => (b.value.grandTotal ?? Decimal.zero)
+          .compareTo(a.value.grandTotal ?? Decimal.zero));
     final top = entries.take(3).toList();
 
     if (top.isEmpty) return const SizedBox.shrink();
@@ -128,7 +134,10 @@ class _TopSuppliers extends StatelessWidget {
               final e = top[index];
               final supplierId = e.key;
               final bucket = e.value;
-              final total = bucket.grandTotal ?? 0;
+
+              // `Decimal?` → `Decimal` for display. `toStringAsFixed(0)`
+              // produces `"12345"`, same output the `double` path gave.
+              final Decimal total = bucket.grandTotal ?? Decimal.zero;
 
               return Container(
                 padding:

@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
@@ -12,15 +13,15 @@ import 'package:flutter/services.dart';
 ///   - [currencySymbol]: prefix for displayed amounts (defaults to empty)
 ///   - [title]: optional header text. If null, uses the localized default.
 class PaymentFormScreen extends StatefulWidget {
-  final double amountDue;
-  final double? initialAmount;
+  final Decimal amountDue;
+  final Decimal? initialAmount;
   final String currencySymbol;
 
   /// If null, falls back to `loc.paymentType` or similar. Pass a pre-built
   /// string here if you want to include the document number, etc.
   final String? title;
 
-  final Future<String?> Function(double amount, String method, String notes)
+  final Future<String?> Function(Decimal amount, String method, String notes)
       onSubmit;
 
   const PaymentFormScreen({
@@ -56,7 +57,7 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
     super.initState();
     final start = widget.initialAmount ?? widget.amountDue;
     _amountController = TextEditingController(
-      text: start > 0 ? start.toStringAsFixed(2) : '',
+      text: start > Decimal.zero ? start.toStringAsFixed(2) : '',
     );
   }
 
@@ -94,9 +95,9 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
   String? _validateAmount(String raw, AppLocalizations loc) {
     final trimmed = raw.trim();
     if (trimmed.isEmpty) return loc.paymentErrorEnterAmount;
-    final value = double.tryParse(trimmed);
+    final value = Decimal.tryParse(trimmed);
     if (value == null) return loc.paymentErrorInvalidNumber;
-    if (value <= 0) return loc.paymentErrorMustBePositive;
+    if (value <= Decimal.zero) return loc.paymentErrorMustBePositive;
     if (value > widget.amountDue) {
       return loc.paymentErrorExceedsDue(_fmt(context, widget.amountDue));
     }
@@ -105,11 +106,11 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
 
   // ==================== HELPERS ====================
 
-  String _fmt(BuildContext ctx, double amount) =>
+  String _fmt(BuildContext ctx, Decimal amount) =>
       AppLocalizations.of(ctx)!.price(amount.toStringAsFixed(2));
 
-  double get _currentAmount =>
-      double.tryParse(_amountController.text.trim()) ?? 0.0;
+  Decimal get _currentAmount =>
+      Decimal.tryParse(_amountController.text.trim()) ?? Decimal.zero;
 
   // ==================== SUBMIT ====================
 
@@ -181,14 +182,37 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
     );
   }
 
-  void _setAmount(double value) {
-    final clamped = value.clamp(0.0, widget.amountDue);
+  /// Clamps [value] to `[Decimal.zero, amountDue]` and writes it to the
+  /// controller, then re-runs validation against the new text.
+  void _setAmount(Decimal value) {
+    final clamped = value < Decimal.zero
+        ? Decimal.zero
+        : (value > widget.amountDue ? widget.amountDue : value);
     setState(() {
       _amountController.text = clamped.toStringAsFixed(2);
       _error = _validateAmount(
-          _amountController.text, AppLocalizations.of(context)!);
+        _amountController.text,
+        AppLocalizations.of(context)!,
+      );
     });
   }
+
+  /// Returns `amountDue * percent / 100`, rounded to two decimal places
+  /// (i.e. rounded to cents). `Decimal * Decimal` returns a `Decimal`,
+  /// but the `/ 100` division returns a `Rational`, so we convert back
+  /// with `.toDecimal(scaleOnInfinitePrecision: 2)` and round to cents to avoid trailing fractions
+  /// in the displayed quick-amount.
+  Decimal _percentOfDue(int percent) {
+    final raw =
+        (widget.amountDue * Decimal.fromInt(percent)) / Decimal.fromInt(100);
+    return _roundToCents(raw.toDecimal(scaleOnInfinitePrecision: 2));
+  }
+
+  /// Round a `Decimal` to two decimal places (nearest cent). Uses
+  /// `toStringAsFixed(2)` as the canonical rounding point so the displayed
+  /// value always matches what the user sees (e.g. `10.005 -> 10.01`).
+  Decimal _roundToCents(Decimal value) =>
+      Decimal.parse(value.toStringAsFixed(2));
 
   // ==================== BUILD ====================
 
@@ -196,7 +220,8 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
-    final canSubmit = !_submitting && _error == null && _currentAmount > 0;
+    final canSubmit =
+        !_submitting && _error == null && _currentAmount > Decimal.zero;
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -224,7 +249,7 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
               _SummaryCard(
                 amountDue: widget.amountDue,
                 amountEntered: _currentAmount,
-                formatter: (double amt) => _fmt(context, amt),
+                formatter: (Decimal amt) => _fmt(context, amt),
                 labelOutstanding: loc.paymentOutstandingLabel,
                 labelRemainingAfter: loc.paymentRemainingAfter,
                 labelSettlesFull: loc.paymentSettlesFull,
@@ -263,7 +288,7 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              if (widget.amountDue > 0) ...[
+              if (widget.amountDue > Decimal.zero) ...[
                 _SectionLabel(text: loc.paymentQuickAmounts),
                 const SizedBox(height: 8),
                 Wrap(
@@ -274,19 +299,19 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
                       label: '25%',
                       onTap: _submitting
                           ? null
-                          : () => _setAmount(widget.amountDue * 0.25),
+                          : () => _setAmount(_percentOfDue(25)),
                     ),
                     _QuickAmountChip(
                       label: '50%',
                       onTap: _submitting
                           ? null
-                          : () => _setAmount(widget.amountDue * 0.50),
+                          : () => _setAmount(_percentOfDue(50)),
                     ),
                     _QuickAmountChip(
                       label: '75%',
                       onTap: _submitting
                           ? null
-                          : () => _setAmount(widget.amountDue * 0.75),
+                          : () => _setAmount(_percentOfDue(75)),
                     ),
                     _QuickAmountChip(
                       label: loc.paymentFullAmount,
@@ -355,7 +380,9 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2.5),
                       )
                     : Text(
-                        loc.paymentSubmitButton(_fmt(context, _currentAmount)),
+                        loc.paymentSubmitButton(
+                          _fmt(context, _currentAmount),
+                        ),
                         style: const TextStyle(
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1.0,
@@ -435,9 +462,9 @@ class _QuickAmountChip extends StatelessWidget {
 // ==================== SUMMARY CARD ====================
 
 class _SummaryCard extends StatelessWidget {
-  final double amountDue;
-  final double amountEntered;
-  final String Function(double) formatter;
+  final Decimal amountDue;
+  final Decimal amountEntered;
+  final String Function(Decimal) formatter;
   final String labelOutstanding;
   final String Function(String amount) labelRemainingAfter;
   final String labelSettlesFull;
@@ -454,7 +481,11 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final remaining = (amountDue - amountEntered).clamp(0.0, amountDue);
+
+    // `remaining = max(0, amountDue - amountEntered)` — Decimal has no
+    // `.clamp`, so do it with a manual branch.
+    final rawRemaining = amountDue - amountEntered;
+    final remaining = rawRemaining < Decimal.zero ? Decimal.zero : rawRemaining;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -483,7 +514,7 @@ class _SummaryCard extends StatelessWidget {
               fontWeight: FontWeight.w800,
             ),
           ),
-          if (amountEntered > 0 && remaining > 0) ...[
+          if (amountEntered > Decimal.zero && remaining > Decimal.zero) ...[
             const SizedBox(height: 12),
             Text(
               labelRemainingAfter(formatter(remaining)),
@@ -492,7 +523,7 @@ class _SummaryCard extends StatelessWidget {
               ),
             ),
           ],
-          if (amountEntered >= amountDue && amountDue > 0) ...[
+          if (amountEntered >= amountDue && amountDue > Decimal.zero) ...[
             const SizedBox(height: 12),
             Text(
               labelSettlesFull,

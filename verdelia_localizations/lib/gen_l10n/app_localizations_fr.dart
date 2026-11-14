@@ -7893,4 +7893,100 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get plansAllSubtitleFree => 'Vous êtes sur le plan Gratuit. Tout ce qui suit est disponible quand vous en aurez besoin.';
+
+  @override
+  String get deliveryDetailsTotalWeightLabel => 'Poids total';
+
+  @override
+  String get deliveryDetailsTotalWeightHelper => 'Poids total de l\'envoi en kilogrammes';
+
+  @override
+  String get deliveryDetailsBrokerLabel => 'Transporteur';
+
+  @override
+  String get deliveryDetailsBrokerNone => 'Non assigné';
+
+  @override
+  String get deliveryDetailsBrokerUnverified => 'Non vérifié';
+
+  @override
+  String get commonRetry => 'Réessayer';
+
+  @override
+  String get deliveryDetailsBrokerLoading => 'Chargement des transporteurs…';
+
+  @override
+  String get deliveryDetailsBrokerLoadFailed => 'Échec du chargement des transporteurs';
+
+  @override
+  String get deliveryDetailsBrokerNoneAvailable => 'Aucun transporteur disponible';
+
+  @override
+  String deliveryDetailsBrokerHelper(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count transporteurs disponibles',
+      one: '1 transporteur disponible',
+      zero: 'Aucun transporteur',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get deliveryDetailsDimensionsLabel => 'Dimensions';
+
+  @override
+  String get deliveryDetailsUnitLabel => 'Unité';
+
+  @override
+  String get deliveryDetailsWeightUnitLabel => 'Unité de poids';
+
+  @override
+  String get deliveryDetailsValidationDimensionsFormat => 'Utilisez le format LxlxH, ex. 5x5x5';
+
+  @override
+  String get vatRateExempt => 'Exonéré de la TVA';
+
+  @override
+  String get vatRateReduced => 'Taux réduit appliqué à cet article';
+
+  @override
+  String get vatRateStandard => 'Taux normal appliqué à cet article';
+
+  @override
+  String get metaUpdatedLabel => 'Mis à jour';
+
+  @override
+  String get deliveryGoodsLabel => 'Marchandises';
+
+  @override
+  String get deliveryPackagesLabel => 'Colis';
+
+  @override
+  String get invoiceTotalLabel => 'Total facturé';
+
+  @override
+  String get costNotAvailable => 'Détail des coûts non disponible pour cette opération';
+
+  @override
+  String get itemBrandLabel => 'Marque';
+
+  @override
+  String get itemUnitLabel => 'Unité';
+
+  @override
+  String get itemBarcodeLabel => 'Code-barres';
+
+  @override
+  String get itemAvailableLabel => 'Disponible';
+
+  @override
+  String get itemCategoryLabel => 'Catégorie';
+
+  @override
+  String get itemProviderLabel => 'Fournisseur';
+
+  @override
+  String get itemDescriptionLabel => 'Description';
 }

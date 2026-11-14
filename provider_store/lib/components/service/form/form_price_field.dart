@@ -1,13 +1,21 @@
 // components/form_price_field.dart
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class FormPriceField extends StatelessWidget {
   final String label;
-  final double? value;
+
+  /// Initial value, in [Decimal]. Null or zero renders an empty field.
+  final Decimal? value;
+
   final bool isRequired;
-  final Function(double) onSaved;
-  final Function(double)? onChanged;
+
+  /// Fires with the parsed [Decimal] when the form is saved.
+  final Function(Decimal) onSaved;
+
+  /// Fires with the parsed [Decimal] on every keystroke.
+  final Function(Decimal)? onChanged;
 
   const FormPriceField({
     super.key,
@@ -60,8 +68,10 @@ class FormPriceField extends StatelessWidget {
             ),
           ),
           child: TextFormField(
-            initialValue:
-                value != null && value! > 0 ? value!.toStringAsFixed(2) : '',
+            // `Decimal` has `toStringAsFixed`, same as `double`.
+            initialValue: value != null && value! > Decimal.zero
+                ? value!.toStringAsFixed(2)
+                : '',
             decoration: InputDecoration(
               hintText: '0.00',
               hintStyle: theme.textTheme.bodyMedium?.copyWith(
@@ -93,19 +103,21 @@ class FormPriceField extends StatelessWidget {
                 return 'This field is required';
               }
               if (val != null && val.isNotEmpty) {
-                final parsed = double.tryParse(val);
-                if (parsed == null || parsed < 0) {
+                // Validate against `Decimal` so the value that gets
+                // saved is the same value the validator accepted.
+                final parsed = Decimal.tryParse(val);
+                if (parsed == null || parsed < Decimal.zero) {
                   return 'Please enter a valid price';
                 }
               }
               return null;
             },
             onSaved: (val) {
-              final parsed = double.tryParse(val ?? '') ?? 0.0;
+              final parsed = Decimal.tryParse(val ?? '') ?? Decimal.zero;
               onSaved(parsed);
             },
             onChanged: (val) {
-              final parsed = double.tryParse(val) ?? 0.0;
+              final parsed = Decimal.tryParse(val) ?? Decimal.zero;
               onChanged?.call(parsed);
             },
           ),

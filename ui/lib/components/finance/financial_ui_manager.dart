@@ -1,4 +1,5 @@
 // financial_ui_manager.dart
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
@@ -108,7 +109,6 @@ class FinancialUIManager {
       [AppLocalizations? loc]) {
     final status = paymentStatus.toLowerCase();
 
-    // Paid statuses
     if (status == 'paid' ||
         status.contains('fully_paid') ||
         status.contains('covers_full') ||
@@ -116,7 +116,6 @@ class FinancialUIManager {
       return loc?.paid ?? 'Paid';
     }
 
-    // Deposit/Partial statuses
     if (status == 'deposited' ||
         status.contains('partial') ||
         status.contains('deposit_') ||
@@ -124,14 +123,12 @@ class FinancialUIManager {
       return loc?.depositReceived ?? 'Deposit Received';
     }
 
-    // Unpaid statuses
     if (status == 'unpaid' ||
         status.contains('no_deposit') ||
         status.contains('pending_payment')) {
       return loc?.unpaid ?? 'Unpaid';
     }
 
-    // Special statuses
     if (status.contains('cancel')) return loc?.cancelled ?? 'Cancelled';
     if (status.contains('overdue')) return loc?.overdue ?? 'Overdue';
     if (status.contains('pending')) return loc?.pending ?? 'Pending';
@@ -204,9 +201,15 @@ class FinancialUIManager {
 
   // ==================== FORMATTING METHODS ====================
 
-  static String formatCurrency(double amount, BuildContext context) {
+  /// Formats a monetary amount for display.
+  ///
+  /// Accepts `num` so both `Decimal` (the money-migrated models) and
+  /// `double` (raw payload values the meta cards still read from
+  /// `Map<String, dynamic>`) flow through unchanged. The body only
+  /// calls `toStringAsFixed(2)`, which is on `num`.
+  static String formatCurrency(Decimal amount, BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    return loc.price(amount.toStringAsFixed(2));
+    return loc.price(amount);
   }
 
   static String formatDate(DateTime? date, [BuildContext? context]) {
@@ -272,16 +275,46 @@ class FinancialUIManager {
     );
   }
 
+  /// Builds a "paid X of Y" progress bar with a percentage label.
+  ///
+  /// All three money parameters are [Decimal] so the sum and the
+  /// division stay exact. The result is converted to `double` at the
+  /// two boundaries that need it: `LinearProgressIndicator.value`
+  /// (Flutter layout) and the `* 100` for the percentage label.
   static Widget buildPaymentProgress({
     required BuildContext context,
-    required double amount,
-    required double paid,
-    required double deposited,
+    required Decimal amount,
+    required Decimal paid,
+    required Decimal deposited,
     double height = 8,
   }) {
     final loc = AppLocalizations.of(context);
-    final totalReceived = deposited + paid;
-    final percentage = amount > 0 ? (totalReceived / amount) : 0;
+    final Decimal totalReceived = deposited + paid;
+
+    // `Decimal / Decimal` returns `Rational`; `.toDecimal(scaleOnInfinitePrecision: 2)` is
+    // required. The `[0, 1]` clamp is a manual three-branch because
+    // `Decimal` has no `.clamp`.
+    Decimal ratioDecimal;
+    if (amount <= Decimal.zero) {
+      ratioDecimal = Decimal.zero;
+    } else {
+      final raw =
+          (totalReceived / amount).toDecimal(scaleOnInfinitePrecision: 2);
+      if (raw < Decimal.zero) {
+        ratioDecimal = Decimal.zero;
+      } else if (raw > Decimal.one) {
+        ratioDecimal = Decimal.one;
+      } else {
+        ratioDecimal = raw;
+      }
+    }
+
+    final double ratio = ratioDecimal.toDouble();
+    final Decimal percentageDecimal =
+        (totalReceived / (amount > Decimal.zero ? amount : Decimal.one))
+                .toDecimal(scaleOnInfinitePrecision: 2) *
+            Decimal.fromInt(100);
+    final double percentage = percentageDecimal.toDouble();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,25 +327,26 @@ class FinancialUIManager {
               style: subtitleStyle(context),
             ),
             Text(
-              '${formatCurrency(totalReceived, context)} / ${formatCurrency(amount, context)}',
+              '${formatCurrency(totalReceived, context)} / '
+              '${formatCurrency(amount, context)}',
               style: subtitleStyle(context),
             ),
           ],
         ),
         const SizedBox(height: 4),
         LinearProgressIndicator(
-          value: percentage.clamp(0.0, 1.0).toDouble(),
+          value: ratio,
           minHeight: height,
           backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
           valueColor: AlwaysStoppedAnimation<Color>(
-            percentage >= 1 ? paidColor : depositColor,
+            ratioDecimal >= Decimal.one ? paidColor : depositColor,
           ),
         ),
         const SizedBox(height: 4),
         Align(
           alignment: Alignment.centerRight,
           child: Text(
-            '${(percentage * 100).toStringAsFixed(1)}%',
+            '${percentage.toStringAsFixed(1)}%',
             style: TextStyle(
               fontSize: 10,
               color: Theme.of(context).colorScheme.onSurfaceVariant,

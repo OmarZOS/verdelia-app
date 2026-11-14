@@ -15078,6 +15078,180 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You\'re on the Free plan. Everything below is available when you need it.'**
   String get plansAllSubtitleFree;
+
+  /// No description provided for @deliveryDetailsTotalWeightLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total weight'**
+  String get deliveryDetailsTotalWeightLabel;
+
+  /// No description provided for @deliveryDetailsTotalWeightHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight of the whole shipment in kilograms'**
+  String get deliveryDetailsTotalWeightHelper;
+
+  /// No description provided for @deliveryDetailsBrokerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipping broker'**
+  String get deliveryDetailsBrokerLabel;
+
+  /// No description provided for @deliveryDetailsBrokerNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned'**
+  String get deliveryDetailsBrokerNone;
+
+  /// No description provided for @deliveryDetailsBrokerUnverified.
+  ///
+  /// In en, this message translates to:
+  /// **'Unverified'**
+  String get deliveryDetailsBrokerUnverified;
+
+  /// No description provided for @commonRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get commonRetry;
+
+  /// No description provided for @deliveryDetailsBrokerLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading brokers…'**
+  String get deliveryDetailsBrokerLoading;
+
+  /// No description provided for @deliveryDetailsBrokerLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load brokers'**
+  String get deliveryDetailsBrokerLoadFailed;
+
+  /// No description provided for @deliveryDetailsBrokerNoneAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No brokers available'**
+  String get deliveryDetailsBrokerNoneAvailable;
+
+  /// Helper text under the broker dropdown
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No brokers} =1{1 broker available} other{{count} brokers available}}'**
+  String deliveryDetailsBrokerHelper(int count);
+
+  /// No description provided for @deliveryDetailsDimensionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dimensions'**
+  String get deliveryDetailsDimensionsLabel;
+
+  /// No description provided for @deliveryDetailsUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get deliveryDetailsUnitLabel;
+
+  /// No description provided for @deliveryDetailsWeightUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight unit'**
+  String get deliveryDetailsWeightUnitLabel;
+
+  /// No description provided for @deliveryDetailsValidationDimensionsFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the format LxWxH, e.g. 5x5x5'**
+  String get deliveryDetailsValidationDimensionsFormat;
+
+  /// No description provided for @vatRateExempt.
+  ///
+  /// In en, this message translates to:
+  /// **'Exempt from value-added tax'**
+  String get vatRateExempt;
+
+  /// No description provided for @vatRateReduced.
+  ///
+  /// In en, this message translates to:
+  /// **'Reduced rate applies to this item'**
+  String get vatRateReduced;
+
+  /// No description provided for @vatRateStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard rate applies to this item'**
+  String get vatRateStandard;
+
+  /// Label for the last-updated timestamp on cart and delivery meta cards
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get metaUpdatedLabel;
+
+  /// Label for the delivery goods description field
+  ///
+  /// In en, this message translates to:
+  /// **'Goods'**
+  String get deliveryGoodsLabel;
+
+  /// Label for the delivery package count field
+  ///
+  /// In en, this message translates to:
+  /// **'Packages'**
+  String get deliveryPackagesLabel;
+
+  /// No description provided for @invoiceTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoiced Total'**
+  String get invoiceTotalLabel;
+
+  /// No description provided for @costNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost breakdown not available for this operation'**
+  String get costNotAvailable;
+
+  /// No description provided for @itemBrandLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Brand'**
+  String get itemBrandLabel;
+
+  /// No description provided for @itemUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get itemUnitLabel;
+
+  /// No description provided for @itemBarcodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Barcode'**
+  String get itemBarcodeLabel;
+
+  /// No description provided for @itemAvailableLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get itemAvailableLabel;
+
+  /// No description provided for @itemCategoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get itemCategoryLabel;
+
+  /// No description provided for @itemProviderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get itemProviderLabel;
+
+  /// No description provided for @itemDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get itemDescriptionLabel;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -13,6 +13,7 @@ dependencies:
 
   # fluttertoast: ^8.2.12
   # dio: ^5.0.0
+  decimal: ^3.0.2
 
 dev_dependencies:
   flutter_test:

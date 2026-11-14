@@ -1,4 +1,5 @@
 // lib/provider_store/components/delivery/DeliveryDetailsSheet.dart
+
 import 'package:event/delivery_change_notifier.dart';
 import 'package:event/product_change_notifier.dart';
 import 'package:flutter/material.dart';
@@ -8,26 +9,18 @@ import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:provider_store/components/orders/details/delivery_details_screen.dart';
 
-/// Edit-only sheet. Collects metadata about a delivery — packages,
-/// shipping method, goods description, and the products attached to
-/// this delivery — and commits them through [onCommit].
+/// Edit-only sheet for a delivery's metadata: packages, shipping
+/// method, broker, goods description, and the products attached to
+/// this delivery. Commits through [onCommit].
 ///
-/// The product list is scoped to the ids the caller passes in via
-/// [initialProductIds]. The sheet never browses the provider's full
-/// catalog; it edits what's already in scope.
-///
-/// This sheet does NOT advance the delivery's status. Transitions are
-/// handled by `DeliveryTransitionSheet`.
+/// Does not advance the delivery's status. Transitions are handled
+/// by `DeliveryTransitionSheet`.
 class DeliveryDetailsSheet extends StatefulWidget {
   final DeliveryChangeNotifier notifier;
   final Delivery delivery;
   final int providerId;
   final List<int> initialProductIds;
-
-  /// Optional focus hint. When set, the sheet will scroll to and
-  /// briefly highlight the section relevant to the fix.
   final DeliveryDetailsFocus? focusOn;
-
   final Future<bool> Function(Map<String, dynamic> fields) onCommit;
 
   const DeliveryDetailsSheet({
@@ -40,8 +33,6 @@ class DeliveryDetailsSheet extends StatefulWidget {
     this.focusOn,
   });
 
-  /// Open the edit sheet as a modal. Returns the fields the user saved,
-  /// or null if they dismissed the sheet.
   static Future<Map<String, dynamic>?> open(
     BuildContext context, {
     required DeliveryChangeNotifier notifier,
@@ -74,9 +65,6 @@ class DeliveryDetailsSheet extends StatefulWidget {
   State<DeliveryDetailsSheet> createState() => _DeliveryDetailsSheetState();
 }
 
-/// Optional focus hint for [DeliveryDetailsSheet]. Used by the
-/// transition flow to open the sheet with the relevant section
-/// scrolled into view.
 enum DeliveryDetailsFocus {
   recipient,
   destination,
@@ -95,9 +83,7 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
   final _hsCodeController = TextEditingController();
   final _searchController = TextEditingController();
   final _feeController = TextEditingController();
-
-  final _packagesKey = GlobalKey();
-  final _productsKey = GlobalKey();
+  final _weightController = TextEditingController();
 
   final Set<int> _selected = {};
 
@@ -107,10 +93,15 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
   bool _selectionExpanded = false;
   bool _pruned = false;
 
-  double get _totalWeight => _packages.fold(
-        0,
-        (total, package) => total + (double.tryParse(package.weight.text) ?? 0),
-      );
+  int? _selectedBrokerId;
+
+  /// Total cargo weight, in kilograms. Kept as `double` internally
+  /// because it aggregates user-typed measurements (parsed from text
+  /// fields via `double.tryParse`), and the only places it crosses a
+  /// type boundary are reads from `Delivery.delivery_total_weight`
+  /// (now `Decimal`) and writes back to the wire payload (which the
+  /// server still accepts as a JSON number).
+  double? _totalWeight;
 
   static const _shippingMethods = [
     'standard',
@@ -132,20 +123,31 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
     }
 
     final delivery = widget.delivery;
-    final count = delivery.delivery_package_count ?? 1;
-    final weight = (delivery.delivery_total_weight ?? 0) / count;
-    final dimensions = (delivery.delivery_cargo_dimensions ?? '')
-        .split(RegExp(r'\s*,\s*|\s*\|\s*;\s*'));
-    for (var i = 0; i < count; i++) {
-      final parts = i < dimensions.length
-          ? dimensions[i].split(RegExp(r'\s*[xX]\s*'))
-          : <String>[];
-      _packages.add(_PackageInput(
-        length: parts.isNotEmpty ? parts[0] : '',
-        width: parts.length > 1 ? parts[1] : '',
-        height: parts.length > 2 ? parts[2] : '',
-        weight: weight,
-      ));
+
+    // `Delivery.delivery_total_weight` is `Decimal?` after the
+    // migration; convert to `double` for the internal accumulator.
+    // The value is a measurement, not money, so `double` is fine
+    // here — the read is lossless for any two-decimal kilogram
+    // value the backend could store.
+    _totalWeight = delivery.delivery_total_weight?.toDouble();
+    _weightController.text = _totalWeight?.toString() ?? '';
+
+    // Each package is one entry in the comma-separated list. Each
+    // entry has the shape `<L>x<W>x<H><unit>:<weight><weight_unit>`,
+    // e.g. `5x5x5m:1.5kg`. The parser tolerates both the new form
+    // and the legacy `<L>x<W>x<H>` form (no weight, unit defaults to
+    // meters).
+    final rawDimensions = delivery.delivery_cargo_dimensions ?? '';
+    if (rawDimensions.trim().isNotEmpty) {
+      final segments = rawDimensions
+          .split(RegExp(r'\s*,\s*'))
+          .where((s) => s.trim().isNotEmpty);
+      for (final segment in segments) {
+        _packages.add(_PackageInput.fromWire(segment));
+      }
+    }
+    if (_packages.isEmpty) {
+      _packages.add(_PackageInput());
     }
 
     _goodsController.text = delivery.delivery_goods_description ?? '';
@@ -153,8 +155,23 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
     _instructionsController.text = delivery.delivery_special_instructions ?? '';
     _hsCodeController.text = delivery.hs_code ?? '';
     _shippingMethod = delivery.delivery_shipping_method;
-    _feeController.text =
-        delivery.delivery_fee != null ? delivery.delivery_fee!.toString() : '';
+
+    // `Delivery.delivery_fee` is `Decimal?` after the migration.
+    // `.toString()` is deterministic — `Decimal("25.00")` → `"25.00"`,
+    // `Decimal("25")` → `"25"`. The text field re-parses it on save,
+    // so either form round-trips correctly.
+    _feeController.text = delivery.delivery_fee?.toString() ?? '';
+
+    final rawBrokerId = delivery.delivery_broker_id;
+    _selectedBrokerId =
+        (rawBrokerId == null || rawBrokerId == 0) ? null : rawBrokerId;
+
+    // Load brokers once. If the notifier already has them, this is a
+    // no-op; the picker's retry button covers the failure case.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.notifier.fetchBrokers();
+    });
   }
 
   @override
@@ -166,8 +183,9 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
     final scope = _effectiveProviderId;
     if (scope <= 0) return;
 
-    final catalog = context.read<ProductNotifier>().products;
-    final valid = catalog
+    final valid = context
+        .read<ProductNotifier>()
+        .products
         .where((p) => p.product_provider_id == scope)
         .map((p) => p.id_product ?? 0)
         .toSet();
@@ -184,13 +202,15 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
     for (final p in _packages) {
       p.dispose();
     }
-    _searchController.removeListener(_onSearchChanged);
-    _searchController.dispose();
+    _searchController
+      ..removeListener(_onSearchChanged)
+      ..dispose();
     _goodsController.dispose();
     _merchantController.dispose();
     _instructionsController.dispose();
     _hsCodeController.dispose();
     _feeController.dispose();
+    _weightController.dispose();
     super.dispose();
   }
 
@@ -222,28 +242,12 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    KeyedSubtree(
-                      key: _productsKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _section(l10n.deliveryDetailsSectionProducts,
-                              Icons.inventory_2_outlined),
-                          _productSelection(l10n),
-                        ],
-                      ),
-                    ),
-                    KeyedSubtree(
-                      key: _packagesKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _section(l10n.deliveryDetailsSectionPackages,
-                              Icons.inventory_outlined),
-                          _packageFields(l10n),
-                        ],
-                      ),
-                    ),
+                    _section(l10n.deliveryDetailsSectionProducts,
+                        Icons.inventory_2_outlined),
+                    _productSelection(l10n),
+                    _section(l10n.deliveryDetailsSectionPackages,
+                        Icons.inventory_outlined),
+                    _packageFields(l10n),
                     _section(l10n.deliveryDetailsSectionShipping,
                         Icons.local_shipping),
                     _shippingFields(l10n),
@@ -323,48 +327,51 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
     );
   }
 
-  // ── Product selection ──
+  // ── Products ──
 
   Widget _productSelection(AppLocalizations l10n) {
     final cs = Theme.of(context).colorScheme;
-    final productNotifier = context.watch<ProductNotifier>();
     final scope = _effectiveProviderId;
+    final allowed = widget.initialProductIds.toSet();
 
-    final allowedIds = widget.initialProductIds.toSet();
-
-    final visibleProducts = productNotifier.products.where((p) {
+    final visible = context.watch<ProductNotifier>().products.where((p) {
       final id = p.id_product ?? 0;
-      if (id <= 0) return false;
-      if (!allowedIds.contains(id)) return false;
-      if (scope > 0 && p.product_provider_id != scope) return false;
-      return true;
+      return id > 0 &&
+          allowed.contains(id) &&
+          (scope <= 0 || p.product_provider_id == scope);
     }).toList();
 
     final filtered = _searchQuery.isEmpty
-        ? visibleProducts
-        : visibleProducts.where((p) {
+        ? visible
+        : visible.where((p) {
             final q = _searchQuery.toLowerCase();
             return (p.product_name ?? '').toLowerCase().contains(q) ||
                 (p.product_brand ?? '').toLowerCase().contains(q) ||
                 (p.product_barcode ?? '').toLowerCase().contains(q);
           }).toList();
 
-    final selectedProducts =
-        visibleProducts.where((p) => _selected.contains(p.id_product)).toList();
+    final selected =
+        visible.where((p) => _selected.contains(p.id_product)).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (visibleProducts.length > 5) _searchBox(cs, l10n),
-        if (visibleProducts.length > 5) const SizedBox(height: 10),
-        if (selectedProducts.isNotEmpty) ...[
-          _selectionSummary(selectedProducts, l10n),
+        if (visible.length > 5) _searchBox(cs, l10n),
+        if (visible.length > 5) const SizedBox(height: 10),
+        if (selected.isNotEmpty) ...[
+          _selectionSummary(selected, l10n),
           const SizedBox(height: 10),
         ],
-        if (visibleProducts.isEmpty)
-          _emptyCatalog(cs, l10n)
+        if (visible.isEmpty)
+          _emptyBox(cs, l10n.deliveryDetailsNoProducts,
+              icon: Icons.inventory_2_outlined)
         else if (filtered.isEmpty)
-          _noMatches(cs, l10n)
+          _emptyBox(cs, l10n.deliveryDetailsNoMatches(_searchQuery),
+              icon: Icons.search_off,
+              action: TextButton(
+                onPressed: () => _searchController.clear(),
+                child: Text(l10n.commonClear),
+              ))
         else
           ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 320),
@@ -382,7 +389,7 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
                   height: 1,
                   color: cs.outlineVariant.withOpacity(0.3),
                 ),
-                itemBuilder: (context, i) => _productRow(filtered[i], cs, l10n),
+                itemBuilder: (_, i) => _productRow(filtered[i], cs, l10n),
               ),
             ),
           ),
@@ -429,8 +436,7 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
     final selected = _selected.contains(id);
     final stock = product.product_quantity ?? 0;
     final outOfStock = stock <= 0;
-
-    final name = product.product_name?.trim().isNotEmpty == true
+    final name = (product.product_name?.trim().isNotEmpty ?? false)
         ? product.product_name!
         : l10n.deliveryDetailsProductFallback(id);
     final brand = product.product_brand?.trim() ?? '';
@@ -519,19 +525,13 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
       ),
       child: Text(
         out ? l10n.deliveryDetailsStockOut : l10n.deliveryDetailsStockIn(stock),
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: color,
-        ),
+        style:
+            TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: color),
       ),
     );
   }
 
-  Widget _selectionSummary(
-    List<Product> selectedProducts,
-    AppLocalizations l10n,
-  ) {
+  Widget _selectionSummary(List<Product> selected, AppLocalizations l10n) {
     final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
@@ -554,8 +554,7 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      l10n.deliveryDetailsProductsSelected(
-                          selectedProducts.length),
+                      l10n.deliveryDetailsProductsSelected(selected.length),
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -566,11 +565,8 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
                   AnimatedRotation(
                     turns: _selectionExpanded ? 0.5 : 0.0,
                     duration: const Duration(milliseconds: 180),
-                    child: Icon(
-                      Icons.expand_more_rounded,
-                      size: 20,
-                      color: cs.onPrimaryContainer,
-                    ),
+                    child: Icon(Icons.expand_more_rounded,
+                        size: 20, color: cs.onPrimaryContainer),
                   ),
                 ],
               ),
@@ -586,7 +582,7 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
                     child: Wrap(
                       spacing: 6,
                       runSpacing: 6,
-                      children: selectedProducts
+                      children: selected
                           .map((p) => _selectedChip(p, cs, l10n))
                           .toList(),
                     ),
@@ -598,12 +594,8 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
     );
   }
 
-  Widget _selectedChip(
-    Product p,
-    ColorScheme cs,
-    AppLocalizations l10n,
-  ) {
-    final name = p.product_name?.trim().isNotEmpty == true
+  Widget _selectedChip(Product p, ColorScheme cs, AppLocalizations l10n) {
+    final name = (p.product_name?.trim().isNotEmpty ?? false)
         ? p.product_name!
         : l10n.deliveryDetailsProductFallback(p.id_product ?? 0);
     return Container(
@@ -626,16 +618,13 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
             ),
           ),
           const SizedBox(width: 4),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => _toggleProduct(p.id_product ?? 0),
-              borderRadius: BorderRadius.circular(50),
-              child: Padding(
-                padding: const EdgeInsets.all(2),
-                child: Icon(Icons.close_rounded,
-                    size: 14, color: cs.onSurfaceVariant),
-              ),
+          InkWell(
+            onTap: () => _toggleProduct(p.id_product ?? 0),
+            borderRadius: BorderRadius.circular(50),
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: Icon(Icons.close_rounded,
+                  size: 14, color: cs.onSurfaceVariant),
             ),
           ),
         ],
@@ -643,7 +632,12 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
     );
   }
 
-  Widget _emptyCatalog(ColorScheme cs, AppLocalizations l10n) {
+  Widget _emptyBox(
+    ColorScheme cs,
+    String message, {
+    required IconData icon,
+    Widget? action,
+  }) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -652,41 +646,15 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
       ),
       child: Row(
         children: [
-          Icon(Icons.inventory_2_outlined,
-              color: cs.onSurfaceVariant, size: 24),
+          Icon(icon, color: cs.onSurfaceVariant, size: 22),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              l10n.deliveryDetailsNoProducts,
+              message,
               style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _noMatches(ColorScheme cs, AppLocalizations l10n) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.search_off, color: cs.onSurfaceVariant, size: 22),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              l10n.deliveryDetailsNoMatches(_searchQuery),
-              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
-            ),
-          ),
-          TextButton(
-            onPressed: () => _searchController.clear(),
-            child: Text(l10n.commonClear),
-          ),
+          if (action != null) action,
         ],
       ),
     );
@@ -694,11 +662,7 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
 
   void _toggleProduct(int id) {
     setState(() {
-      if (_selected.contains(id)) {
-        _selected.remove(id);
-      } else {
-        _selected.add(id);
-      }
+      if (!_selected.add(id)) _selected.remove(id);
     });
   }
 
@@ -707,74 +671,11 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
   Widget _packageFields(AppLocalizations l10n) {
     return Column(
       children: [
-        ..._packages.asMap().entries.map((entry) {
-          final index = entry.key;
-          final package = entry.value;
-          return Padding(
+        for (var i = 0; i < _packages.length; i++)
+          Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _dimension(
-                        package.length,
-                        l10n.deliveryDetailsDimensionLength,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _dimension(
-                        package.width,
-                        l10n.deliveryDetailsDimensionWidth,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _dimension(
-                        package.height,
-                        l10n.deliveryDetailsDimensionHeight,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: package.weight,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        decoration: InputDecoration(
-                          labelText:
-                              l10n.deliveryDetailsPackageWeightLabel(index + 1),
-                          border: const OutlineInputBorder(),
-                        ),
-                        onChanged: (_) => setState(() {}),
-                        validator: (value) {
-                          final w = double.tryParse(value ?? '');
-                          return w == null || w <= 0
-                              ? l10n.deliveryDetailsValidationEnterWeight
-                              : null;
-                        },
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _packages.length == 1
-                          ? null
-                          : () => setState(() {
-                                _packages.removeAt(index).dispose();
-                              }),
-                      icon: const Icon(Icons.remove_circle_outline),
-                      tooltip: l10n.deliveryDetailsRemovePackage,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        }),
+            child: _packageRow(i, l10n),
+          ),
         Align(
           alignment: Alignment.centerLeft,
           child: OutlinedButton.icon(
@@ -788,7 +689,7 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
           child: Text(
             l10n.deliveryDetailsPackageSummary(
               _packages.length,
-              _totalWeight.toStringAsFixed(2),
+              _totalWeight?.toString() ?? '—',
             ),
             style: const TextStyle(fontSize: 12),
           ),
@@ -797,22 +698,184 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
     );
   }
 
-  Widget _dimension(TextEditingController controller, String label) {
+  Widget _packageRow(int index, AppLocalizations l10n) {
+    final pkg = _packages[index];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 2,
+              child: _dimensionField(
+                controller: pkg.length,
+                label: l10n.deliveryDetailsDimensionLength,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              flex: 2,
+              child: _dimensionField(
+                controller: pkg.width,
+                label: l10n.deliveryDetailsDimensionWidth,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              flex: 2,
+              child: _dimensionField(
+                controller: pkg.height,
+                label: l10n.deliveryDetailsDimensionHeight,
+              ),
+            ),
+            const SizedBox(width: 6),
+            SizedBox(
+              width: 72,
+              child: DropdownButtonFormField<String>(
+                value: pkg.unit,
+                decoration: InputDecoration(
+                  labelText: l10n.deliveryDetailsUnitLabel,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 12,
+                  ),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'm', child: Text('m')),
+                  DropdownMenuItem(value: 'cm', child: Text('cm')),
+                ],
+                onChanged: (v) {
+                  if (v == null) return;
+                  setState(() => pkg.unit = v);
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 4,
+              child: TextFormField(
+                controller: pkg.weight,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: l10n.deliveryDetailsPackageWeightLabel(index + 1),
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 14,
+                  ),
+                ),
+                validator: (value) {
+                  final text = value?.trim() ?? '';
+                  if (text.isEmpty) return null;
+                  final w = double.tryParse(text);
+                  return (w == null || w < 0)
+                      ? l10n.deliveryDetailsValidationEnterWeight
+                      : null;
+                },
+                onChanged: (_) => setState(() {
+                  _totalWeight = _sumPackageWeights();
+                }),
+              ),
+            ),
+            const SizedBox(width: 6),
+            SizedBox(
+              width: 78,
+              child: DropdownButtonFormField<String>(
+                value: pkg.weightUnit,
+                decoration: InputDecoration(
+                  labelText: l10n.deliveryDetailsWeightUnitLabel,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 12,
+                  ),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'kg', child: Text('kg')),
+                  DropdownMenuItem(value: 'g', child: Text('g')),
+                ],
+                onChanged: (v) {
+                  if (v == null) return;
+                  setState(() {
+                    pkg.weightUnit = v;
+                    _totalWeight = _sumPackageWeights();
+                  });
+                },
+              ),
+            ),
+            const SizedBox(width: 4),
+            IconButton(
+              onPressed: _packages.length == 1
+                  ? null
+                  : () => setState(() {
+                        _packages.removeAt(index).dispose();
+                        _totalWeight = _sumPackageWeights();
+                      }),
+              icon: const Icon(Icons.remove_circle_outline),
+              tooltip: l10n.deliveryDetailsRemovePackage,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _dimensionField({
+    required TextEditingController controller,
+    required String label,
+  }) {
     return TextFormField(
       controller: controller,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 14,
+        ),
       ),
       validator: (value) {
         final d = double.tryParse(value ?? '');
-        return d == null || d <= 0
+        return (d == null || d <= 0)
             ? AppLocalizations.of(context)!.deliveryDetailsValidationRequired
             : null;
       },
     );
   }
+
+  /// Sum every package's weight, normalized to kilograms. Packages
+  /// entered in grams contribute `weight / 1000`.
+  ///
+  /// Stays `double` because weight is a measurement, not money, and
+  /// the only place this value crosses a `Decimal` boundary is the
+  /// read from `Delivery.delivery_total_weight` (already converted to
+  /// `double` in `initState`) and the write back to the wire payload.
+  double? _sumPackageWeights() {
+    double totalKg = 0;
+    bool any = false;
+    for (final pkg in _packages) {
+      final raw = double.tryParse(pkg.weight.text.trim());
+      if (raw == null) continue;
+      any = true;
+      totalKg += pkg.weightUnit == 'g' ? raw / 1000 : raw;
+    }
+    return any ? totalKg : null;
+  }
+
+  // ── Shipping ──
 
   Widget _shippingFields(AppLocalizations l10n) {
     return Column(
@@ -827,13 +890,16 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
             border: const OutlineInputBorder(),
           ),
           validator: (value) {
-            if (value == null || value.trim().isEmpty) return null;
-            final f = double.tryParse(value);
+            final text = value?.trim() ?? '';
+            if (text.isEmpty) return null;
+            final f = double.tryParse(text);
             if (f == null) return l10n.deliveryDetailsValidationEnterAmount;
             if (f < 0) return l10n.deliveryDetailsValidationFeeNegative;
             return null;
           },
         ),
+        const SizedBox(height: 12),
+        _brokerPicker(l10n),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           value: _shippingMethod,
@@ -842,14 +908,12 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
             border: const OutlineInputBorder(),
           ),
           items: _shippingMethods
-              .map((method) => DropdownMenuItem(
-                    value: method,
-                    child: Text(
-                      DeliveryShippingConfig.labelFor(method, l10n),
-                    ),
+              .map((m) => DropdownMenuItem(
+                    value: m,
+                    child: Text(DeliveryShippingConfig.labelFor(m, l10n)),
                   ))
               .toList(),
-          onChanged: (value) => setState(() => _shippingMethod = value!),
+          onChanged: (v) => setState(() => _shippingMethod = v!),
         ),
         const SizedBox(height: 12),
         TextFormField(
@@ -862,6 +926,112 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
       ],
     );
   }
+
+  Widget _brokerPicker(AppLocalizations l10n) {
+    final cs = Theme.of(context).colorScheme;
+
+    final notifier = context.watch<DeliveryChangeNotifier>();
+    final brokers = notifier.brokers;
+    final loading = notifier.isBrokersLoading;
+    final error = notifier.brokerError;
+
+    final ids = brokers.map((b) => b.id).toSet();
+    final value = (_selectedBrokerId != null && ids.contains(_selectedBrokerId))
+        ? _selectedBrokerId
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<int?>(
+          value: value,
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: l10n.deliveryDetailsBrokerLabel,
+            prefixIcon: const Icon(Icons.store_mall_directory_outlined),
+            border: const OutlineInputBorder(),
+            helperText: _brokerHelper(l10n, brokers.length, loading, error),
+            helperMaxLines: 2,
+          ),
+          items: [
+            DropdownMenuItem<int?>(
+              value: null,
+              child: Text(
+                l10n.deliveryDetailsBrokerNone,
+                style: TextStyle(
+                  color: cs.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+            ...brokers.map((b) => DropdownMenuItem<int?>(
+                  value: b.id,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          b.displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (!b.verified) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: cs.error.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            l10n.deliveryDetailsBrokerUnverified,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: cs.error,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                )),
+          ],
+          onChanged:
+              loading ? null : (v) => setState(() => _selectedBrokerId = v),
+        ),
+        if (error != null && brokers.isEmpty && !loading)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton.icon(
+                onPressed: () => widget.notifier.refreshBrokers(),
+                icon: const Icon(Icons.refresh, size: 16),
+                label: Text(l10n.commonRetry),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  String? _brokerHelper(
+    AppLocalizations l10n,
+    int count,
+    bool loading,
+    String? error,
+  ) {
+    if (loading) return l10n.deliveryDetailsBrokerLoading;
+    if (error != null) return l10n.deliveryDetailsBrokerLoadFailed;
+    if (count == 0) return l10n.deliveryDetailsBrokerNoneAvailable;
+    return l10n.deliveryDetailsBrokerHelper(count);
+  }
+
+  // ── Additional ──
 
   Widget _additionalFields(AppLocalizations l10n) {
     return Column(
@@ -917,10 +1087,13 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
     );
   }
 
+  // ── Commit ──
+
   List<int> _validSelectedIds() {
     final scope = _effectiveProviderId;
-    final catalog = context.read<ProductNotifier>().products;
-    return catalog
+    return context
+        .read<ProductNotifier>()
+        .products
         .where((p) =>
             _selected.contains(p.id_product) &&
             (scope <= 0 || p.product_provider_id == scope))
@@ -930,22 +1103,29 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
   }
 
   Map<String, dynamic> _buildFields() {
-    final dimensions = _packages
-        .map((p) => [
-              p.length.text.trim(),
-              p.width.text.trim(),
-              p.height.text.trim(),
-            ].join('x'))
-        .join(', ');
+    // Serialize packages to the compact wire form:
+    //
+    //     <L>x<W>x<H><unit>:<weight><weight_unit>
+    //
+    // One entry per package, joined with `, `.
+    final dimensionsWire =
+        _packages.map((p) => p.toWire()).where((s) => s.isNotEmpty).join(', ');
 
     final selectedIds = _validSelectedIds();
     final feeText = _feeController.text.trim();
 
     return {
       'delivery_package_count': _packages.length,
-      'delivery_total_weight': _totalWeight,
-      'delivery_cargo_dimensions': dimensions,
+      // `_totalWeight` is `double?` internally; the wire payload
+      // takes a JSON number, which is what `double` produces.
+      'delivery_total_weight': _totalWeight ?? _sumPackageWeights(),
+      'delivery_cargo_dimensions': dimensionsWire,
       'delivery_shipping_method': _shippingMethod,
+      'delivery_broker_id': _selectedBrokerId,
+      // The server model for `delivery_fee` is `Optional[float]`; a
+      // `double` is the right wire type. `Delivery.delivery_fee` is
+      // `Decimal?` after the client migration, but the write path
+      // still emits a JSON number.
       if (feeText.isNotEmpty && double.tryParse(feeText) != null)
         'delivery_fee': double.parse(feeText),
       if (_goodsController.text.trim().isNotEmpty)
@@ -980,7 +1160,7 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(l10n.deliveryDetailsSaveError(error.toString())),
+          content: Text(l10n.deliveryDetailsSaveFailed),
           backgroundColor: Colors.red,
         ));
       }
@@ -990,22 +1170,86 @@ class _DeliveryDetailsSheetState extends State<DeliveryDetailsSheet> {
   }
 }
 
+/// A single package's input state.
 class _PackageInput {
-  final length = TextEditingController();
-  final width = TextEditingController();
-  final height = TextEditingController();
-  final weight = TextEditingController();
+  final TextEditingController length;
+  final TextEditingController width;
+  final TextEditingController height;
+  final TextEditingController weight;
+
+  String unit;
+  String weightUnit;
 
   _PackageInput({
     String length = '',
     String width = '',
     String height = '',
-    double? weight,
-  }) {
-    this.length.text = length;
-    this.width.text = width;
-    this.height.text = height;
-    if (weight != null) this.weight.text = weight.toString();
+    String weight = '',
+    this.unit = 'm',
+    this.weightUnit = 'kg',
+  })  : length = TextEditingController(text: length),
+        width = TextEditingController(text: width),
+        height = TextEditingController(text: height),
+        weight = TextEditingController(text: weight);
+
+  factory _PackageInput.fromWire(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return _PackageInput();
+
+    final halves = trimmed.split(':');
+    final dimsPart = halves.isNotEmpty ? halves[0].trim() : '';
+    final weightPart = halves.length > 1 ? halves[1].trim() : '';
+
+    String lengthText = '';
+    String widthText = '';
+    String heightText = '';
+    String unit = 'm';
+    final dimMatch = RegExp(
+      r'^(\d+(?:\.\d+)?)\s*[xX]\s*(\d+(?:\.\d+)?)\s*[xX]\s*(\d+(?:\.\d+)?)\s*([a-zA-Z]*)$',
+    ).firstMatch(dimsPart);
+    if (dimMatch != null) {
+      lengthText = dimMatch.group(1)!;
+      widthText = dimMatch.group(2)!;
+      heightText = dimMatch.group(3)!;
+      final parsedUnit = dimMatch.group(4)?.toLowerCase() ?? '';
+      if (parsedUnit == 'cm') unit = 'cm';
+    }
+
+    String weightText = '';
+    String weightUnit = 'kg';
+    if (weightPart.isNotEmpty) {
+      final wMatch = RegExp(
+        r'^(\d+(?:\.\d+)?)\s*(kg|g)?$',
+        caseSensitive: false,
+      ).firstMatch(weightPart);
+      if (wMatch != null) {
+        weightText = wMatch.group(1)!;
+        final parsedUnit = wMatch.group(2)?.toLowerCase() ?? '';
+        if (parsedUnit == 'g') weightUnit = 'g';
+      }
+    }
+
+    return _PackageInput(
+      length: lengthText,
+      width: widthText,
+      height: heightText,
+      weight: weightText,
+      unit: unit,
+      weightUnit: weightUnit,
+    );
+  }
+
+  String toWire() {
+    final l = length.text.trim();
+    final w = width.text.trim();
+    final h = height.text.trim();
+
+    if (l.isEmpty && w.isEmpty && h.isEmpty) return '';
+
+    final weightText = weight.text.trim();
+    final wPart = weightText.isEmpty ? '' : ':$weightText$weightUnit';
+
+    return '${l}x${w}x${h}$unit$wPart';
   }
 
   void dispose() {

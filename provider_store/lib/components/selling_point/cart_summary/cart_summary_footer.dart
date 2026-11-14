@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:event/cart_change_notifier.dart';
@@ -52,8 +53,6 @@ class CartFooter extends StatelessWidget {
 
     if (confirmed != true) return;
     cart.clearCart();
-    // Close the cart sheet after clearing. The dialog is already
-    // dismissed by the time we get here.
     if (navigator.canPop()) navigator.pop();
   }
 
@@ -161,10 +160,9 @@ class _CartTotals extends StatelessWidget {
 
   const _CartTotals({required this.cart});
 
-  /// VAT rate. Kept as a named constant so it's obvious it's a
-  /// placeholder and where to change it. Real tax should come from
-  /// the provider or the cart's per-item VAT, not a magic number.
-  static const double _vatRate = 0.19;
+  /// VAT rate as a fraction, in [Decimal]. `static final` because
+  /// `Decimal.parse` isn't a compile-time constant.
+  static final Decimal _vatRate = Decimal.parse('0.19');
 
   @override
   Widget build(BuildContext context) {
@@ -172,12 +170,19 @@ class _CartTotals extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final loc = AppLocalizations.of(context)!;
 
-    // The cart's total is treated as tax-inclusive: VAT is extracted
-    // from it rather than added on top. If your backend treats the
-    // total as tax-exclusive, reverse the two lines below.
-    final total = cart.cartSubtotal;
-    final taxAmount = total * _vatRate / (1 + _vatRate);
-    final subtotal = total - taxAmount;
+    // `cart.cartSubtotal` is `Decimal` after the CartChangeNotifier
+    // migration. The total is treated as **tax-inclusive**: VAT is
+    // extracted from it rather than added on top.
+    //
+    //     taxAmount = total * vatRate / (1 + vatRate)
+    //     subtotal  = total - taxAmount
+    //
+    // `.toDecimal(scaleOnInfinitePrecision: 2)` on the division — `Decimal / Decimal` returns
+    // a `Rational`.
+    final Decimal total = cart.cartSubtotal;
+    final Decimal taxAmount = (total * _vatRate / (Decimal.one + _vatRate))
+        .toDecimal(scaleOnInfinitePrecision: 2);
+    final Decimal subtotal = total - taxAmount;
 
     final productLines = cart.productItemCount;
     final serviceLines = cart.serviceItemCount;
@@ -341,10 +346,6 @@ class _QuickActions extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Below 380dp, the three actions can't share a row without
-        // the labels ellipsizing down to nothing in French or Arabic.
-        // Drop to a two-row layout: secondary actions on top, primary
-        // checkout full-width below.
         final narrow = constraints.maxWidth < 380;
 
         final clearButton = OutlinedButton.icon(

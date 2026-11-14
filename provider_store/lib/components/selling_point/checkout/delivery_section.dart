@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
@@ -31,35 +32,39 @@ class _DeliverySectionState extends State<DeliverySection>
   final _formKey = GlobalKey<FormState>();
   DeliveryData _deliveryData = DeliveryData();
   bool _isLoadingPrice = false;
-  double _estimatedPrice = 0.0;
 
-  // Animation controllers - FIXED: Using mixin instead of ScaffoldMessenger
+  /// Latest price estimate, in [Decimal]. Zero until an estimate
+  /// succeeds.
+  Decimal _estimatedPrice = Decimal.zero;
+
   late AnimationController _expandController;
   late Animation<double> _expandAnimation;
 
-  // Dimension controllers
   final TextEditingController _lengthController = TextEditingController();
   final TextEditingController _widthController = TextEditingController();
   final TextEditingController _heightController = TextEditingController();
+  final TextEditingController _weightController = TextEditingController();
+
   String _selectedUnit = 'cm';
+  String _selectedWeightUnit = 'kg';
+
   final List<String> _unitOptions = ['cm', 'm'];
+  final List<String> _weightUnitOptions = ['kg', 'g'];
 
   @override
   void initState() {
     super.initState();
     _initializeDeliveryData();
 
-    // FIXED: Use the SingleTickerProviderStateMixin
     _expandController = AnimationController(
       duration: const Duration(milliseconds: 300),
-      vsync: this, // Using 'this' as the vsync provider
+      vsync: this,
     );
     _expandAnimation = CurvedAnimation(
       parent: _expandController,
       curve: Curves.easeInOut,
     );
 
-    // Initialize animation state based on current selection
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.selectedType == 'delivery' && mounted) {
         _expandController.forward();
@@ -71,7 +76,6 @@ class _DeliverySectionState extends State<DeliverySection>
   void didUpdateWidget(covariant DeliverySection oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Handle animation when delivery type changes
     if (widget.selectedType != oldWidget.selectedType) {
       if (widget.selectedType == 'delivery') {
         _expandController.forward();
@@ -87,6 +91,7 @@ class _DeliverySectionState extends State<DeliverySection>
     _lengthController.dispose();
     _widthController.dispose();
     _heightController.dispose();
+    _weightController.dispose();
     super.dispose();
   }
 
@@ -101,47 +106,69 @@ class _DeliverySectionState extends State<DeliverySection>
   }
 
   void _parseExistingDimensions() {
-    if (_deliveryData.deliveryCargoDimensions?.isNotEmpty == true) {
-      final dimensions = DeliveryUIManager.parseDimensions(
-        _deliveryData.deliveryCargoDimensions ?? "",
-      );
-      if (dimensions != null) {
-        // Use a post-frame callback to avoid setState during build
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            setState(() {
-              _lengthController.text = dimensions.length.toString();
-              _widthController.text = dimensions.width.toString();
-              _heightController.text = dimensions.height.toString();
-              _selectedUnit = dimensions.unit;
-            });
-          }
-        });
-      }
-    }
+    final raw = _deliveryData.deliveryCargoDimensions;
+    if (raw == null || raw.isEmpty) return;
+
+    final parsed = DeliveryUIManager.parseDimensions(raw);
+    if (parsed == null) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _lengthController.text = _formatForInput(parsed.length);
+        _widthController.text = _formatForInput(parsed.width);
+        _heightController.text = _formatForInput(parsed.height);
+        _selectedUnit = parsed.unit;
+
+        if (parsed.weight != null && parsed.weight! > 0) {
+          _weightController.text = _formatForInput(parsed.weight!);
+          _selectedWeightUnit = parsed.weightUnit ?? 'kg';
+        }
+      });
+    });
   }
 
+  String _formatForInput(double v) =>
+      v == v.truncateToDouble() ? v.toInt().toString() : v.toString();
+
   void _updateDimensions() {
-    final dimensions = _buildDimensions();
+    final wire = _buildDimensions();
     _deliveryData = _deliveryData.copyWith(
-      deliveryCargoDimensions: dimensions ?? '',
+      deliveryCargoDimensions: wire ?? '',
     );
 
     if (mounted) setState(() {});
     _notifyDataChanged();
 
-    if (dimensions != null) _estimatePrice();
+    if (wire != null && wire.isNotEmpty) _estimatePrice();
   }
 
   String? _buildDimensions() {
     final l = _parseDouble(_lengthController.text);
     final w = _parseDouble(_widthController.text);
     final h = _parseDouble(_heightController.text);
+    final weight = _parseDouble(_weightController.text);
 
-    if (l == null || w == null || h == null) return null;
+    if (l == null && w == null && h == null && weight == null) {
+      return '';
+    }
+
+    final hasAnyDimension = l != null || w != null || h != null;
+    final hasAllDimensions = l != null && w != null && h != null;
+
+    if (hasAnyDimension && !hasAllDimensions) {
+      return null;
+    }
 
     return DeliveryUIManager.formatDimensions(
-      DimensionData(length: l, width: w, height: h, unit: _selectedUnit),
+      DimensionData(
+        length: l ?? 0,
+        width: w ?? 0,
+        height: h ?? 0,
+        unit: _selectedUnit,
+        weight: weight,
+        weightUnit: _selectedWeightUnit,
+      ),
     );
   }
 
@@ -150,9 +177,9 @@ class _DeliverySectionState extends State<DeliverySection>
     return trimmed.isNotEmpty ? double.tryParse(trimmed) : null;
   }
 
-// ============================================================================
-// PRICE ESTIMATION
-// ============================================================================
+  // ============================================================================
+  // PRICE ESTIMATION
+  // ============================================================================
 
   void _estimatePrice() async {
     if (!_canEstimatePrice()) return;
@@ -160,6 +187,11 @@ class _DeliverySectionState extends State<DeliverySection>
     _setLoading(true);
 
     try {
+      // `DeliveryUIManager.estimateDeliveryPrice` returns the price
+      // in whatever type the manager declares. After the Delivery
+      // migration it should return `Decimal`; if it still returns
+      // `double`, wrap the result with `Decimal.parse(price.toString())`
+      // here (or migrate the manager, which is cleaner).
       final price = await DeliveryUIManager.estimateDeliveryPrice(
         deliveryData: _deliveryData,
       );
@@ -173,8 +205,12 @@ class _DeliverySectionState extends State<DeliverySection>
   }
 
   bool _canEstimatePrice() {
-    return (_deliveryData.deliveryAddressId ?? 0) > 0 &&
-        (_deliveryData.deliveryTotalWeight ?? 0) > 0;
+    // `deliveryAddressId` is `int?`, `deliveryTotalWeight` is
+    // `Decimal?` after the Delivery migration.
+    final hasAddress = (_deliveryData.deliveryAddressId ?? 0) > 0;
+    final hasWeight =
+        (_deliveryData.deliveryTotalWeight ?? Decimal.zero) > Decimal.zero;
+    return hasAddress && hasWeight;
   }
 
   void _setLoading(bool loading) {
@@ -183,11 +219,12 @@ class _DeliverySectionState extends State<DeliverySection>
     }
   }
 
-  void _updateWithPrice(double price) {
+  void _updateWithPrice(Decimal price) {
     if (!mounted) return;
 
     setState(() {
       _estimatedPrice = price;
+      // `DeliveryData.deliveryFee` is `Decimal?` after migration.
       _deliveryData = _deliveryData.copyWith(deliveryFee: price);
       _isLoadingPrice = false;
     });
@@ -219,17 +256,6 @@ class _DeliverySectionState extends State<DeliverySection>
 
     _notifyDataChanged();
     _estimatePrice();
-
-    // Quick visual feedback
-    // HapticFeedback.lightImpact();
-
-    // ScaffoldMessenger.of(context).showSnackBar(
-    //   SnackBar(
-    //     content: Text(
-    //         'Address filled from ${widget.customer?.fullName ?? 'customer'}'),
-    //     duration: const Duration(seconds: 2),
-    //   ),
-    // );
   }
 
   void _handleDataChanged(DeliveryData newData) {
@@ -251,6 +277,15 @@ class _DeliverySectionState extends State<DeliverySection>
       if (mounted) {
         setState(() {
           _deliveryData = DeliveryData();
+          _lengthController.clear();
+          _widthController.clear();
+          _heightController.clear();
+          _weightController.clear();
+          _selectedUnit = 'cm';
+          _selectedWeightUnit = 'kg';
+          // Reset the price so the badge disappears when the user
+          // switches off delivery.
+          _estimatedPrice = Decimal.zero;
         });
       }
       widget.onDeliveryDataChanged?.call(_deliveryData);
@@ -268,15 +303,10 @@ class _DeliverySectionState extends State<DeliverySection>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Enhanced Header
           _buildEnhancedHeader(context, theme, loc),
           const SizedBox(height: 16),
-
-          // Delivery Type Cards with enhanced design
           _buildDeliveryTypeCards(context, theme, deliveryTypes),
           const SizedBox(height: 20),
-
-          // Animated Delivery Form
           SizeTransition(
             sizeFactor: _expandAnimation,
             child: FadeTransition(
@@ -285,7 +315,7 @@ class _DeliverySectionState extends State<DeliverySection>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildDeliveryFormSection(context, theme, loc),
-                  if (_estimatedPrice > 0) ...[
+                  if (_estimatedPrice > Decimal.zero) ...[
                     const SizedBox(height: 16),
                     _buildEnhancedPriceEstimation(context, theme, loc),
                   ],
@@ -350,7 +380,8 @@ class _DeliverySectionState extends State<DeliverySection>
               ],
             ),
           ),
-          if (widget.selectedType == 'delivery' && _estimatedPrice > 0) ...[
+          if (widget.selectedType == 'delivery' &&
+              _estimatedPrice > Decimal.zero) ...[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -519,7 +550,6 @@ class _DeliverySectionState extends State<DeliverySection>
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            // Form Header
             Row(
               children: [
                 Container(
@@ -546,8 +576,6 @@ class _DeliverySectionState extends State<DeliverySection>
               ],
             ),
             const SizedBox(height: 24),
-
-            // Delivery Details Form
             DeliveryUIManager.buildPremiumDeliveryDetailsForm(
               context: context,
               deliveryData: _deliveryData,
@@ -555,12 +583,21 @@ class _DeliverySectionState extends State<DeliverySection>
               lengthController: _lengthController,
               widthController: _widthController,
               heightController: _heightController,
+              weightController: _weightController,
               selectedUnit: _selectedUnit,
+              selectedWeightUnit: _selectedWeightUnit,
               unitOptions: _unitOptions,
+              weightUnitOptions: _weightUnitOptions,
               onDataChanged: _handleDataChanged,
               onUnitChanged: (value) {
                 setState(() {
                   _selectedUnit = value ?? 'cm';
+                  _updateDimensions();
+                });
+              },
+              onWeightUnitChanged: (value) {
+                setState(() {
+                  _selectedWeightUnit = value ?? 'kg';
                   _updateDimensions();
                 });
               },
@@ -650,7 +687,7 @@ class _DeliverySectionState extends State<DeliverySection>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Total Cost', // You might need to add this to your localizations
+                    'Total Cost',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color:
                           theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
@@ -671,7 +708,7 @@ class _DeliverySectionState extends State<DeliverySection>
                 duration: const Duration(milliseconds: 300),
                 child: Text(
                   '\$${_estimatedPrice.toStringAsFixed(2)}',
-                  key: ValueKey(_estimatedPrice),
+                  key: ValueKey(_estimatedPrice.toString()),
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: theme.colorScheme.onPrimaryContainer,
@@ -753,7 +790,7 @@ class _DeliverySectionState extends State<DeliverySection>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Fill address from customer profile', // You might need to add this to your localizations
+                        'Fill address from customer profile',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onPrimaryContainer
                               .withOpacity(0.8),

@@ -1,31 +1,46 @@
+// lib/event/views/finance_analytics.dart
+import 'package:decimal/decimal.dart';
+
 import 'package:event/views/business_ops_notifier.dart';
 import 'package:verdelia_core/business/finance/FinancialDocument.dart';
 import 'package:verdelia_core/business/finance/business_analytics.dart';
 
 class FinanceAnalytics {
   bool _isCalculating = false;
-  double _totalRevenue = 0.0;
-  double _totalCollected = 0.0;
-  double _totalOutstanding = 0.0;
+
+  Decimal _totalRevenue = Decimal.zero;
+  Decimal _totalCollected = Decimal.zero;
+  Decimal _totalOutstanding = Decimal.zero;
   int _totalTransactions = 0;
-  final Map<String, double> _revenueBySource = {};
-  final Map<String, double> _collectionsByStatus = {};
-  final Map<String, double> _revenueByDocumentType = {};
+
+  final Map<String, Decimal> _revenueBySource = {};
+  final Map<String, Decimal> _collectionsByStatus = {};
+  final Map<String, Decimal> _revenueByDocumentType = {};
   AnalyticsCache? _cache;
 
   bool get isCalculating => _isCalculating;
-  double get totalRevenue => _totalRevenue;
-  double get totalCollected => _totalCollected;
-  double get totalOutstanding => _totalOutstanding;
+  Decimal get totalRevenue => _totalRevenue;
+  Decimal get totalCollected => _totalCollected;
+  Decimal get totalOutstanding => _totalOutstanding;
   int get totalTransactions => _totalTransactions;
-  Map<String, double> get revenueBySource => Map.unmodifiable(_revenueBySource);
-  Map<String, double> get collectionsByStatus =>
+  Map<String, Decimal> get revenueBySource =>
+      Map.unmodifiable(_revenueBySource);
+  Map<String, Decimal> get collectionsByStatus =>
       Map.unmodifiable(_collectionsByStatus);
-  Map<String, double> get revenueByDocumentType =>
+  Map<String, Decimal> get revenueByDocumentType =>
       Map.unmodifiable(_revenueByDocumentType);
   AnalyticsCache? get cache => _cache;
-  double get collectionRate =>
-      _totalRevenue > 0 ? (_totalCollected / _totalRevenue) * 100 : 0.0;
+
+  /// Collection rate as a percentage (`0..100`), in [Decimal].
+  ///
+  /// `.toDecimal(scaleOnInfinitePrecision: 2)` on the division: `Decimal / Decimal` returns a
+  /// `Rational`, which can't be assigned to a `Decimal`.
+  Decimal get collectionRate {
+    if (_totalRevenue <= Decimal.zero) return Decimal.zero;
+    return (_totalCollected / _totalRevenue)
+            .toDecimal(scaleOnInfinitePrecision: 2) *
+        Decimal.fromInt(100);
+  }
 
   Future<void> refresh(List<FinancialDocument> documents) async {
     if (_isCalculating || documents.isEmpty) return;
@@ -47,22 +62,26 @@ class FinanceAnalytics {
     _resetValues();
 
     for (final doc in documents) {
-      final amount = doc.documentAmount ?? 0;
-      final paid = doc.totalPaid ?? 0;
-      final outstanding = doc.outstandingBalance ?? 0;
-      final source = doc.sourceType ?? 'unknown';
-      final status = doc.paymentStatus ?? 'unknown';
-      final docType = doc.documentType ?? 'unknown';
+      // All money fields on `FinancialDocument` are non-null after the
+      // model migration, so no `?? 0` fallbacks are needed.
+      final amount = doc.documentAmount;
+      final paid = doc.totalPaid;
+      final outstanding = doc.outstandingBalance;
+      final source = doc.sourceType;
+      final status = doc.paymentStatus;
+      final docType = doc.documentType;
 
       _totalRevenue += amount;
       _totalCollected += paid;
       _totalOutstanding += outstanding;
       _totalTransactions++;
 
-      _revenueBySource[source] = (_revenueBySource[source] ?? 0) + amount;
-      _collectionsByStatus[status] = (_collectionsByStatus[status] ?? 0) + paid;
+      _revenueBySource[source] =
+          (_revenueBySource[source] ?? Decimal.zero) + amount;
+      _collectionsByStatus[status] =
+          (_collectionsByStatus[status] ?? Decimal.zero) + paid;
       _revenueByDocumentType[docType] =
-          (_revenueByDocumentType[docType] ?? 0) + amount;
+          (_revenueByDocumentType[docType] ?? Decimal.zero) + amount;
     }
 
     _cache = AnalyticsCache(
@@ -70,8 +89,11 @@ class FinanceAnalytics {
       totalCollected: _totalCollected,
       totalOutstanding: _totalOutstanding,
       transactionCount: _totalTransactions,
-      revenueBySource: Map.from(_revenueBySource),
-      collectionsByStatus: Map.from(_collectionsByStatus),
+      revenueBySource: Map<String, Decimal>.from(_revenueBySource),
+      collectionsByStatus: Map<String, Decimal>.from(_collectionsByStatus),
+      // FIX: the original commented this out, so the getter was always
+      // empty after a `calculate`. Uncomment once `AnalyticsCache`
+      // declares the field.
       // revenueByDocumentType: Map.from(_revenueByDocumentType),
       collectionRate: collectionRate,
     );
@@ -83,20 +105,20 @@ class FinanceAnalytics {
   }
 
   void _resetValues() {
-    _totalRevenue = 0.0;
-    _totalCollected = 0.0;
-    _totalOutstanding = 0.0;
+    _totalRevenue = Decimal.zero;
+    _totalCollected = Decimal.zero;
+    _totalOutstanding = Decimal.zero;
     _totalTransactions = 0;
     _revenueBySource.clear();
     _collectionsByStatus.clear();
     _revenueByDocumentType.clear();
   }
 
-  Map<String, double> getAmountByStatus(List<FinancialDocument> documents) {
-    final amounts = <String, double>{};
+  Map<String, Decimal> getAmountByStatus(List<FinancialDocument> documents) {
+    final amounts = <String, Decimal>{};
     for (final doc in documents) {
-      final status = doc.paymentStatus ?? 'Unknown';
-      amounts[status] = (amounts[status] ?? 0.0) + (doc.documentAmount ?? 0);
+      final status = doc.paymentStatus;
+      amounts[status] = (amounts[status] ?? Decimal.zero) + doc.documentAmount;
     }
     return amounts;
   }
@@ -105,36 +127,46 @@ class FinanceAnalytics {
       List<FinancialDocument> documents) {
     final counts = <String, int>{};
     for (final doc in documents) {
-      final source = doc.sourceType ?? 'Unknown';
+      final source = doc.sourceType;
       counts[source] = (counts[source] ?? 0) + 1;
     }
     return counts;
   }
 
-  Map<String, double> getAverageAmountByDocumentType(
+  /// Average document amount, grouped by `documentType`, in [Decimal].
+  ///
+  /// The per-group division needs `.toDecimal(scaleOnInfinitePrecision: 2)` for the same reason
+  /// as [collectionRate].
+  Map<String, Decimal> getAverageAmountByDocumentType(
       List<FinancialDocument> documents) {
-    final amountsByType = <String, List<double>>{};
+    final amountsByType = <String, List<Decimal>>{};
     for (final doc in documents) {
-      final type = doc.documentType ?? 'Unknown';
-      final amount = doc.documentAmount ?? 0;
-      amountsByType.putIfAbsent(type, () => []).add(amount);
+      final type = doc.documentType;
+      amountsByType.putIfAbsent(type, () => []).add(doc.documentAmount);
     }
 
-    final averages = <String, double>{};
+    final averages = <String, Decimal>{};
     for (final entry in amountsByType.entries) {
-      final total = entry.value.fold(0.0, (sum, amount) => sum + amount);
-      averages[entry.key] = total / entry.value.length;
+      final total = entry.value.fold(
+        Decimal.zero,
+        (sum, amount) => sum + amount,
+      );
+      final count = Decimal.fromInt(entry.value.length);
+      averages[entry.key] =
+          (total / count).toDecimal(scaleOnInfinitePrecision: 2);
     }
     return averages;
   }
 
-  Map<int, double> getTopCustomersByRevenue(List<FinancialDocument> documents,
-      {int limit = 10}) {
-    final customerRevenue = <int, double>{};
+  Map<int, Decimal> getTopCustomersByRevenue(
+    List<FinancialDocument> documents, {
+    int limit = 10,
+  }) {
+    final customerRevenue = <int, Decimal>{};
     for (final doc in documents) {
-      final customerId = doc.customerId ?? 0;
-      final amount = doc.documentAmount ?? 0;
-      customerRevenue[customerId] = (customerRevenue[customerId] ?? 0) + amount;
+      final customerId = doc.customerId;
+      customerRevenue[customerId] =
+          (customerRevenue[customerId] ?? Decimal.zero) + doc.documentAmount;
     }
 
     final sortedEntries = customerRevenue.entries.toList()
@@ -142,29 +174,31 @@ class FinanceAnalytics {
     return Map.fromEntries(sortedEntries.take(limit));
   }
 
-  Map<DateTime, double> getDailyRevenueTrend(List<FinancialDocument> documents,
-      {int days = 30}) {
+  Map<DateTime, Decimal> getDailyRevenueTrend(
+    List<FinancialDocument> documents, {
+    int days = 30,
+  }) {
     final endDate = DateTime.now();
     final startDate = endDate.subtract(Duration(days: days - 1));
 
-    final dailyRevenue = <DateTime, double>{};
+    final dailyRevenue = <DateTime, Decimal>{};
     for (var i = 0; i < days; i++) {
       final date = startDate.add(Duration(days: i));
       final dateOnly = DateTime(date.year, date.month, date.day);
-      dailyRevenue[dateOnly] = 0.0;
+      dailyRevenue[dateOnly] = Decimal.zero;
     }
 
     for (final doc in documents) {
-      if (doc.issueDate != null &&
-          !doc.issueDate!.isBefore(startDate) &&
-          !doc.issueDate!.isAfter(endDate)) {
+      // `issueDate` is non-null on the migrated `FinancialDocument`.
+      final issueDate = doc.issueDate;
+      if (!issueDate.isBefore(startDate) && !issueDate.isAfter(endDate)) {
         final dateOnly = DateTime(
-          doc.issueDate!.year,
-          doc.issueDate!.month,
-          doc.issueDate!.day,
+          issueDate.year,
+          issueDate.month,
+          issueDate.day,
         );
-        final amount = doc.documentAmount ?? 0;
-        dailyRevenue[dateOnly] = (dailyRevenue[dateOnly] ?? 0) + amount;
+        dailyRevenue[dateOnly] =
+            (dailyRevenue[dateOnly] ?? Decimal.zero) + doc.documentAmount;
       }
     }
 

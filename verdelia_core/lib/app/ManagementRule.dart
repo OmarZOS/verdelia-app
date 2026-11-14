@@ -1,6 +1,46 @@
 import 'package:verdelia_core/app/AppUser.dart';
 import 'package:verdelia_core/business/Supplier.dart';
 
+/// A single membership rule that ties a user to a provider inside an
+/// organisation.
+///
+/// ## Wire shape (abbreviated)
+///
+/// ```json
+/// {
+///   "id_management_rule": 2,
+///   "rule_org_id": 116,
+///   "rule_provider_id": 2,
+///   "rule_user_id": 3,
+///   "management_rule_status": "PENDING",
+///   "management_rule_code": 27,
+///   "management_rule_expiry": "2026-12-23T15:56:36",
+///   "rule_org":      { ... provider_organisation fields ... },
+///   "rule_provider": { ... product provider fields ... },
+///   "rule_user":     { ... app_user fields ... }
+/// }
+/// ```
+///
+/// ## Corrections over the previous model
+///
+/// * **FK names.** The wire uses `rule_org_id`, `rule_provider_id`,
+///   and `rule_user_id` — not `rule_ref_*`. Every FK was null before.
+/// * **Nested relationship names.** The wire uses `rule_org`,
+///   `rule_provider`, and `rule_user` — not
+///   `provider_organisation`, `product_provider`, `app_user`. Every
+///   nested object was null before.
+/// * **Provider parser.** The `rule_provider` payload matches the same
+///   shape `Supplier.fromJson` already handles (`provider_name`,
+///   `provider_contact_info` under `product_provider_details`,
+///   `provider_organisation_*` under `product_provider_org`). The
+///   local `ProductProvider` model that used to live here read
+///   `product_provider_owner` — a field the payload never emits — and
+///   is now removed in favour of `Supplier`.
+/// * **Organisation id.** `ProviderOrganisation.fromJson` was reading
+///   `idprovider_organisation`, but the payload emits
+///   `id_provider_organisation`. Fixed.
+/// * **Organisation desc.** The payload emits
+///   `provider_organisation_description`, not `_desc`. Fixed.
 class ManagementRule {
   final int idManagementRule;
   final int? ruleRefOrg;
@@ -53,11 +93,35 @@ class ManagementRule {
   }
 
   factory ManagementRule.fromJson(Map<String, dynamic> json) {
+    // The wire uses `rule_org` / `rule_provider` / `rule_user`.
+    // Accept the old names too so persisted payloads survive.
+    final orgJson = _asMapOrNull(
+      json['rule_org'] ?? json['provider_organisation'],
+    );
+    final providerJson = _asMapOrNull(
+      json['rule_provider'] ?? json['product_provider'],
+    );
+    final userJson = _asMapOrNull(
+      json['rule_user'] ?? json['app_user'],
+    );
+
+    final invitationsRaw = json['role_invitation'] ??
+        json['role_invitations'] ??
+        json['invitations'];
+
     return ManagementRule(
       idManagementRule: _parseInt(json['id_management_rule']),
-      ruleRefOrg: _parseIntNullable(json['rule_ref_org']),
-      ruleRefProvider: _parseIntNullable(json['rule_ref_provider']),
-      ruleRefUser: _parseIntNullable(json['rule_ref_user']),
+      // FK names on the wire are `rule_org_id`, `rule_provider_id`,
+      // `rule_user_id` — not `rule_ref_*`.
+      ruleRefOrg: _parseIntNullable(
+        json['rule_org_id'] ?? json['rule_ref_org'],
+      ),
+      ruleRefProvider: _parseIntNullable(
+        json['rule_provider_id'] ?? json['rule_ref_provider'],
+      ),
+      ruleRefUser: _parseIntNullable(
+        json['rule_user_id'] ?? json['rule_ref_user'],
+      ),
       managementRuleCode: _parseInt(json['management_rule_code']),
       managementRuleStatus: json['management_rule_status']?.toString(),
       managementRuleExpiry: json['management_rule_expiry']?.toString(),
@@ -67,17 +131,20 @@ class ManagementRule {
       updatedAt: json['updated_at'] != null
           ? _parseDateTime(json['updated_at'])
           : null,
-      providerOrganisation: json['provider_organisation'] != null
-          ? ProviderOrganisation.fromJson(json['provider_organisation'])
-          : null,
-      productProvider: json['product_provider'] != null
-          ? Supplier.fromJson(json['product_provider'])
-          : null,
-      appUser:
-          json['app_user'] != null ? AppUser.fromJson(json['app_user']) : null,
-      roleInvitations: json['role_invitation'] != null
-          ? (json['role_invitation'] as List)
-              .map((item) => RoleInvitation.fromJson(item))
+      providerOrganisation:
+          orgJson != null ? ProviderOrganisation.fromJson(orgJson) : null,
+      // `rule_provider` uses the same nested shape `Supplier` already
+      // parses. Reusing it removes the local `ProductProvider` model
+      // (which read a `product_provider_owner` that the API never
+      // emits).
+      productProvider:
+          providerJson != null ? Supplier.fromJson(providerJson) : null,
+      appUser: userJson != null ? AppUser.fromJson(userJson) : null,
+      roleInvitations: invitationsRaw is List
+          ? invitationsRaw
+              .whereType<Map>()
+              .map((item) =>
+                  RoleInvitation.fromJson(Map<String, dynamic>.from(item)))
               .toList()
           : null,
     );
@@ -86,17 +153,18 @@ class ManagementRule {
   Map<String, dynamic> toJson() {
     return {
       'id_management_rule': idManagementRule,
-      'rule_ref_org': ruleRefOrg,
-      'rule_ref_provider': ruleRefProvider,
-      'rule_ref_user': ruleRefUser,
+      // Emit the wire names the server reads on round-trip.
+      'rule_org_id': ruleRefOrg,
+      'rule_provider_id': ruleRefProvider,
+      'rule_user_id': ruleRefUser,
       'management_rule_code': managementRuleCode,
       'management_rule_status': managementRuleStatus,
       'management_rule_expiry': managementRuleExpiry,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
-      'provider_organisation': providerOrganisation?.toJson(),
-      'product_provider': productProvider?.toJson(),
-      'app_user': appUser?.toJson(),
+      'rule_org': providerOrganisation?.toJson(),
+      'rule_provider': productProvider?.toJson(),
+      'rule_user': appUser?.toJson(),
       'role_invitation': roleInvitations?.map((r) => r.toJson()).toList(),
     };
   }
@@ -116,17 +184,19 @@ class ManagementRule {
   }
 
   RoleInvitation? get pendingInvitation {
-    return roleInvitations?.firstWhere(
-      (inv) => inv.isPending,
-      orElse: () => null as RoleInvitation,
-    );
+    if (roleInvitations == null) return null;
+    for (final inv in roleInvitations!) {
+      if (inv.isPending) return inv;
+    }
+    return null;
   }
 
   RoleInvitation? get acceptedInvitation {
-    return roleInvitations?.firstWhere(
-      (inv) => inv.isAccepted,
-      orElse: () => null as RoleInvitation,
-    );
+    if (roleInvitations == null) return null;
+    for (final inv in roleInvitations!) {
+      if (inv.isAccepted) return inv;
+    }
+    return null;
   }
 
   String get displayStatus {
@@ -201,10 +271,16 @@ class ManagementRule {
     if (value is String) {
       try {
         return DateTime.parse(value);
-      } catch (e) {
+      } catch (_) {
         return null;
       }
     }
+    return null;
+  }
+
+  static Map<String, dynamic>? _asMapOrNull(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
     return null;
   }
 
@@ -275,7 +351,8 @@ class ManagementRule {
   @override
   String toString() {
     return 'ManagementRule(id: $idManagementRule, code: $managementRuleCode, '
-        'status: $managementRuleStatus, provider: ${productProvider?.providerName}, '
+        'status: $managementRuleStatus, '
+        'provider: ${productProvider?.providerName}, '
         'user: ${appUser?.appUserName})';
   }
 }
@@ -395,30 +472,39 @@ class ProviderOrganisation {
   });
 
   factory ProviderOrganisation.fromJson(Map<String, dynamic> json) {
+    // FIX: wire names are `id_provider_organisation`,
+    // `provider_organisation_description`, `user_id`, and `naming_id`.
+    // The previous model read `idprovider_organisation`,
+    // `provider_organisation_desc`, and `app_user_id` — none of which
+    // the API emits.
     return ProviderOrganisation(
-      idproviderOrganisation: _parseInt(json['idprovider_organisation']),
+      idproviderOrganisation: _parseInt(
+        json['id_provider_organisation'] ?? json['idprovider_organisation'],
+      ),
       providerOrganisationName: json['provider_organisation_name']?.toString(),
-      providerOrganisationDesc: json['provider_organisation_desc']?.toString(),
+      providerOrganisationDesc: (json['provider_organisation_description'] ??
+              json['provider_organisation_desc'])
+          ?.toString(),
       providerOrganisationIconUrl:
           json['provider_organisation_icon_url']?.toString(),
-      appUserId: _parseIntNullable(json['app_user_id']),
+      appUserId: _parseIntNullable(json['user_id'] ?? json['app_user_id']),
       providerOrganisationWalletId:
           _parseIntNullable(json['provider_organisation_wallet_id']),
-      providerOrganisationNaming:
-          _parseIntNullable(json['provider_organisation_naming']),
+      providerOrganisationNaming: _parseIntNullable(
+          json['naming_id'] ?? json['provider_organisation_naming']),
       verifiedOrganisation: json['verified_organisation'] as bool?,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'idprovider_organisation': idproviderOrganisation,
+      'id_provider_organisation': idproviderOrganisation,
       'provider_organisation_name': providerOrganisationName,
-      'provider_organisation_desc': providerOrganisationDesc,
+      'provider_organisation_description': providerOrganisationDesc,
       'provider_organisation_icon_url': providerOrganisationIconUrl,
-      'app_user_id': appUserId,
+      'user_id': appUserId,
       'provider_organisation_wallet_id': providerOrganisationWalletId,
-      'provider_organisation_naming': providerOrganisationNaming,
+      'naming_id': providerOrganisationNaming,
       'verified_organisation': verifiedOrganisation,
     };
   }
@@ -437,122 +523,6 @@ class ProviderOrganisation {
     if (value is int) return value;
     if (value is String) return int.tryParse(value);
     return null;
-  }
-}
-
-// ============================================================================
-// Product Provider Model
-// ============================================================================
-
-class ProductProvider {
-  final int idProductProvider;
-  final int productProviderTypeId;
-  final int productProviderLocationId;
-  final int productProviderOrgId;
-  final int productProviderDetailsId;
-  final int productProviderOwner;
-  final int? productProviderWalletId;
-  final bool? verifiedProvider;
-  final ProductProviderDetails productProviderDetails;
-
-  ProductProvider({
-    required this.idProductProvider,
-    required this.productProviderTypeId,
-    required this.productProviderLocationId,
-    required this.productProviderOrgId,
-    required this.productProviderDetailsId,
-    required this.productProviderOwner,
-    this.productProviderWalletId,
-    this.verifiedProvider,
-    required this.productProviderDetails,
-  });
-
-  factory ProductProvider.fromJson(Map<String, dynamic> json) {
-    return ProductProvider(
-      idProductProvider: _parseInt(json['id_product_provider']),
-      productProviderTypeId: _parseInt(json['product_provider_type_id']),
-      productProviderLocationId:
-          _parseInt(json['product_provider_location_id']),
-      productProviderOrgId: _parseInt(json['product_provider_org_id']),
-      productProviderDetailsId: _parseInt(json['product_provider_details_id']),
-      productProviderOwner: _parseInt(json['product_provider_owner']),
-      productProviderWalletId:
-          _parseIntNullable(json['product_provider_wallet_id']),
-      verifiedProvider: json['verified_provider'] as bool?,
-      productProviderDetails: ProductProviderDetails.fromJson(
-        json['product_provider_details'] as Map<String, dynamic>? ?? {},
-      ),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id_product_provider': idProductProvider,
-      'product_provider_type_id': productProviderTypeId,
-      'product_provider_location_id': productProviderLocationId,
-      'product_provider_org_id': productProviderOrgId,
-      'product_provider_details_id': productProviderDetailsId,
-      'product_provider_owner': productProviderOwner,
-      'product_provider_wallet_id': productProviderWalletId,
-      'verified_provider': verifiedProvider,
-      'product_provider_details': productProviderDetails.toJson(),
-    };
-  }
-
-  String get displayName =>
-      productProviderDetails.providerName ?? 'Provider #$idProductProvider';
-
-  static int _parseInt(dynamic value) {
-    if (value == null) return 0;
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value) ?? 0;
-    return 0;
-  }
-
-  static int? _parseIntNullable(dynamic value) {
-    if (value == null) return null;
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value);
-    return null;
-  }
-}
-
-// ============================================================================
-// Product Provider Details
-// ============================================================================
-
-class ProductProviderDetails {
-  final int idproviderDetailsId;
-  final String? providerName;
-  final String? providerContactInfo;
-
-  ProductProviderDetails({
-    required this.idproviderDetailsId,
-    this.providerName,
-    this.providerContactInfo,
-  });
-
-  factory ProductProviderDetails.fromJson(Map<String, dynamic> json) {
-    return ProductProviderDetails(
-      idproviderDetailsId: _parseInt(json['idprovider_details_id']),
-      providerName: json['provider_name']?.toString(),
-      providerContactInfo: json['provider_contact_info']?.toString(),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'idprovider_details_id': idproviderDetailsId,
-      'provider_name': providerName,
-      'provider_contact_info': providerContactInfo,
-    };
-  }
-
-  static int _parseInt(dynamic value) {
-    if (value == null) return 0;
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value) ?? 0;
-    return 0;
   }
 }
 

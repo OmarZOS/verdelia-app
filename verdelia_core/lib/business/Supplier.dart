@@ -5,6 +5,57 @@ import 'dart:developer' as developer;
 import '../app/VerdeliaImage.dart';
 import 'NamingContribution.dart';
 
+/// A supplier (a.k.a. product provider) as returned by the API.
+///
+/// ## Read shape (nested graph from `product_provider`)
+///
+/// ```json
+/// {
+///   "id_product_provider": 6,
+///   "product_provider_type_id": 6,
+///   "product_provider_details_id": 6,
+///   "product_provider_wallet_id": 37,
+///   "product_provider_location_id": 28,
+///   "product_provider_org_id": 118,
+///   "product_provider_details": {
+///     "provider_name": "MediLab Services 3430",
+///     "provider_contact_info": "{...}",
+///     "naming_contribution": { ... }
+///   },
+///   "provider_image": [],
+///   "product_provider_location": {
+///     "id_location": 28,
+///     "position_wkt": "POINT(lng lat)",
+///     "location_name": "Office",
+///     "location_postal_code": null
+///   },
+///   "product_provider_org": {
+///     "id_provider_organisation": 118,
+///     "provider_organisation_name": "VitalCare 093d",
+///     "provider_organisation_description": "Leading ...",
+///     "user_id": 5,
+///     "naming": null
+///   },
+///   "product_provider_type": {
+///     "id_product_provider_type": 6,
+///     "product_provider_type_name": "food.dining.juice_bar"
+///   }
+/// }
+/// ```
+///
+/// ## Write shape (`Body_create_supplier_api_v1_suppliers_post`)
+///
+/// ```json
+/// {
+///   "provider": { ...ProductProvider_API... },
+///   "location": { ...Location_API... },
+///   "image":    { ...ProviderImage_API... }  (optional)
+/// }
+/// ```
+///
+/// The `provider` sub-object uses the API field names — most
+/// importantly `provider_organisation_desc` (not `_description`) and
+/// `id_provider_owner` (not `user_id`).
 class Supplier {
   final int idProviderDetails;
   final int idProductProvider;
@@ -15,30 +66,23 @@ class Supplier {
   final String providerName;
   final String providerContactInfo;
   final int productProviderTypeId;
+  final String supplierTypeName;
   final String addressStreet;
   final String addressCity;
   final String addressPostalCode;
   final String addressCountry;
-
   final int idProviderOrganisation;
   final String providerOrganisationName;
   final String providerOrganisationDesc;
-
   final double locationLatitude;
   final double locationLongitude;
   final String? locationName;
   final String? supplierImageUrl;
   final int? supplierImageId;
-
   final VerdeliaImage? supplierImage;
-
-  /// Trilingual provider name from
-  /// `product_provider_details.naming_contribution`.
   final NamingContribution? naming;
-
-  /// Trilingual organisation name from
-  /// `product_provider_org.naming_contribution`.
   final NamingContribution? organisationNaming;
+  final NamingContribution? supplierTypeNaming;
 
   Supplier({
     required this.idProviderDetails,
@@ -52,6 +96,8 @@ class Supplier {
     required this.idLocation,
     required this.productProviderOwnerId,
     required this.productProviderTypeId,
+    this.supplierTypeName = '',
+    this.supplierTypeNaming,
     this.supplierImageUrl,
     this.supplierImageId,
     required this.idProviderOrganisation,
@@ -103,6 +149,7 @@ class Supplier {
     String? providerName,
     String? providerContactInfo,
     int? productProviderTypeId,
+    String? supplierTypeName,
     String? addressStreet,
     String? addressCity,
     String? addressPostalCode,
@@ -118,6 +165,7 @@ class Supplier {
     VerdeliaImage? supplierImage,
     NamingContribution? naming,
     NamingContribution? organisationNaming,
+    NamingContribution? supplierTypeNaming,
   }) {
     return Supplier(
       idProviderDetails: idProviderDetails ?? this.idProviderDetails,
@@ -134,6 +182,8 @@ class Supplier {
           productProviderOwnerId ?? this.productProviderOwnerId,
       productProviderTypeId:
           productProviderTypeId ?? this.productProviderTypeId,
+      supplierTypeName: supplierTypeName ?? this.supplierTypeName,
+      supplierTypeNaming: supplierTypeNaming ?? this.supplierTypeNaming,
       supplierImageUrl: supplierImageUrl ?? this.supplierImageUrl,
       supplierImageId: supplierImageId ?? this.supplierImageId,
       idProviderOrganisation:
@@ -153,40 +203,20 @@ class Supplier {
     );
   }
 
-  /// Parse a deeply-nested supplier JSON as returned by detail endpoints.
-  ///
-  /// Shape:
-  /// ```json
-  /// {
-  ///   "id_product_provider": 1,
-  ///   "product_provider_location": {
-  ///     "id_location": 5,
-  ///     "position_wkt": "POINT(lng lat)",
-  ///     "location_name": "...",
-  ///     "location_address": { ... }
-  ///   },
-  ///   "product_provider_details": {
-  ///     "provider_name": "...",
-  ///     "provider_contact_info": "...",
-  ///     "naming_contribution": { ... }
-  ///   },
-  ///   "product_provider_org": {
-  ///     "provider_organisation_name": "...",
-  ///     "naming_contribution": { ... }
-  ///   },
-  ///   "provider_image": [ { "id_provider_image": 1,
-  ///                         "provider_image_url": "..." } ]
-  /// }
-  /// ```
   factory Supplier.fromJson(Map<String, dynamic> json) {
     try {
       final locationData = _asMap(json['product_provider_location']);
       final detailsData = _asMap(json['product_provider_details']);
       final orgData = _asMap(json['product_provider_org']);
+      final typeData = _asMap(json['product_provider_type']);
       final addressData = _asMap(locationData?['location_address']);
 
       final coords = _parseWkt(locationData?['position_wkt']);
       final image = _parseFirstImage(json['provider_image']);
+
+      final ownerId = _parseIntOrNull(
+        json['product_provider_owner'] ?? orgData?['user_id'],
+      );
 
       return Supplier(
         idProviderDetails: _parseInt(json['product_provider_details_id']),
@@ -195,8 +225,10 @@ class Supplier {
             _parseInt(json['product_provider_details_id']),
         providerName: _getString(detailsData?['provider_name']),
         providerContactInfo: _getString(detailsData?['provider_contact_info']),
-        productProviderOwnerId: _parseInt(json['product_provider_owner']),
+        productProviderOwnerId: ownerId ?? 0,
         productProviderTypeId: _parseInt(json['product_provider_type_id']),
+        supplierTypeName: _getString(typeData?['product_provider_type_name']),
+        supplierTypeNaming: _parseNaming(typeData?['naming_contribution']),
         locationLatitude: coords?.$2 ?? 0.0,
         locationLongitude: coords?.$1 ?? 0.0,
         locationName: _getStringOrNull(locationData?['location_name']),
@@ -204,17 +236,24 @@ class Supplier {
         idProviderOrganisation: _parseInt(json['product_provider_org_id']),
         providerOrganisationName:
             _getString(orgData?['provider_organisation_name']),
-        providerOrganisationDesc:
-            _getString(orgData?['provider_organisation_desc']),
+        providerOrganisationDesc: _getString(
+          orgData?['provider_organisation_description'] ??
+              orgData?['provider_organisation_desc'],
+        ),
         locationAddressId: _parseInt(addressData?['id_address']),
         addressStreet: _getString(addressData?['address_street']),
         addressCity: _getString(addressData?['address_city']),
-        addressPostalCode: _getString(addressData?['address_postal_code']),
+        addressPostalCode: _firstNonEmpty([
+          addressData?['address_postal_code'],
+          locationData?['location_postal_code'],
+        ]),
         addressCountry: _getString(addressData?['address_country']),
         supplierImageUrl: image?.$2,
         supplierImageId: image?.$1,
         naming: _parseNaming(detailsData?['naming_contribution']),
-        organisationNaming: _parseNaming(orgData?['naming_contribution']),
+        organisationNaming: _parseNaming(
+          orgData?['naming'] ?? orgData?['naming_contribution'],
+        ),
       );
     } catch (e, st) {
       _logParseError('Supplier.fromJson', e, st);
@@ -222,15 +261,13 @@ class Supplier {
     }
   }
 
-  /// Parse a supplier JSON from the flattened search projection. The
-  /// search endpoints return columns rather than the nested graph, so
-  /// this function reads both shapes and normalizes them.
   factory Supplier.fromSearchJson(Map<String, dynamic> json) {
     try {
       final provider = _resolveProviderMap(json);
       final org = _resolveOrgMap(json, provider);
       final loc = _resolveLocationMap(json, provider);
       final addr = _resolveAddressMap(json, loc);
+      final typeData = _resolveTypeMap(json, provider);
 
       final coords = _parseWkt(loc['position_wkt'] ?? json['position_wkt']);
 
@@ -241,6 +278,12 @@ class Supplier {
         provider['provider_name'],
         detailsMap['provider_name'],
       ], fallback: 'Unknown Supplier');
+
+      final ownerId = _parseIntOrNull(
+        provider['product_provider_owner'] ??
+            json['product_provider_owner'] ??
+            org['user_id'],
+      );
 
       return Supplier(
         idProviderDetails: _parseInt(
@@ -257,38 +300,50 @@ class Supplier {
           provider['provider_contact_info'],
           detailsMap['provider_contact_info'],
         ]),
-        productProviderOwnerId: _parseInt(
-          provider['product_provider_owner'] ?? json['product_provider_owner'],
-        ),
+        productProviderOwnerId: ownerId ?? 0,
         productProviderTypeId: _parseInt(
           provider['product_provider_type_id'] ??
               json['product_provider_type_id'],
         ),
+        supplierTypeName: _getString(
+          typeData['product_provider_type_name'] ??
+              json['product_provider_type_name'],
+        ),
+        supplierTypeNaming: _parseNaming(typeData['naming_contribution']),
         locationLatitude: coords?.$2 ?? 0.0,
         locationLongitude: coords?.$1 ?? 0.0,
         locationName: _getStringOrNull(loc['location_name']),
         idLocation: _parseInt(loc['id_location']),
         idProviderOrganisation: _parseInt(
-          org['idprovider_organisation'] ?? json['idprovider_organisation'],
+          org['idprovider_organisation'] ??
+              org['id_provider_organisation'] ??
+              json['idprovider_organisation'],
         ),
         providerOrganisationName: _getString(
           org['provider_organisation_name'] ??
               json['provider_organisation_name'],
         ),
-        providerOrganisationDesc: _getString(
-          org['provider_organisation_desc'] ??
-              json['provider_organisation_desc'],
-        ),
+        providerOrganisationDesc: _firstNonEmpty([
+          org['provider_organisation_description'],
+          org['provider_organisation_desc'],
+          json['provider_organisation_description'],
+          json['provider_organisation_desc'],
+        ]),
         locationAddressId: _parseInt(addr['id_address']),
         addressStreet: _getString(addr['address_street']),
         addressCity: _getString(addr['address_city']),
-        addressPostalCode: _getString(addr['address_postal_code']),
+        addressPostalCode: _firstNonEmpty([
+          addr['address_postal_code'],
+          loc['location_postal_code'],
+          json['location_postal_code'],
+        ]),
         addressCountry: _getString(addr['address_country']),
         supplierImageUrl: _getStringOrNull(json['supplier_image_url']),
         supplierImageId: _parseIntOrNull(json['supplier_image_id']),
         naming: _parseNaming(detailsMap['naming_contribution']),
         organisationNaming: _parseNaming(
-          org['naming_contribution'] ??
+          org['naming'] ??
+              org['naming_contribution'] ??
               _asMap(json['product_provider_org'])?['naming_contribution'],
         ),
       );
@@ -298,48 +353,135 @@ class Supplier {
     }
   }
 
-  /// Serialize to the shape expected by the create / update endpoints.
+  /// Serialises the supplier for **local persistence**.
   ///
-  /// NOTE: this is intentionally asymmetric with [fromJson] — the
-  /// backend write contract uses `provider` / `image` / `location` as
-  /// top-level keys, while the read contract returns
-  /// `product_provider*`. Do not round-trip `fromJson(toJson())`.
+  /// Round-trips with [Supplier.fromJson] because both sides use the
+  /// read-side field names (`product_provider_*`, `_description`,
+  /// `user_id`). Do **not** send this to the API — the write contract
+  /// is [toCreateJson].
   Map<String, dynamic> toJson() {
     return {
-      'provider': {
-        'id_product_provider': idProductProvider,
-        'id_provider_owner': productProviderOwnerId,
-        'idprovider_details_id': productProviderDetailsId,
-        'id_product_provider_type': productProviderTypeId,
-        'id_provider_organisation': idProviderOrganisation,
-        'provider_organisation_desc': providerOrganisationDesc,
-        'provider_organisation_name': providerOrganisationName,
-        'product_provider_type_desc': 'string',
+      'id_product_provider': idProductProvider,
+      'product_provider_details_id': productProviderDetailsId,
+      'product_provider_type_id': productProviderTypeId,
+      'product_provider_org_id': idProviderOrganisation,
+      'product_provider_location_id': idLocation,
+      'product_provider_owner': productProviderOwnerId,
+      'product_provider_details': {
+        'idprovider_details_id': idProviderDetails,
         'provider_name': providerName,
         'provider_contact_info': providerContactInfo,
-        if (naming != null) 'naming': naming!.toJson(),
+        if (naming != null) 'naming_contribution': naming!.toJson(),
       },
-      'image': {
-        'id_provider_image': supplierImageId ?? 0,
-        'provider_image_url': supplierImageUrl,
-        'provider_ref_id': idProductProvider,
-      },
-      'location': {
+      'product_provider_location': {
         'id_location': idLocation,
-        'location_latitude': locationLatitude,
-        'location_longitude': locationLongitude,
-        'location_name': locationName ?? '',
-        'location_address_id': locationAddressId,
-        'id_address': locationAddressId,
-        'address_street': addressStreet,
-        'address_city': addressCity,
-        'address_postal_code': addressPostalCode,
-        'address_country': addressCountry,
+        if (locationLatitude != 0.0 && locationLongitude != 0.0)
+          'position_wkt': 'POINT($locationLongitude $locationLatitude)',
+        'location_name': locationName,
+        'location_postal_code': addressPostalCode,
+        'location_address': {
+          'id_address': locationAddressId,
+          'address_street': addressStreet,
+          'address_city': addressCity,
+          'address_postal_code': addressPostalCode,
+          'address_country': addressCountry,
+        },
       },
+      'product_provider_org': {
+        'id_provider_organisation': idProviderOrganisation,
+        'provider_organisation_name': providerOrganisationName,
+        'provider_organisation_description': providerOrganisationDesc,
+        'user_id': productProviderOwnerId,
+        if (organisationNaming != null) 'naming': organisationNaming!.toJson(),
+      },
+      'product_provider_type': {
+        'id_product_provider_type': productProviderTypeId,
+        'product_provider_type_name': supplierTypeName,
+        if (supplierTypeNaming != null)
+          'naming_contribution': supplierTypeNaming!.toJson(),
+      },
+      if (supplierImageId != null || supplierImageUrl != null)
+        'provider_image': [
+          {
+            'id_provider_image': supplierImageId ?? 0,
+            'provider_image_url': supplierImageUrl ?? '',
+            'provider_ref_id': idProductProvider,
+          }
+        ],
     };
   }
 
-  // ==================== Naming accessors ====================
+  /// The `ProductProvider_API` field subset.
+  ///
+  /// The write model uses `provider_organisation_desc` (abbreviated)
+  /// and `id_provider_owner` (not `user_id`).
+  Map<String, dynamic> toProviderApiJson() {
+    return {
+      'id_product_provider': idProductProvider,
+      'id_provider_owner': productProviderOwnerId,
+      'idprovider_details_id': productProviderDetailsId,
+      'id_product_provider_type': productProviderTypeId,
+      'id_provider_organisation': idProviderOrganisation,
+      'product_provider_type_desc': supplierTypeName,
+      'provider_organisation_name': providerOrganisationName,
+      'provider_organisation_desc': providerOrganisationDesc,
+      'provider_name': providerName,
+      'provider_contact_info': providerContactInfo,
+      if (naming != null) 'naming': naming!.toJson(),
+    };
+  }
+
+  /// The `Location_API` body for the `location` sibling.
+  Map<String, dynamic> toLocationApiJson() {
+    return {
+      'id_location': idLocation,
+      if (locationLatitude != 0.0 && locationLongitude != 0.0)
+        'location_latitude': locationLatitude,
+      if (locationLatitude != 0.0 && locationLongitude != 0.0)
+        'location_longitude': locationLongitude,
+      'location_name': locationName ?? '',
+      'location_address_id': locationAddressId,
+      'id_address': locationAddressId,
+      'address_street': addressStreet,
+      'address_city': addressCity,
+      'address_postal_code': addressPostalCode,
+      'address_country': addressCountry,
+    };
+  }
+
+  /// The `ProviderImage_API` body for the `image` sibling, or null
+  /// when there is no image to send.
+  Map<String, dynamic>? toImageApiJson() {
+    if (supplierImageId == null &&
+        (supplierImageUrl == null || supplierImageUrl!.isEmpty)) {
+      return null;
+    }
+    return {
+      'id_provider_image': supplierImageId ?? 0,
+      'provider_image_url': supplierImageUrl ?? '',
+      'provider_ref_id': idProductProvider,
+    };
+  }
+
+  /// Body for `POST /api/v1/suppliers` and `PUT /api/v1/suppliers/{id}`.
+  ///
+  /// Shape (`Body_create_supplier_api_v1_suppliers_post`):
+  ///
+  /// ```json
+  /// {
+  ///   "provider": { ...ProductProvider_API... },
+  ///   "location": { ...Location_API... },
+  ///   "image":    { ...ProviderImage_API... }  (optional)
+  /// }
+  /// ```
+  Map<String, dynamic> toCreateJson() {
+    final image = toImageApiJson();
+    return {
+      'provider': toProviderApiJson(),
+      'location': toLocationApiJson(),
+      if (image != null) 'image': image,
+    };
+  }
 
   String nameFor(String lang) {
     final resolved = naming?.nameFor(lang) ?? '';
@@ -353,8 +495,13 @@ class Supplier {
     return providerOrganisationName;
   }
 
-  bool get hasLocation => locationLatitude != 0.0 && locationLongitude != 0.0;
+  String supplierTypeNameFor(String lang) {
+    final resolved = supplierTypeNaming?.nameFor(lang) ?? '';
+    if (resolved.isNotEmpty) return resolved;
+    return supplierTypeName;
+  }
 
+  bool get hasLocation => locationLatitude != 0.0 && locationLongitude != 0.0;
   bool get hasAddress => addressStreet.isNotEmpty || addressCity.isNotEmpty;
 
   String get fullAddress {
@@ -394,10 +541,6 @@ class Supplier {
   String toString() => 'Supplier(id: $idProductProvider, '
       'name: $providerName, hasLocation: $hasLocation)';
 
-  // ==================== Parse helpers ====================
-
-  /// Returns the provider sub-map, or the top-level map if the
-  /// response is flat.
   static Map<String, dynamic> _resolveProviderMap(Map<String, dynamic> json) {
     final raw = json['product_provider'];
     if (raw is List && raw.isNotEmpty) {
@@ -429,6 +572,7 @@ class Supplier {
       'id_location': json['id_location'],
       'position_wkt': json['position_wkt'],
       'location_name': json['location_name'],
+      'location_postal_code': json['location_postal_code'],
     };
   }
 
@@ -458,6 +602,17 @@ class Supplier {
     return json;
   }
 
+  static Map<String, dynamic> _resolveTypeMap(
+    Map<String, dynamic> json,
+    Map<String, dynamic> provider,
+  ) {
+    final fromProvider = _asMap(provider['product_provider_type']);
+    if (fromProvider != null) return fromProvider;
+    final fromJson = _asMap(json['product_provider_type']);
+    if (fromJson != null) return fromJson;
+    return const {};
+  }
+
   static Map<String, dynamic>? _asMap(dynamic value) {
     if (value is Map<String, dynamic>) return value;
     if (value is Map) return Map<String, dynamic>.from(value);
@@ -470,8 +625,6 @@ class Supplier {
     return NamingContribution.fromJson(map);
   }
 
-  /// Parse a WKT POINT into `(longitude, latitude)`, or null when the
-  /// string isn't a valid POINT.
   static (double, double)? _parseWkt(dynamic value) {
     if (value is! String) return null;
     final match =
@@ -484,8 +637,6 @@ class Supplier {
     return (lng, lat);
   }
 
-  /// Extract the first `(imageId, imageUrl)` pair from a list of
-  /// provider images. Returns null when there's nothing usable.
   static (int, String)? _parseFirstImage(dynamic images) {
     if (images is! List) return null;
     for (final image in images) {
@@ -498,8 +649,6 @@ class Supplier {
     return null;
   }
 
-  /// Return the first non-empty string from [candidates], else
-  /// [fallback] (or the empty string if no fallback was given).
   static String _firstNonEmpty(
     List<dynamic> candidates, {
     String fallback = '',
@@ -534,7 +683,6 @@ class Supplier {
     Object error,
     StackTrace stackTrace,
   ) {
-    // Gate on kDebugMode so the log doesn't fire in release builds.
     assert(() {
       developer.log(
         'Error in $where: $error\n$stackTrace',
@@ -601,7 +749,9 @@ class SupplierCategory {
         productProviderTypeId: id,
         productCategoryDesc: flatName,
         iconUrl: icon,
-        naming: Supplier._parseNaming(json['naming_contribution']),
+        naming: Supplier._parseNaming(
+          json['naming_contribution'] ?? json['naming'],
+        ),
       );
     } catch (_) {
       return SupplierCategory.empty();
@@ -611,11 +761,13 @@ class SupplierCategory {
   static List<SupplierCategory> listFromJson(dynamic json) {
     if (json is! List) return const [];
     return json
-        .whereType<Map<String, dynamic>>()
-        .map(SupplierCategory.fromJson)
+        .whereType<Map>()
+        .map((e) => SupplierCategory.fromJson(Map<String, dynamic>.from(e)))
         .toList(growable: false);
   }
 
+  /// Serialises the category for **local persistence**. Round-trips
+  /// with [SupplierCategory.fromJson]. Do not send to the API.
   Map<String, dynamic> toJson() {
     return {
       'id_product_provider_type': productProviderTypeId,

@@ -1,6 +1,27 @@
+// lib/checkout/CheckoutViewModel.dart
+//
+// CheckoutViewModel — owns the checkout flow state.
+//
+// Changelog (this revision):
+//
+//   * `processCartCheckout` is gone. The ViewModel now has a single
+//     entry point — `processCheckout(cartNotifier)` — and reads the
+//     one live cart off the notifier. To check out an API-loaded
+//     cart, the caller calls `cartNotifier.loadCartForCheckout(cart)`
+//     first, then `processCheckout`.
+//   * Everything else from the previous revision is preserved:
+//     single-notify `_process`, `CartPayloadBuilder.effectivePaymentStatus`,
+//     delivery payload guards, shared reset body.
+//
+// Money: `_depositAmount` and every total in `calculateTotals` are
+// `Decimal`. `CartPayloadBuilder.depositAmount` and `computeTotals` are
+// `Decimal`-typed after the builder migration, so the ViewModel's
+// deposit field must match.
+
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:decimal/decimal.dart';
 import 'package:event/cart_change_notifier.dart';
 import 'package:flutter/foundation.dart';
 import 'package:verdelia_core/app/AppUser.dart';
@@ -14,7 +35,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // ==================== CONSTANTS ====================
 
-/// Document types the checkout flow understands.
 abstract class _DocType {
   static const receipt = 'receipt';
   static const invoice = 'invoice';
@@ -22,14 +42,12 @@ abstract class _DocType {
   static const none = 'none';
 }
 
-/// Payment intents the checkout flow understands.
 abstract class _PayType {
   static const payment = 'payment';
   static const deposit = 'deposit';
   static const installment = 'installment';
 }
 
-/// Payment methods the checkout flow understands.
 abstract class _PayMethod {
   static const cash = 'cash';
   static const card = 'card';
@@ -37,7 +55,6 @@ abstract class _PayMethod {
   static const mobile = 'mobile';
 }
 
-/// Payment statuses recorded on the cart.
 abstract class _PayStatus {
   static const completed = 'completed';
   static const pending = 'pending';
@@ -75,14 +92,29 @@ class CheckoutResult {
   final String message;
   final int? orderId;
 
+  /// Settlement the backend actually recorded for this checkout, when
+  /// the response carried one. Null when the flow didn't request a
+  /// payment, or when the response didn't include settlement data.
+  final String? recordedPaymentStatus;
+
   const CheckoutResult._({
     required this.isSuccess,
     required this.message,
     this.orderId,
+    this.recordedPaymentStatus,
   });
 
-  factory CheckoutResult.success(String message, {int? orderId}) =>
-      CheckoutResult._(isSuccess: true, message: message, orderId: orderId);
+  factory CheckoutResult.success(
+    String message, {
+    int? orderId,
+    String? recordedPaymentStatus,
+  }) =>
+      CheckoutResult._(
+        isSuccess: true,
+        message: message,
+        orderId: orderId,
+        recordedPaymentStatus: recordedPaymentStatus,
+      );
 
   factory CheckoutResult.failure(String message) =>
       CheckoutResult._(isSuccess: false, message: message);
@@ -94,7 +126,15 @@ class CheckoutViewModel extends ChangeNotifier {
   final CartService _cartService = AppLocator.get<CartService>();
 
   static const String _prefsKey = 'checkout_parameters';
-  static const double vatRate = 0.19;
+
+  /// Standard Algerian VAT as a fraction, in [Decimal].
+  static final Decimal vatRate = Decimal.parse('0.19');
+
+  /// Sentinel for "no customer chosen yet" — distinct from a real
+  /// customer whose `idAppUser` is legitimately zero (which can't
+  /// happen in this app, but the field is nullable so we treat it as
+  /// a guest marker).
+  static const int _guestUserId = 0;
 
   // ─── Customer ───
   AppUser? _selectedCustomer;
@@ -107,7 +147,11 @@ class CheckoutViewModel extends ChangeNotifier {
   // ─── Payment ───
   String _paymentType = _PayType.payment;
   String _paymentMethod = _PayMethod.cash;
-  double _depositAmount = 0.0;
+
+  /// Deposit amount, in [Decimal]. Zero unless [_paymentType] is
+  /// `deposit`.
+  Decimal _depositAmount = Decimal.zero;
+
   String? _dueDate;
   String _cardType = 'visa';
   String? _cardDetails;
@@ -138,7 +182,10 @@ class CheckoutViewModel extends ChangeNotifier {
 
   String get paymentType => _paymentType;
   String get paymentMethod => _paymentMethod;
-  double get depositAmount => _depositAmount;
+
+  /// Deposit amount, in [Decimal].
+  Decimal get depositAmount => _depositAmount;
+
   String? get dueDate => _dueDate;
   String get cardType => _cardType;
   String? get cardDetails => _cardDetails;
@@ -157,28 +204,38 @@ class CheckoutViewModel extends ChangeNotifier {
   bool get isProcessing => _isProcessing;
   CheckoutResult? get lastCheckoutResult => _lastCheckoutResult;
 
-  /// Payment status derived from the payment method and intent.
+  /// Payment status the wire payload will carry.
   ///
-  ///   cash + full payment → completed (settled on the spot)
-  ///   everything else     → pending  (awaits gateway or confirmation)
+  /// Delegates to the same `CartPayloadBuilder` that produces the
+  /// request body, so the ViewModel and the backend agree on what was
+  /// recorded.
+  ///
+  ///     cash + full payment → completed
+  ///     everything else     → pending
   String get effectivePaymentStatus {
-    if (_paymentType == _PayType.payment && _paymentMethod == _PayMethod.cash) {
-      return _PayStatus.completed;
-    }
-    return _PayStatus.pending;
+    return CartPayloadBuilder(
+      providerId: 0,
+      sellingUserId: 0,
+      cart: Cart.local(),
+      applyVAT: _applyVAT,
+      paymentType: _payTypeFrom(_paymentType),
+      paymentMethod: _payMethodFrom(_paymentMethod),
+      depositAmount: _depositAmount,
+    ).effectivePaymentStatus;
   }
 
   bool get isGuestCustomer =>
-      _selectedCustomer != null && _selectedCustomer!.idAppUser == 0;
+      _selectedCustomer != null && _selectedCustomer!.idAppUser == _guestUserId;
 
   bool get hasRealCustomer =>
-      (_selectedCustomer != null && _selectedCustomer!.idAppUser != 0) ||
+      (_selectedCustomer != null &&
+          _selectedCustomer!.idAppUser != _guestUserId) ||
       _selectedPerson != null;
 
   String get customerName {
     final customer = _selectedCustomer;
     if (customer != null) {
-      if (customer.idAppUser == 0) return 'Guest';
+      if (customer.idAppUser == _guestUserId) return 'Guest';
       final name =
           '${customer.personFirstName ?? ''} ${customer.personLastName ?? ''}'
               .trim();
@@ -198,7 +255,11 @@ class CheckoutViewModel extends ChangeNotifier {
 
   // ==================== CHECKOUT FLOW ====================
 
-  /// Checkout using the current local cart (from CartChangeNotifier).
+  /// The only checkout entry point.
+  ///
+  /// Uses whatever cart `cartNotifier.cart` currently holds. To check
+  /// out an API-loaded cart, call `cartNotifier.loadCartForCheckout(cart)`
+  /// first.
   Future<CheckoutResult> processCheckout({
     required CartChangeNotifier cartNotifier,
     required int sellingUserId,
@@ -217,20 +278,7 @@ class CheckoutViewModel extends ChangeNotifier {
     return result;
   }
 
-  /// Checkout with a specific cart (used by API-backed carts).
-  Future<CheckoutResult> processCartCheckout({
-    required Cart cart,
-    required int sellingUserId,
-    required int providerId,
-  }) async {
-    return _process(
-      cart: cart,
-      sellingUserId: sellingUserId,
-      providerId: providerId,
-    );
-  }
-
-  /// Shared implementation for both checkout entry points.
+  /// Shared implementation.
   Future<CheckoutResult> _process({
     required Cart cart,
     required int sellingUserId,
@@ -244,18 +292,18 @@ class CheckoutViewModel extends ChangeNotifier {
     _lastCheckoutResult = null;
     notifyListeners();
 
+    var result = CheckoutResult.failure('Checkout did not complete');
     try {
       if (cart.isEmpty) {
-        return _finish(CheckoutResult.failure('Cart is empty'));
+        result = CheckoutResult.failure('Cart is empty');
+      } else {
+        final payload = _buildPayload(
+          cart: cart,
+          sellingUserId: sellingUserId,
+          providerId: providerId,
+        );
+        result = await _submit(payload);
       }
-
-      final payload = _buildPayload(
-        cart: cart,
-        sellingUserId: sellingUserId,
-        providerId: providerId,
-      );
-      final result = await _submit(payload);
-      return _finish(result);
     } catch (e, stack) {
       developer.log(
         'Checkout failed',
@@ -263,40 +311,30 @@ class CheckoutViewModel extends ChangeNotifier {
         error: e,
         stackTrace: stack,
       );
-      return _finish(CheckoutResult.failure('Checkout failed: $e'));
+      result = CheckoutResult.failure('Checkout failed: $e');
     } finally {
+      _lastCheckoutResult = result;
       _isProcessing = false;
       notifyListeners();
     }
-  }
-
-  CheckoutResult _finish(CheckoutResult result) {
-    _lastCheckoutResult = result;
-    notifyListeners();
     return result;
   }
 
   Future<CheckoutResult> _submit(Map<String, dynamic> payload) async {
     try {
-      final cart = await _cartService.addCart(payload);
+      final response = await _cartService.addCart(payload);
 
-      if (cart?.cartId == null) {
+      if (response == null || response.cartId == null) {
         return CheckoutResult.failure('Failed to place order');
       }
 
-      final cartId = cart!.cartId!;
-      final wantsPaymentNow =
-          _paymentType == _PayType.payment || _paymentType == _PayType.deposit;
-
-      if (wantsPaymentNow && effectivePaymentStatus == null) {
-        return CheckoutResult.failure(
-          'Cart created but payment was not recorded (ID $cartId)',
-        );
-      }
+      final cartId = response.cartId!;
+      final recordedStatus = _recordedStatusFrom(response);
 
       return CheckoutResult.success(
         'Order placed successfully. Order ID: $cartId',
         orderId: cartId,
+        recordedPaymentStatus: recordedStatus,
       );
     } catch (e, stack) {
       developer.log(
@@ -309,13 +347,23 @@ class CheckoutViewModel extends ChangeNotifier {
     }
   }
 
+  /// Best-effort settlement summary from the cart response.
+  ///
+  /// Precedence:
+  ///   - a completed invoice → 'completed'
+  ///   - a pending invoice   → 'pending'
+  ///   - no settlement data  → the ViewModel's own derivation
+  String _recordedStatusFrom(Cart response) {
+    for (final invoice in response.invoices) {
+      final s = invoice.invoiceStatus.toLowerCase();
+      if (s == _PayStatus.completed) return _PayStatus.completed;
+      if (s == _PayStatus.pending) return _PayStatus.pending;
+    }
+    return effectivePaymentStatus;
+  }
+
   // ==================== PAYLOAD BUILDER ====================
 
-  /// Map the ViewModel's UI state into a `CartPayloadBuilder` and produce
-  /// the exact request body the backend expects.
-  ///
-  /// All wire-format knowledge lives in `CartPayloadBuilder`; this method is
-  /// only responsible for translating ViewModel strings into its enums.
   Map<String, dynamic> _buildPayload({
     required Cart cart,
     required int sellingUserId,
@@ -331,6 +379,9 @@ class CheckoutViewModel extends ChangeNotifier {
       applyVAT: _applyVAT,
       paymentType: _payTypeFrom(_paymentType),
       paymentMethod: _payMethodFrom(_paymentMethod),
+      // `CartPayloadBuilder.depositAmount` is `Decimal?` after the
+      // builder migration. Passing the non-null `_depositAmount`
+      // (defaulted to `Decimal.zero`) works directly.
       depositAmount: _depositAmount,
       dueDate: _dueDate == null ? null : DateTime.tryParse(_dueDate!),
       delivery: _buildDeliveryPayload(),
@@ -341,20 +392,28 @@ class CheckoutViewModel extends ChangeNotifier {
     ).build();
   }
 
-  /// Translate the ViewModel's `DeliveryData` into the backend's
-  /// `Delivery_API` shape. Returns null for pickups so the field is omitted.
   CartDeliveryPayload? _buildDeliveryPayload() {
     if (_deliveryType == 'pickup' || _deliveryData == null) return null;
+
+    final addressId = _deliveryData!.deliveryAddressId;
+    final providerId = _deliveryData!.deliveryProviderId;
+    if (addressId == null || providerId == null) {
+      developer.log(
+        'Delivery requested without address/provider id; '
+        'omitting delivery payload.',
+        name: 'CheckoutViewModel',
+      );
+      return null;
+    }
 
     return CartDeliveryPayload(
       deliveryShippingMethod:
           _deliveryData!.deliveryShippingMethod ?? 'standard',
       deliverySpecialInstructions: _deliveryData!.deliverySpecialInstructions,
-      deliveryAddressId: _deliveryData!.deliveryAddressId ?? 0,
-      deliveryProviderId: _deliveryData!.deliveryProviderId ?? 0,
+      deliveryAddressId: addressId,
+      deliveryProviderId: providerId,
       deliveryStatus: 'pending',
       deliverySourceType: 'cart',
-      // Fill remaining fields from _deliveryData as available.
     );
   }
 
@@ -412,6 +471,7 @@ class CheckoutViewModel extends ChangeNotifier {
   }
 
   void setApplyVAT(bool apply) {
+    if (_applyVAT == apply) return;
     _applyVAT = apply;
     notifyListeners();
   }
@@ -421,12 +481,11 @@ class CheckoutViewModel extends ChangeNotifier {
     _paymentType = type;
 
     if (type != _PayType.deposit) {
-      _depositAmount = 0.0;
+      _depositAmount = Decimal.zero;
     }
     if (type != _PayType.installment) {
       _dueDate = null;
     }
-
     notifyListeners();
   }
 
@@ -436,10 +495,13 @@ class CheckoutViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setDepositAmount(double amount) {
+  /// Set the deposit amount, in [Decimal].
+  ///
+  /// The caller is expected to supply a non-negative value. `canCheckout`
+  /// enforces the upper bound against `computeTotals(...).total`.
+  void setDepositAmount(Decimal amount) {
     if (_depositAmount == amount) return;
     _depositAmount = amount;
-    // A deposit is paid now, not deferred — drop any pending due date.
     if (_paymentType == _PayType.deposit) {
       _dueDate = null;
     }
@@ -448,15 +510,15 @@ class CheckoutViewModel extends ChangeNotifier {
 
   void setInstallmentDate(DateTime dueDate) {
     _dueDate = dueDate.toIso8601String();
-    // A date only makes sense when the intent is installment.
     if (_paymentType != _PayType.installment) {
       _paymentType = _PayType.installment;
-      _depositAmount = 0.0;
+      _depositAmount = Decimal.zero;
     }
     notifyListeners();
   }
 
   void setCardType(String type) {
+    if (_cardType == type) return;
     _cardType = type;
     notifyListeners();
   }
@@ -488,6 +550,7 @@ class CheckoutViewModel extends ChangeNotifier {
   }
 
   void setNotes(String notes) {
+    if (_notes == notes) return;
     _notes = notes;
     notifyListeners();
   }
@@ -500,6 +563,7 @@ class CheckoutViewModel extends ChangeNotifier {
   }
 
   void addParameter(String key, String value) {
+    if (_parameters.any((p) => p.key == key)) return;
     _parameters.add(CheckoutParameter(key: key, value: value));
     notifyListeners();
   }
@@ -595,6 +659,16 @@ class CheckoutViewModel extends ChangeNotifier {
   // ==================== RESET ====================
 
   void clearAll() {
+    _resetMutableState();
+    notifyListeners();
+  }
+
+  void resetAfterCheckout() {
+    _resetMutableState();
+    notifyListeners();
+  }
+
+  void _resetMutableState() {
     _selectedCustomer = null;
     _selectedPerson = null;
     _documentType = _DocType.receipt;
@@ -608,69 +682,73 @@ class CheckoutViewModel extends ChangeNotifier {
     _bankDetails = null;
     _mobileProvider = null;
     _cardType = 'visa';
-    _depositAmount = 0.0;
+    _depositAmount = Decimal.zero;
     _lastCheckoutResult = null;
     _deliveryData = null;
     _syncVatWithDocumentType();
-    notifyListeners();
-  }
-
-  void resetAfterCheckout() {
-    _selectedCustomer = null;
-    _selectedPerson = null;
-    _notes = '';
-    _parameters = [];
-    _cardDetails = null;
-    _bankDetails = null;
-    _mobileProvider = null;
-    _depositAmount = 0.0;
-    _lastCheckoutResult = null;
-    _deliveryData = null;
-    _syncVatWithDocumentType();
-    notifyListeners();
   }
 
   // ==================== TOTALS / VALIDATION ====================
 
-  /// Public totals helper used by the UI. Delegates to a builder instance
-  /// so the arithmetic has one source of truth.
-  Map<String, double> calculateTotals(CartChangeNotifier cartNotifier) {
-    final t = CartPayloadBuilder(
-      providerId: 0,
-      sellingUserId: 0,
-      cart: cartNotifier.cart,
-      applyVAT: _applyVAT,
-      paymentType: _payTypeFrom(_paymentType),
-      depositAmount: _depositAmount,
-    ).computeTotals(cartNotifier.cart.totalAmount);
+  /// Breakdown of the cart's monetary totals, in [Decimal].
+  ///
+  /// - `subtotal`: net (ex-VAT) subtotal
+  /// - `vatAmount`: VAT portion
+  /// - `vatRate`: the applied rate as a fraction (`0.19` when VAT is on)
+  /// - `total`: VAT-inclusive cart total
+  /// - `paidMoney`: amount being charged now
+  /// - `balanceDue`: `total - paidMoney`, non-negative
+  Map<String, Decimal> calculateTotals(CartChangeNotifier cartNotifier) {
+    final builder = _totalsBuilderFor(cartNotifier.cart);
+    final t = builder.computeTotals(cartNotifier.cart.totalAmount);
+
+    // Balance is `total - paid`, clamped to zero. `Decimal` has no
+    // `.clamp`, so manual compare.
+    final diff = t.total - t.paid;
+    final Decimal balanceDue = diff < Decimal.zero ? Decimal.zero : diff;
 
     return {
       'subtotal': t.subtotal,
       'vatAmount': t.vat,
-      'vatRate': _applyVAT ? vatRate : 0.0,
+      'vatRate': _applyVAT ? vatRate : Decimal.zero,
       'total': t.total,
       'paidMoney': t.paid,
-      'balanceDue': t.total - t.paid,
+      'balanceDue': balanceDue,
     };
   }
 
   bool canCheckout(CartChangeNotifier cartNotifier) {
     if (cartNotifier.cart.isEmpty) return false;
 
+    if (_documentType.contains('invoice') && !hasRealCustomer) return false;
+
     if (_paymentType == _PayType.deposit) {
-      final totals = CartPayloadBuilder(
-        providerId: 0,
-        sellingUserId: 0,
-        cart: cartNotifier.cart,
-        applyVAT: _applyVAT,
-        paymentType: PayType.deposit,
-        depositAmount: _depositAmount,
-      ).computeTotals(cartNotifier.cart.totalAmount);
-      if (_depositAmount <= 0 || _depositAmount > totals.total) return false;
+      final builder = _totalsBuilderFor(cartNotifier.cart);
+      final totals = builder.computeTotals(cartNotifier.cart.totalAmount);
+      if (_depositAmount <= Decimal.zero || _depositAmount > totals.total) {
+        return false;
+      }
     }
     return true;
   }
 
+  CartPayloadBuilder _totalsBuilderFor(Cart cart) {
+    return CartPayloadBuilder(
+      providerId: 0,
+      sellingUserId: 0,
+      cart: cart,
+      applyVAT: _applyVAT,
+      paymentType: _payTypeFrom(_paymentType),
+      paymentMethod: _payMethodFrom(_paymentMethod),
+      depositAmount: _depositAmount,
+    );
+  }
+
+  /// Flat summary map for display and telemetry.
+  ///
+  /// Monetary entries are [Decimal]; callers that `jsonEncode` the
+  /// result should convert them with `double.parse(v.toString())` (or
+  /// whatever wire helper the caller uses) at the boundary.
   Map<String, dynamic> getCheckoutSummary(CartChangeNotifier cartNotifier) {
     final totals = calculateTotals(cartNotifier);
     return {

@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:verdelia_core/business/finance/ProvidedService.dart';
@@ -28,7 +29,7 @@ class ServicePriceColumn extends StatelessWidget {
         ),
 
         // Original Price with discount
-        if (service.discountPercentage > 0) ...[
+        if (service.discountPercentage > Decimal.zero) ...[
           const SizedBox(height: 4),
           Text(
             loc.price(service.basePrice.toStringAsFixed(2)),
@@ -57,7 +58,7 @@ class ServicePriceColumn extends StatelessWidget {
         ),
 
         // Profit indicator
-        if (service.profitMargin > 0) ...[
+        if (service.profitMargin > Decimal.zero) ...[
           const SizedBox(height: 8),
           Text(
             '${service.profitMargin.toStringAsFixed(1)}% ${loc.profitMargin ?? 'margin'}',

@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_core/business/Product.dart';
 import 'product_state.dart';
@@ -13,11 +14,13 @@ class ProductCart {
   int get totalItems =>
       _state.cartQuantities.values.fold(0, (sum, q) => sum + q);
 
-  double get totalPrice {
-    double total = 0;
+  /// Sum of `product_price × quantity` across every line, in
+  /// [Decimal]. Exact.
+  Decimal get totalPrice {
+    Decimal total = Decimal.zero;
     for (final item in _state.cartItems) {
       final qty = _state.cartQuantities[item.id_product] ?? 0;
-      total += (item.product_price ?? 0) * qty;
+      total += (item.product_price ?? Decimal.zero) * Decimal.fromInt(qty);
     }
     return total;
   }

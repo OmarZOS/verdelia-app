@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:verdelia_core/business/finance/ProvidedService.dart';
@@ -117,6 +118,8 @@ class _ServiceConfigurationSheetState extends State<ServiceConfigurationSheet> {
                           loc: loc,
                           theme: theme,
                           colorScheme: colorScheme,
+                          // `ProvidedService.finalPrice` is `Decimal`
+                          // after the ProvidedService migration.
                           unitPrice: widget.service.finalPrice,
                           controller: _quantityController,
                           focusNode: _quantityFocus,
@@ -262,8 +265,6 @@ class _ServiceConfigurationSheetState extends State<ServiceConfigurationSheet> {
       parameters: _parameters.isNotEmpty ? _parameters : null,
     );
 
-    // The loc read above is only used for _scheduleError; keep it in
-    // case a future validation path needs a message. Silenced via `_`.
     assert(loc is AppLocalizations);
 
     Navigator.pop(context);
@@ -280,10 +281,6 @@ class _ServiceConfigurationSheetState extends State<ServiceConfigurationSheet> {
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
-      // Allow picking past dates so a service that was already
-      // scheduled can have its date adjusted backwards if needed.
-      // Tighten this to `DateTime.now()` if past dates are invalid
-      // for your business rules.
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       locale: locale,
@@ -300,13 +297,10 @@ class _ServiceConfigurationSheetState extends State<ServiceConfigurationSheet> {
 
   Future<void> _showTimePicker() async {
     final initial = _parseTime(_timeController.text) ?? TimeOfDay.now();
-    final locale = Localizations.localeOf(context);
 
     final picked = await showTimePicker(
       context: context,
       initialTime: initial,
-      // Force 24h format to match the `HH:mm` string we store.
-      // Set to null to follow the platform's locale setting.
       builder: (context, child) {
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
@@ -328,7 +322,6 @@ class _ServiceConfigurationSheetState extends State<ServiceConfigurationSheet> {
   // Date/time parsing helpers
   // ══════════════════════════════════════════════════════════════════
 
-  /// Parse a `YYYY-MM-DD` string. Returns null on any malformed input.
   DateTime? _parseDate(String raw) {
     if (raw.isEmpty) return null;
     try {
@@ -338,7 +331,6 @@ class _ServiceConfigurationSheetState extends State<ServiceConfigurationSheet> {
     }
   }
 
-  /// Parse an `HH:mm` string. Returns null on any malformed input.
   TimeOfDay? _parseTime(String raw) {
     if (raw.isEmpty) return null;
     final parts = raw.split(':');
@@ -350,8 +342,6 @@ class _ServiceConfigurationSheetState extends State<ServiceConfigurationSheet> {
     return TimeOfDay(hour: hour, minute: minute);
   }
 
-  /// A sensible default for a new scheduling: tomorrow at the same
-  /// time of day.
   DateTime _defaultDate() => DateTime.now().add(const Duration(days: 1));
 
   // ══════════════════════════════════════════════════════════════════
@@ -359,8 +349,6 @@ class _ServiceConfigurationSheetState extends State<ServiceConfigurationSheet> {
   // ══════════════════════════════════════════════════════════════════
 
   bool _shouldShowParameters() {
-    // Wire to your service model once it exposes configurable
-    // parameters. Currently always false — no parameters section.
     return false;
   }
 }
@@ -518,7 +506,10 @@ class _QuantitySection extends StatelessWidget {
   final AppLocalizations loc;
   final ThemeData theme;
   final ColorScheme colorScheme;
-  final double unitPrice;
+
+  /// Unit price, in [Decimal].
+  final Decimal unitPrice;
+
   final TextEditingController controller;
   final FocusNode focusNode;
   final VoidCallback? onDecrement;
@@ -539,6 +530,11 @@ class _QuantitySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // `Decimal * int` isn't defined; widen the quantity to `Decimal`
+    // for the multiplication. `Decimal * Decimal` is exact.
+    final int qty = _currentQuantity(controller);
+    final Decimal lineTotal = unitPrice * Decimal.fromInt(qty);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -628,15 +624,15 @@ class _QuantitySection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 10),
-        // Price math line: unit × qty = total. Wrapped in a
-        // FittedBox so a long formatted total can't overflow.
+        // Price math line: unit × qty = total. `Decimal.toStringAsFixed(2)`
+        // produces the same two-decimal string as the `double` path.
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: AlignmentDirectional.centerStart,
           child: Text(
             '${loc.currencySymbol}${unitPrice.toStringAsFixed(2)} '
-            '× ${controller.text} '
-            '= ${loc.currencySymbol}${(unitPrice * _currentQuantity(controller)).toStringAsFixed(2)}',
+            '× $qty '
+            '= ${loc.currencySymbol}${lineTotal.toStringAsFixed(2)}',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
@@ -730,9 +726,6 @@ class _ServiceDetailsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        // Meta line: duration on the left, price on the right. Uses
-        // Wrap so on narrow sheets the price drops to a new line
-        // instead of crowding the duration.
         Wrap(
           spacing: 16,
           runSpacing: 6,
@@ -745,6 +738,8 @@ class _ServiceDetailsSection extends StatelessWidget {
             ),
             _MetaItem(
               icon: Icons.attach_money_rounded,
+              // `finalPrice` is `Decimal` after migration;
+              // `toStringAsFixed(2)` works directly.
               label: loc.price(service.finalPrice.toStringAsFixed(2)),
               theme: theme,
               colorScheme: colorScheme,
@@ -1040,9 +1035,6 @@ class _Actions extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Stack vertically on very narrow sheets where two buttons
-        // can't hold "Cancel" + "Save Configuration" in the ambient
-        // locale.
         final stack = constraints.maxWidth < 340;
 
         final cancelButton = OutlinedButton(

@@ -7902,4 +7902,103 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get plansAllSubtitleFree => 'أنت على الخطة المجانية. كل ما يلي متاح عندما تحتاجه.';
+
+  @override
+  String get deliveryDetailsTotalWeightLabel => 'الوزن الإجمالي';
+
+  @override
+  String get deliveryDetailsTotalWeightHelper => 'وزن الشحنة الكاملة بالكيلوغرام';
+
+  @override
+  String get deliveryDetailsBrokerLabel => 'شركة الشحن';
+
+  @override
+  String get deliveryDetailsBrokerNone => 'غير معيّن';
+
+  @override
+  String get deliveryDetailsBrokerUnverified => 'غير موثّق';
+
+  @override
+  String get commonRetry => 'إعادة المحاولة';
+
+  @override
+  String get deliveryDetailsBrokerLoading => 'جارٍ تحميل شركات الشحن…';
+
+  @override
+  String get deliveryDetailsBrokerLoadFailed => 'تعذّر تحميل شركات الشحن';
+
+  @override
+  String get deliveryDetailsBrokerNoneAvailable => 'لا توجد شركات شحن متاحة';
+
+  @override
+  String deliveryDetailsBrokerHelper(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count شركة شحن متاحة',
+      many: '$count شركة شحن متاحة',
+      few: '$count شركات شحن متاحة',
+      two: 'شركتا شحن متاحتان',
+      one: 'شركة شحن واحدة متاحة',
+      zero: 'لا توجد شركات شحن',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get deliveryDetailsDimensionsLabel => 'الأبعاد';
+
+  @override
+  String get deliveryDetailsUnitLabel => 'الوحدة';
+
+  @override
+  String get deliveryDetailsWeightUnitLabel => 'وحدة الوزن';
+
+  @override
+  String get deliveryDetailsValidationDimensionsFormat => 'استخدم الصيغة الطول×العرض×الارتفاع، مثال: 5×5×5';
+
+  @override
+  String get vatRateExempt => 'معفى من ضريبة القيمة المضافة';
+
+  @override
+  String get vatRateReduced => 'تطبق الضريبة المخفّضة على هذا العنصر';
+
+  @override
+  String get vatRateStandard => 'تطبق الضريبة القياسية على هذا العنصر';
+
+  @override
+  String get metaUpdatedLabel => 'آخر تحديث';
+
+  @override
+  String get deliveryGoodsLabel => 'البضائع';
+
+  @override
+  String get deliveryPackagesLabel => 'الطرود';
+
+  @override
+  String get invoiceTotalLabel => 'إجمالي الفاتورة';
+
+  @override
+  String get costNotAvailable => 'تفصيل التكلفة غير متوفر لهذه العملية';
+
+  @override
+  String get itemBrandLabel => 'العلامة التجارية';
+
+  @override
+  String get itemUnitLabel => 'الوحدة';
+
+  @override
+  String get itemBarcodeLabel => 'الباركود';
+
+  @override
+  String get itemAvailableLabel => 'المتوفر';
+
+  @override
+  String get itemCategoryLabel => 'الفئة';
+
+  @override
+  String get itemProviderLabel => 'المزوّد';
+
+  @override
+  String get itemDescriptionLabel => 'الوصف';
 }

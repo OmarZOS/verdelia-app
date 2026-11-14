@@ -1,4 +1,6 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
+import 'package:verdelia_core/business/finance/OrderedItem.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:app_constants/app_constants.dart';
 import 'package:verdelia_core/business/finance/Order.dart';
@@ -202,11 +204,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  double _calculateTotalPaid(List<dynamic> orders) {
-    return orders.fold(0.0, (sum, order) {
-      final price = order.totalPrice is double
-          ? order.totalPrice
-          : double.tryParse(order.totalPrice?.toString() ?? '0') ?? 0.0;
+  Decimal _calculateTotalPaid(List<dynamic> orders) {
+    return orders.fold(Decimal.zero, (sum, order) {
+      final price = order.totalPrice is Decimal
+          ? order.totalPrice as Decimal
+          : Decimal.tryParse(order.totalPrice?.toString() ?? '0') ??
+              Decimal.zero;
       return sum + price;
     });
   }
@@ -430,7 +433,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       ),
                     ),
                     Text(
-                      loc.price(order.totalPrice?.toStringAsFixed(2) ?? '0.00'),
+                      loc.price(
+                        (order.totalPrice ?? Decimal.zero).toStringAsFixed(2),
+                      ),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.primary,
@@ -698,7 +703,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                "${loc.totalTxt}: ${loc.price((order?.totalPrice ?? 0.0).toStringAsFixed(2))}",
+                "${loc.totalTxt}: ${loc.price((order?.totalPrice ?? Decimal.zero).toStringAsFixed(2))}",
                 style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 16),
@@ -778,8 +783,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
           ),
         ),
         title: Text(item.orderedProduct?.productName ?? ""),
-        subtitle: Text(loc.qtyTxt(item.orderedQuantity,
-            loc.price(item.unitPrice.toStringAsFixed(2)))),
+        subtitle: Text(loc.qtyTxt(
+          item.orderedQuantity,
+          loc.price(item.unitPrice.toStringAsFixed(2)),
+        )),
         trailing: Text(
           loc.price(item.totalPrice.toStringAsFixed(2)),
           style: theme.textTheme.bodyMedium?.copyWith(

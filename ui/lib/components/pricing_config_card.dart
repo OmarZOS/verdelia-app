@@ -4,38 +4,37 @@ import 'dart:async';
 import 'dart:ui' show FontFeature;
 
 import 'package:app_constants/app_constants.dart';
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 
-/// Pure view over [PricingState].
-///
-/// The card never derives anything. It reads the five values, renders
-/// four inputs (base, tax, and whichever of profit/final is the driver
-/// for the current mode), and emits raw user input. Deriving the paired
-/// field is [PricingState]'s job — that's why the paired field can't
-/// desync: there is exactly one place that computes it.
 class PricingConfigCard extends StatefulWidget {
-  final double basePrice;
-  final double taxPercentage;
-  final double profitMargin;
-  final double finalPrice;
+  /// Base price, in [Decimal].
+  final Decimal basePrice;
+
+  /// Tax percentage (e.g. `19` for 19%), in [Decimal].
+  final Decimal taxPercentage;
+
+  /// Profit margin percentage (e.g. `25` for 25%), in [Decimal].
+  final Decimal profitMargin;
+
+  /// Final sale price, in [Decimal].
+  final Decimal finalPrice;
+
   final PricingMode mode;
 
-  /// AI-suggested selling price, or null. Purely a display / one-tap
-  /// affordance — the card does not store it.
-  final double? aiPrice;
+  /// AI-suggested final price, in [Decimal]. Null when no suggestion.
+  final Decimal? aiPrice;
 
-  final ValueChanged<double> onBasePriceChanged;
-  final ValueChanged<double> onTaxPercentageChanged;
-  final ValueChanged<double> onProfitMarginChanged;
-  final ValueChanged<double> onFinalPriceChanged;
+  final ValueChanged<Decimal> onBasePriceChanged;
+  final ValueChanged<Decimal> onTaxPercentageChanged;
+  final ValueChanged<Decimal> onProfitMarginChanged;
+  final ValueChanged<Decimal> onFinalPriceChanged;
   final ValueChanged<PricingMode> onModeChanged;
 
-  /// Push the AI price into the driver field for the current mode.
   final VoidCallback onAcceptAiPrice;
 
-  /// Debounce for text-field commits.
   final Duration debounce;
 
   const PricingConfigCard({
@@ -73,13 +72,21 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
   Timer? _debounce;
   String? _pendingField;
 
+  final Map<String, String> _lastRendered = {
+    'base': '',
+    'tax': '',
+    'profit': '',
+    'final': '',
+  };
+
   @override
   void initState() {
     super.initState();
-    _basePriceController = _makeController(widget.basePrice);
-    _taxController = _makeController(widget.taxPercentage);
-    _profitController = _makeController(widget.profitMargin);
-    _finalPriceController = _makeController(widget.finalPrice);
+
+    _basePriceController = _makeController(widget.basePrice, 'base');
+    _taxController = _makeController(widget.taxPercentage, 'tax');
+    _profitController = _makeController(widget.profitMargin, 'profit');
+    _finalPriceController = _makeController(widget.finalPrice, 'final');
 
     _basePriceFocus.addListener(() => _flushOnBlur(_basePriceFocus, 'base'));
     _taxFocus.addListener(() => _flushOnBlur(_taxFocus, 'tax'));
@@ -87,8 +94,11 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
     _finalPriceFocus.addListener(() => _flushOnBlur(_finalPriceFocus, 'final'));
   }
 
-  TextEditingController _makeController(double value) {
+  /// Create a controller seeded with the parent's value, and record
+  /// what the field currently shows.
+  TextEditingController _makeController(Decimal value, String field) {
     final text = value.toStringAsFixed(2);
+    _lastRendered[field] = text;
     return TextEditingController(text: text)
       ..selection = TextSelection(baseOffset: 0, extentOffset: text.length);
   }
@@ -97,26 +107,79 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
   void didUpdateWidget(covariant PricingConfigCard oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (widget.basePrice != oldWidget.basePrice && !_basePriceFocus.hasFocus) {
-      _basePriceController.text = widget.basePrice.toStringAsFixed(2);
-    }
-    if (widget.taxPercentage != oldWidget.taxPercentage &&
-        !_taxFocus.hasFocus) {
-      _taxController.text = widget.taxPercentage.toStringAsFixed(2);
-    }
-    if (widget.profitMargin != oldWidget.profitMargin &&
-        !_profitFocus.hasFocus) {
-      _profitController.text = widget.profitMargin.toStringAsFixed(2);
-    }
-    if (widget.finalPrice != oldWidget.finalPrice &&
-        !_finalPriceFocus.hasFocus) {
-      _finalPriceController.text = widget.finalPrice.toStringAsFixed(2);
-    }
+    _syncField(
+      controller: _basePriceController,
+      focusNode: _basePriceFocus,
+      field: 'base',
+      incoming: widget.basePrice,
+      oldValue: oldWidget.basePrice,
+    );
+    _syncField(
+      controller: _taxController,
+      focusNode: _taxFocus,
+      field: 'tax',
+      incoming: widget.taxPercentage,
+      oldValue: oldWidget.taxPercentage,
+    );
+    _syncField(
+      controller: _profitController,
+      focusNode: _profitFocus,
+      field: 'profit',
+      incoming: widget.profitMargin,
+      oldValue: oldWidget.profitMargin,
+    );
+    _syncField(
+      controller: _finalPriceController,
+      focusNode: _finalPriceFocus,
+      field: 'final',
+      incoming: widget.finalPrice,
+      oldValue: oldWidget.finalPrice,
+    );
 
     if (widget.mode != oldWidget.mode) {
-      _profitController.text = widget.profitMargin.toStringAsFixed(2);
-      _finalPriceController.text = widget.finalPrice.toStringAsFixed(2);
+      _forceSyncField(
+        controller: _profitController,
+        focusNode: _profitFocus,
+        field: 'profit',
+        value: widget.profitMargin,
+      );
+      _forceSyncField(
+        controller: _finalPriceController,
+        focusNode: _finalPriceFocus,
+        field: 'final',
+        value: widget.finalPrice,
+      );
     }
+  }
+
+  void _syncField({
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required String field,
+    required Decimal incoming,
+    required Decimal oldValue,
+  }) {
+    if (incoming == oldValue) return;
+    if (focusNode.hasFocus) return;
+
+    final formatted = incoming.toStringAsFixed(2);
+    if (_lastRendered[field] == formatted) return;
+
+    controller.text = formatted;
+    _lastRendered[field] = formatted;
+  }
+
+  void _forceSyncField({
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required String field,
+    required Decimal value,
+  }) {
+    if (focusNode.hasFocus) return;
+    final formatted = value.toStringAsFixed(2);
+    if (controller.text == formatted) return;
+    controller.text = formatted;
+    _lastRendered[field] = formatted;
   }
 
   @override
@@ -167,14 +230,17 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
     }
   }
 
-  double _parse(String text) => double.tryParse(text) ?? 0.0;
+  /// Parse user-typed text into a [Decimal]. Empty or unparseable
+  /// input becomes `Decimal.zero`, matching the old
+  /// `double.tryParse(text) ?? 0.0`.
+  Decimal _parse(String text) => _readDecimal(text) ?? Decimal.zero;
 
   // ==================== AI suggestion ====================
 
   bool get _aiAvailable {
     final ai = widget.aiPrice;
-    if (ai == null || ai <= 0) return false;
-    return (widget.finalPrice - ai).abs() >= 0.01;
+    if (ai == null || ai <= Decimal.zero) return false;
+    return (widget.finalPrice - ai).abs() >= Decimal.parse('0.01');
   }
 
   // ==================== Build ====================
@@ -185,17 +251,37 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
     final colorScheme = theme.colorScheme;
     final loc = AppLocalizations.of(context)!;
 
-    // Preview derivations — display only, never stored.
-    final taxAmount = widget.basePrice * widget.taxPercentage / 100;
-    final priceAfterTax = widget.basePrice + taxAmount;
-    final profitAmount = widget.mode == PricingMode.byProfit
-        ? priceAfterTax * (widget.profitMargin / 100)
-        : widget.finalPrice - priceAfterTax;
-    final profitPercentage = widget.mode == PricingMode.byProfit
-        ? widget.profitMargin
-        : priceAfterTax > 0
-            ? (profitAmount / priceAfterTax) * 100
-            : 0.0;
+    // `taxAmount = basePrice * taxPercentage / 100`, in Decimal.
+    // `.toDecimal(scaleOnInfinitePrecision: 2)` is required — `Decimal / Decimal` returns a
+    // `Rational`.
+    final Decimal taxAmount =
+        (widget.basePrice * widget.taxPercentage / Decimal.fromInt(100))
+            .toDecimal(scaleOnInfinitePrecision: 2);
+
+    final Decimal priceAfterTax = widget.basePrice + taxAmount;
+
+    // `profitAmount` and `profitPercentage` branch on `widget.mode`.
+    // Both branches compute in `Decimal`; the `byFinalPrice` branch's
+    // division needs `.toDecimal(scaleOnInfinitePrecision: 2)`.
+    final Decimal profitAmount;
+    if (widget.mode == PricingMode.byProfit) {
+      profitAmount =
+          (priceAfterTax * widget.profitMargin / Decimal.fromInt(100))
+              .toDecimal(scaleOnInfinitePrecision: 2);
+    } else {
+      profitAmount = widget.finalPrice - priceAfterTax;
+    }
+
+    final Decimal profitPercentage;
+    if (widget.mode == PricingMode.byProfit) {
+      profitPercentage = widget.profitMargin;
+    } else if (priceAfterTax > Decimal.zero) {
+      profitPercentage = (profitAmount / priceAfterTax)
+              .toDecimal(scaleOnInfinitePrecision: 2) *
+          Decimal.fromInt(100);
+    } else {
+      profitPercentage = Decimal.zero;
+    }
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -223,14 +309,14 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
               ),
             ],
           ),
-          if (widget.aiPrice != null && widget.aiPrice! > 0) ...[
+          if (widget.aiPrice != null && widget.aiPrice! > Decimal.zero) ...[
             const SizedBox(height: 14),
             _AiSuggestionStrip(
               aiPrice: widget.aiPrice!,
               currentFinal: widget.finalPrice,
               available: _aiAvailable,
               onAccept: widget.onAcceptAiPrice,
-              onReset: () => widget.onFinalPriceChanged(0.0),
+              onReset: () => widget.onFinalPriceChanged(Decimal.zero),
             ),
           ],
           const SizedBox(height: 20),
@@ -302,20 +388,17 @@ class _PricingConfigCardState extends State<PricingConfigCard> {
 // Shared number formatting helpers
 // ══════════════════════════════════════════════════════════════════
 
-/// Formats [amount] as a signed price using the locale's own sign
-/// placement. The `+` / `−` never sits on the wrong side of the
-/// numeral in Arabic, where the whole token is a single bidi run.
 extension _PricingFormatting on AppLocalizations {
-  String signedPrice(double amount, {bool alwaysSign = false}) {
+  String signedPrice(Decimal amount, {bool alwaysSign = false}) {
     final formatted = price(amount.abs().toStringAsFixed(2));
-    if (amount < 0) return priceNegative(formatted);
+    if (amount < Decimal.zero) return priceNegative(formatted);
     if (alwaysSign) return pricePositive(formatted);
     return formatted;
   }
 
-  String signedPercent(double value, {bool alwaysSign = false}) {
+  String signedPercent(Decimal value, {bool alwaysSign = false}) {
     final formatted = value.abs().toStringAsFixed(2);
-    if (value < 0) return '$formatted%−';
+    if (value < Decimal.zero) return '$formatted%−';
     if (alwaysSign) return '+$formatted%';
     return '$formatted%';
   }
@@ -324,8 +407,12 @@ extension _PricingFormatting on AppLocalizations {
 // ==================== AI SUGGESTION STRIP ====================
 
 class _AiSuggestionStrip extends StatelessWidget {
-  final double aiPrice;
-  final double currentFinal;
+  /// AI-suggested price, in [Decimal].
+  final Decimal aiPrice;
+
+  /// Current final price, in [Decimal].
+  final Decimal currentFinal;
+
   final bool available;
   final VoidCallback onAccept;
   final VoidCallback onReset;
@@ -344,9 +431,10 @@ class _AiSuggestionStrip extends StatelessWidget {
     final cs = theme.colorScheme;
     final loc = AppLocalizations.of(context)!;
 
-    final diff = (currentFinal - aiPrice).abs();
+    // `(currentFinal - aiPrice).abs` on `Decimal` returns `Decimal`.
+    final Decimal diff = (currentFinal - aiPrice).abs();
     final applied = !available;
-    final higher = currentFinal > aiPrice;
+    final bool higher = currentFinal > aiPrice;
 
     final accent = applied
         ? Colors.green
@@ -493,8 +581,6 @@ class _ModeTab extends StatelessWidget {
     required this.onTap,
   });
 
-  /// Below this per-tab width, the icon is dropped so the label
-  /// has room. Above it, both icon and label render.
   static const double _iconMinWidth = 120;
 
   @override
@@ -655,12 +741,23 @@ class _NumericField extends StatelessWidget {
 // ==================== PRICE PREVIEW ====================
 
 class _PricePreview extends StatelessWidget {
-  final double basePrice;
-  final double taxAmount;
-  final double priceAfterTax;
-  final double profitAmount;
-  final double profitPercentage;
-  final double finalPrice;
+  /// Base price, in [Decimal].
+  final Decimal basePrice;
+
+  /// Tax amount, in [Decimal].
+  final Decimal taxAmount;
+
+  /// Price after tax (`basePrice + taxAmount`), in [Decimal].
+  final Decimal priceAfterTax;
+
+  /// Profit amount, in [Decimal].
+  final Decimal profitAmount;
+
+  /// Profit percentage, in [Decimal].
+  final Decimal profitPercentage;
+
+  /// Final price, in [Decimal].
+  final Decimal finalPrice;
 
   const _PricePreview({
     required this.basePrice,
@@ -676,7 +773,7 @@ class _PricePreview extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final loc = AppLocalizations.of(context)!;
-    final profitPositive = profitAmount >= 0;
+    final profitPositive = profitAmount >= Decimal.zero;
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -863,4 +960,26 @@ class _PreviewRow extends StatelessWidget {
       ],
     );
   }
+}
+
+// ============================================================================
+// Decimal helper
+// ============================================================================
+
+/// Parses text into a [Decimal]. Returns `null` for empty or
+/// unparseable input, so callers can pick their own fallback.
+Decimal? _readDecimal(dynamic v) {
+  if (v == null) return null;
+  if (v is Decimal) return v;
+  if (v is int) return Decimal.fromInt(v);
+  if (v is double) {
+    if (v.isNaN || v.isInfinite) return null;
+    return Decimal.tryParse(v.toString());
+  }
+  if (v is String) {
+    final trimmed = v.trim();
+    if (trimmed.isEmpty) return null;
+    return Decimal.tryParse(trimmed);
+  }
+  return null;
 }

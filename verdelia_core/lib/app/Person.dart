@@ -234,12 +234,26 @@ class Person {
         detailsJson = json;
       }
 
-      String? bloodType = json['person_blood_type'] as String?;
-      if (bloodType == null && detailsJson['person_blood_type'] != null) {
-        bloodType = detailsJson['person_blood_type'] as String?;
+      // Blood type: accept both `person_blood_type` (ORM) and
+      // `blood_type` (flat API shape).
+      String? bloodType =
+          (json['person_blood_type'] ?? json['blood_type']) as String?;
+      if (bloodType == null) {
+        bloodType = (detailsJson['person_blood_type'] ??
+            detailsJson['blood_type']) as String?;
       }
 
+      // FIX: the payload nests the location under `person_location`.
+      // The old code only looked for `person_location_id` at the top
+      // level, which the payload never emits — so the FK was always
+      // null. Read `person_location.id_location` as the fallback.
       int? locationId = (json['person_location_id'] as num?)?.toInt();
+      if (locationId == null) {
+        final loc = json['person_location'];
+        if (loc is Map) {
+          locationId = (loc['id_location'] as num?)?.toInt();
+        }
+      }
       if (locationId == null && detailsJson['person_location_id'] != null) {
         locationId = (detailsJson['person_location_id'] as num?)?.toInt();
       }
@@ -250,8 +264,10 @@ class Person {
       }
 
       int detailsId = (json['person_details_id'] as num?)?.toInt() ?? 0;
-      if (detailsId == 0 && detailsJson['person_details_id'] != null) {
-        detailsId = (detailsJson['person_details_id'] as num?)?.toInt() ?? 0;
+      if (detailsId == 0) {
+        detailsId = (detailsJson['id_person_details'] as num?)?.toInt() ??
+            (detailsJson['person_details_id'] as num?)?.toInt() ??
+            0;
       }
 
       int idPerson = (json['id_person'] as num?)?.toInt() ?? 0;
@@ -267,8 +283,10 @@ class Person {
         doctor_id: doctorId,
         person_details: PersonDetails.fromJson(detailsJson),
         created_at: _parseDate(json['created_at']) ??
+            _parseDate(detailsJson['person_created_at']) ??
             _parseDate(detailsJson['created_at']),
         updated_at: _parseDate(json['updated_at']) ??
+            _parseDate(detailsJson['person_updated_at']) ??
             _parseDate(detailsJson['updated_at']),
       );
     } catch (e, stackTrace) {
@@ -289,6 +307,15 @@ class Person {
       'person_details': person_details.toJson(),
       if (created_at != null) 'created_at': created_at!.toIso8601String(),
       if (updated_at != null) 'updated_at': updated_at!.toIso8601String(),
+    };
+  }
+
+  Map<String, dynamic> toPersonApiJson() {
+    return {
+      'id_person': id_person,
+      'person_details_id': person_details_id,
+      ...person_details.toPersonApiFields(),
+      'blood_type': person_blood_type,
     };
   }
 
@@ -382,6 +409,17 @@ class PersonDetails {
   // ---- Contact (existing) ----
   final String? person_email;
   final String? person_phone;
+
+  Map<String, dynamic> toPersonApiFields() {
+    return {
+      'id_person_details': id_person_details,
+      'person_first_name': person_first_name,
+      'person_last_name': person_last_name,
+      'person_birth_date': person_birth_date?.toIso8601String(),
+      'person_gender': person_gender.wireValue,
+      'person_country_code': person_country_code,
+    };
+  }
 
   // ---- Contact (new: person_languages) ----
   /// Comma-separated language codes as stored on the DB column

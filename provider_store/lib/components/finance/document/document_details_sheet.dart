@@ -1,3 +1,5 @@
+// lib/screens/finance/document_details_sheet.dart
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:verdelia_core/app/AppUser.dart';
@@ -21,23 +23,26 @@ class DocumentDetailsSheet extends StatelessWidget {
 
   /// True when the document has no real customer attached.
   ///
-  /// A document counts as "guest" when neither a customer id nor a person id
-  /// was populated. Verify against live data before relying on this — if the
-  /// backend sometimes leaves both fields empty for a real customer, they'll
-  /// be misclassified.
+  /// A document counts as "guest" when neither a customer id nor a person
+  /// id was populated. Verify against live data before relying on this —
+  /// if the backend sometimes leaves both fields empty for a real
+  /// customer, they'll be misclassified.
   static bool isGuestDocument(FinancialDocument doc) {
-    final hasCustomerId = (doc.customerId ?? 0) > 0;
-    final hasPersonId = (doc.customerPersonId ?? 0) > 0;
+    // `customerId` and `customerPersonId` are non-null on the migrated
+    // `FinancialDocument`.
+    final hasCustomerId = doc.customerId > 0;
+    final hasPersonId = doc.customerPersonId > 0;
     return !hasCustomerId && !hasPersonId;
   }
 
   /// Label for the guest identity, e.g. "Guest #42".
   ///
   /// Uses `sourceId` as the cart id — that's what the finance notifier
-  /// groups by. If your backend puts a different id in `sourceId`, adjust
-  /// here or rename the label.
+  /// groups by. If your backend puts a different id in `sourceId`,
+  /// adjust here or rename the label.
   static String guestLabel(FinancialDocument doc, AppLocalizations loc) {
-    final cartId = doc.sourceId ?? 0;
+    // `sourceId` is non-null on the migrated `FinancialDocument`.
+    final cartId = doc.sourceId;
     return cartId > 0 ? 'Guest #$cartId' : loc.unknown;
   }
 
@@ -199,9 +204,6 @@ class DocumentDetailsSheet extends StatelessWidget {
           const SizedBox(height: 20),
 
           // ── Status badge · date · (guest chip) ──
-          // Layout: status + guest chip on the left, spacer, then date.
-          // Using a Wrap for the left cluster so long status+guest
-          // combinations don't overflow on narrow screens.
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -276,7 +278,6 @@ class DocumentDetailsSheet extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 10),
-              // Date on its own row — no Spacer crowding
               Row(
                 children: [
                   Icon(
@@ -305,8 +306,10 @@ class DocumentDetailsSheet extends StatelessWidget {
 
   Widget _buildFinancialMetrics(
       BuildContext context, ThemeData theme, AppLocalizations loc) {
-    final totalPaid = document.totalPaid ?? 0;
-    final totalDeposited = document.totalDeposited ?? 0;
+    // All three money fields are non-null `Decimal` after migration;
+    // no `?? 0` fallbacks.
+    final totalPaid = document.totalPaid;
+    final totalDeposited = document.totalDeposited;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -367,7 +370,7 @@ class DocumentDetailsSheet extends StatelessWidget {
     required BuildContext context,
     required ThemeData theme,
     required String title,
-    required double amount,
+    required Decimal amount,
     required IconData icon,
     required Color color,
   }) {
@@ -434,13 +437,34 @@ class DocumentDetailsSheet extends StatelessWidget {
 
   Widget _buildPaymentProgress(
       BuildContext context, ThemeData theme, AppLocalizations loc) {
-    final totalPaid = document.totalPaid ?? 0;
-    final totalDeposited = document.totalDeposited ?? 0;
+    // `documentAmount`, `totalPaid`, `totalDeposited` are non-null
+    // `Decimal`.
+    final totalPaid = document.totalPaid;
+    final totalDeposited = document.totalDeposited;
     final totalReceived = totalPaid + totalDeposited;
-    final percentagePaid = document.documentAmount > 0
-        ? (totalReceived / document.documentAmount * 100).clamp(0.0, 100.0)
-        : 0.0;
-    final remainingAmount = document.remainingAmount;
+
+    // `Decimal` division returns a `Rational`; `.toDecimal(scaleOnInfinitePrecision: 2)` is
+    // required. `.clamp` isn't on `Decimal`, so the bounds are
+    // handled with manual `if`s.
+    Decimal percentagePaid = Decimal.zero;
+    if (document.documentAmount > Decimal.zero) {
+      final raw = (totalReceived / document.documentAmount)
+              .toDecimal(scaleOnInfinitePrecision: 2) *
+          Decimal.fromInt(100);
+      if (raw < Decimal.zero) {
+        percentagePaid = Decimal.zero;
+      } else if (raw > Decimal.fromInt(100)) {
+        percentagePaid = Decimal.fromInt(100);
+      } else {
+        percentagePaid = raw;
+      }
+    }
+
+    // Use the model's clamped `outstandingBalance` rather than the
+    // extension's unclamped `remainingAmount`. The extension can go
+    // negative on overpayment; the sheet shouldn't show a negative
+    // "remaining" — the model clamps it to zero.
+    final remainingAmount = document.outstandingBalance;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -488,7 +512,8 @@ class DocumentDetailsSheet extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // Progress bar
+          // Progress bar. `FractionallySizedBox` takes a `double`
+          // `widthFactor`, so the ratio is the one place we convert.
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: Container(
@@ -496,7 +521,10 @@ class DocumentDetailsSheet extends StatelessWidget {
               color: theme.colorScheme.surfaceVariant.withOpacity(0.4),
               child: FractionallySizedBox(
                 alignment: Alignment.centerLeft,
-                widthFactor: (percentagePaid / 100).clamp(0.0, 1.0),
+                widthFactor: (percentagePaid / Decimal.fromInt(100))
+                    .toDecimal(scaleOnInfinitePrecision: 2)
+                    .toDouble()
+                    .clamp(0.0, 1.0),
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -532,7 +560,7 @@ class DocumentDetailsSheet extends StatelessWidget {
                       FinancialUIManager.formatCurrency(
                           remainingAmount, context),
                       style: theme.textTheme.headlineSmall?.copyWith(
-                        color: remainingAmount > 0
+                        color: remainingAmount > Decimal.zero
                             ? theme.colorScheme.error
                             : theme.colorScheme.primary,
                         fontWeight: FontWeight.w800,
@@ -777,8 +805,10 @@ class DocumentDetailsSheet extends StatelessWidget {
       final personnelNotifier =
           Provider.of<PersonnelNotifier>(context, listen: false);
       return await personnelNotifier.getCustomerDisplayInfo(
-        customerId: document.customerId ?? 0,
-        customerType: document.customerType ?? 'unknown',
+        // `customerId` and `customerPersonId` are non-null after
+        // migration.
+        customerId: document.customerId,
+        customerType: document.customerType,
         personId: document.customerPersonId,
       );
     } catch (e) {
@@ -791,7 +821,8 @@ class DocumentDetailsSheet extends StatelessWidget {
     required ThemeData theme,
     required AppLocalizations loc,
   }) {
-    final cartId = document.sourceId ?? 0;
+    // `sourceId` is non-null after migration.
+    final cartId = document.sourceId;
     final hasCartId = cartId > 0;
     final color = theme.colorScheme.onSurfaceVariant;
 
@@ -1143,7 +1174,8 @@ class DocumentDetailsSheet extends StatelessWidget {
     required AppLocalizations loc,
     required BuildContext context,
   }) {
-    final hasSeller = document.sellerId != null && document.sellerId! > 0;
+    // `sellerId` is `int` (non-null) after migration.
+    final hasSeller = document.sellerId > 0;
     final color = hasSeller ? Colors.blue : Colors.grey;
 
     if (!hasSeller) {
@@ -1364,7 +1396,8 @@ class DocumentDetailsSheet extends StatelessWidget {
     ];
 
     // Optional supplier card takes the full width
-    final supplierId = document.supplierId ?? 0;
+    // `supplierId` is non-null after migration.
+    final supplierId = document.supplierId;
     final showSupplier = supplierId > 0;
 
     return Column(
@@ -1504,8 +1537,10 @@ class DocumentDetailsSheet extends StatelessWidget {
 
   Widget _buildActionButtons(
       BuildContext context, ThemeData theme, AppLocalizations loc) {
-    final remainingAmount = document.remainingAmount;
-    final hasBalance = remainingAmount > 0;
+    // Use the clamped `outstandingBalance`, not the unclamped
+    // extension's `remainingAmount`.
+    final remainingAmount = document.outstandingBalance;
+    final hasBalance = remainingAmount > Decimal.zero;
 
     return Column(
       children: [
@@ -1538,7 +1573,10 @@ class DocumentDetailsSheet extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => PaymentFormScreen(
-                        amountDue: document.remainingAmount,
+                        // `PaymentFormScreen.amountDue` and the
+                        // `onSubmit` amount parameter are `Decimal`
+                        // after the payment flow's migration.
+                        amountDue: document.outstandingBalance,
                         onSubmit: (amount, method, notes) async {
                           final notifier =
                               context.read<FinanceChangeNotifier>();

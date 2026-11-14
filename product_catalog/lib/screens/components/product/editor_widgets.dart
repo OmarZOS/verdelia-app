@@ -1,5 +1,6 @@
 // lib/screens/product_details/editor_widgets.dart
 
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:verdelia_core/business/Product.dart';
@@ -35,15 +36,6 @@ String _productCategoryHierarchy(
 // Fallback network image
 // ==================================================================
 
-/// Renders the first candidate URL that actually loads.
-///
-/// Walks [candidates] in order. When the current URL fails to load
-/// (network error, 404, malformed data), it advances to the next one.
-/// Renders [placeholderBuilder] only when every candidate has failed.
-///
-/// URLs are resolved and de-duplicated once on init, so a repeated
-/// source (e.g. the seller attached the origin image) is never fetched
-/// twice.
 class FallbackNetworkImage extends StatefulWidget {
   final List<String?> candidates;
   final BoxFit fit;
@@ -73,8 +65,6 @@ class _FallbackNetworkImageState extends State<FallbackNetworkImage> {
   @override
   void didUpdateWidget(covariant FallbackNetworkImage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Restart the walk when the candidate list changes (e.g. the
-    // product was edited and now points at a different image).
     if (!_sameCandidates(oldWidget.candidates, widget.candidates)) {
       _urls = _resolveUrls();
       _index = 0;
@@ -117,8 +107,6 @@ class _FallbackNetworkImageState extends State<FallbackNetworkImage> {
       key: ValueKey(_urls[_index]),
       fit: widget.fit,
       errorBuilder: (_, __, ___) {
-        // Defer the advance so we never call setState while the error
-        // callback is still inside the build phase.
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _advance();
         });
@@ -139,13 +127,6 @@ class _FallbackNetworkImageState extends State<FallbackNetworkImage> {
 class EditorHero extends StatelessWidget {
   final Product product;
   final bool isRTL;
-
-  /// Pre-resolved display name. When provided and non-empty, the hero
-  /// uses it directly instead of reading `product.product_name`.
-  ///
-  /// This lets the caller decide whether the linked IProduct's name or
-  /// the flat Product name wins. `EditorProductView` passes the value
-  /// from its `_localizedName` getter, which prefers the origin.
   final String? displayName;
 
   const EditorHero({
@@ -155,9 +136,6 @@ class EditorHero extends StatelessWidget {
     this.displayName,
   });
 
-  /// Ordered image candidates: seller's primary, the rest of the seller
-  /// gallery, then the linked origin's reference image. Passed straight
-  /// to [FallbackNetworkImage], which picks the first one that loads.
   List<String?> _imageCandidates() => <String?>[
         product.primaryImageUrl,
         ...product.imageUrls,
@@ -191,7 +169,6 @@ class EditorHero extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ─── Thumbnail with optional gallery count badge ──────
           SizedBox(
             width: 110,
             height: 110,
@@ -316,10 +293,9 @@ class EditorHero extends StatelessWidget {
         : product.product_name;
     if (localized.trim().isNotEmpty) return localized.trim();
 
-    final raw = (product.product_nameRaw ?? '').trim();
+    final raw = (product.genericNameRaw ?? '').trim();
     if (raw.isNotEmpty) return raw;
 
-    // Fall back to the id so editors can at least identify the row.
     final id = product.id_product;
     return id != null ? 'Product #$id' : '—';
   }
@@ -350,12 +326,22 @@ class PricingHero extends StatelessWidget {
     final cs = theme.colorScheme;
     final loc = AppLocalizations.of(context)!;
 
-    final base = product.product_base_price ?? 0;
-    final finalPrice = product.product_price ?? 0;
-    final margin = product.unitMargin;
-    final marginPct = product.unitMarginPercent;
-    final hasBase = base > 0;
-    final marginColor = (margin ?? 0) >= 0 ? const Color(0xFF1E8E5A) : cs.error;
+    // `product_base_price` and `product_price` are `Decimal?` after
+    // the Product migration. `?? Decimal.zero` matches the old
+    // `?? 0` fallback.
+    final Decimal base = product.product_base_price ?? Decimal.zero;
+    final Decimal finalPrice = product.product_price ?? Decimal.zero;
+
+    // `unitMargin` and `unitMarginPercent` are `Decimal?` getters on
+    // Product. `unitMarginPercent` returns a **fraction** (e.g.
+    // `0.152` for 15.2%), so `* 100` is the percent conversion.
+    final Decimal? margin = product.unitMargin;
+    final Decimal? marginPct = product.unitMarginPercent;
+
+    final bool hasBase = base > Decimal.zero;
+    final Color marginColor = (margin ?? Decimal.zero) >= Decimal.zero
+        ? const Color(0xFF1E8E5A)
+        : cs.error;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -420,7 +406,7 @@ class PricingHero extends StatelessWidget {
                 child: _BigPrice(
                   label: loc.finalPriceLabel,
                   caption: loc.finalPriceCaption,
-                  value: finalPrice > 0 ? finalPrice : null,
+                  value: finalPrice > Decimal.zero ? finalPrice : null,
                   color: cs.primary,
                   alignEnd: true,
                 ),
@@ -436,11 +422,15 @@ class PricingHero extends StatelessWidget {
                 Expanded(
                   child: _KpiPill(
                     label: loc.marginLabel,
+                    // `margin` is `Decimal?`; the null check promotes
+                    // it to non-null in the else branch. `>= Decimal.zero`
+                    // gives the same sign-prefix behaviour as the
+                    // original `>= 0`.
                     value: margin == null
                         ? '—'
-                        : '${margin >= 0 ? '+' : ''}${margin.toStringAsFixed(2)}',
+                        : '${margin >= Decimal.zero ? '+' : ''}${margin.toStringAsFixed(2)}',
                     color: marginColor,
-                    icon: (margin ?? 0) >= 0
+                    icon: (margin ?? Decimal.zero) >= Decimal.zero
                         ? Icons.trending_up_rounded
                         : Icons.trending_down_rounded,
                   ),
@@ -449,9 +439,12 @@ class PricingHero extends StatelessWidget {
                 Expanded(
                   child: _KpiPill(
                     label: loc.marginPercentLabel,
+                    // `marginPct` is a **fraction** (0.152 for 15.2%);
+                    // `* 100` gives the percent string the original
+                    // `(marginPct * 100).toStringAsFixed(1)` produced.
                     value: marginPct == null
                         ? '—'
-                        : '${(marginPct * 100).toStringAsFixed(1)}%',
+                        : '${(marginPct * Decimal.fromInt(100)).toStringAsFixed(1)}%',
                     color: marginColor,
                     icon: Icons.percent_rounded,
                   ),
@@ -569,6 +562,12 @@ class StockCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final loc = AppLocalizations.of(context)!;
+
+    // `product_quantity`, `product_reserved_quantity` and
+    // `product_available_quantity` are still `int` on the migrated
+    // Product — the migration kept these accessors as `int?` to avoid
+    // churn. The ratios are integer division in Dart, producing
+    // `double` for `int / int`, so no `Decimal` conversion here.
     final stock = product.product_quantity ?? 0;
     final reserved = product.product_reserved_quantity ?? 0;
     final available = product.product_available_quantity;
@@ -660,19 +659,22 @@ class MetadataCard extends StatelessWidget {
       loc,
     );
 
-    // Barcode: prefer the origin's extracted barcode when present —
-    // it came from the physical product, not from a human typing.
     final barcode = (origin != null && origin.iproductBarcode.isNotEmpty)
         ? origin.iproductBarcode
         : (product.product_barcode ?? '—');
 
-    // Imported brand: the origin's own brand field, when non-empty
-    // and different from the seller's. Shown as a distinct chip so a
-    // steward can spot a mismatch.
     final originBrand = (origin != null &&
             origin.iproductBrand.isNotEmpty &&
             origin.iproductBrand != (product.product_brand ?? ''))
         ? origin.iproductBrand
+        : null;
+
+    // `origin.iproductInfoConfidence` is `Decimal` (non-null, `[0, 1]`)
+    // after the IProduct migration. `* Decimal.fromInt(100)` gives
+    // the percent value; `.round()` returns a `Decimal`; `.toString()`
+    // renders the whole-number percent string.
+    final String? originConfidenceLabel = origin != null
+        ? '${(origin.iproductInfoConfidence * Decimal.fromInt(100)).round()}%'
         : null;
 
     final entries = <_MetaEntry>[
@@ -718,7 +720,6 @@ class MetadataCard extends StatelessWidget {
             ? loc.visibilityVisibleLabel
             : loc.visibilityHiddenLabel,
       ),
-      // ---- origin-only rows, rendered when the origin exists ----
       if (originBrand != null)
         _MetaEntry(
           icon: Icons.business_outlined,
@@ -731,11 +732,11 @@ class MetadataCard extends StatelessWidget {
           label: loc.metaImportSourceLabel,
           value: origin.iproductInfoSource,
         ),
-      if (origin != null)
+      if (originConfidenceLabel != null)
         _MetaEntry(
           icon: Icons.verified_outlined,
           label: loc.metaImportConfidenceLabel,
-          value: '${(origin.iproductInfoConfidence * 100).round()}%',
+          value: originConfidenceLabel,
         ),
     ];
 
@@ -885,7 +886,10 @@ class _SectionCard extends StatelessWidget {
 class _BigPrice extends StatelessWidget {
   final String label;
   final String caption;
-  final double? value;
+
+  /// Price, in [Decimal]. Null renders `—`.
+  final Decimal? value;
+
   final Color color;
   final bool alignEnd;
 
@@ -916,6 +920,8 @@ class _BigPrice extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
+          // `Decimal` has `toStringAsFixed`, same two-decimal output
+          // the `double` path produced.
           value == null ? '—' : value!.toStringAsFixed(2),
           style: theme.textTheme.headlineSmall?.copyWith(
             color: color,

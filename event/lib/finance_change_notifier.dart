@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:decimal/decimal.dart';
 import 'package:event/components/finance/finance_download.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_core/business/finance/FinancialDocument.dart';
@@ -35,6 +36,12 @@ void _log(String tag, String message, {Object? error, StackTrace? stack}) {
 /// Business operations (carts, deliveries, per-supplier operation summaries)
 /// are handled by [BusinessOperationNotifier] — this class does not touch
 /// them.
+///
+/// ## Money
+///
+/// [totalRevenue], [totalCollected], [totalOutstanding], [collectionRate],
+/// [totalAmount], and every analytics getter that returns money, are
+/// [Decimal]. [FinanceDocumentFilter.minAmount] / [maxAmount] are [Decimal?].
 class FinanceChangeNotifier extends ChangeNotifier {
   // ==================== DEPENDENCIES ====================
 
@@ -76,18 +83,20 @@ class FinanceChangeNotifier extends ChangeNotifier {
   bool get hasMoreDocuments => _pagination.hasMore;
   String? get currentSearchQuery => _search.currentQuery;
 
-  // Analytics
+  // Analytics — all money flows through `Decimal` after the
+  // `FinanceAnalytics` migration.
   bool get isCalculatingAnalytics => _analytics.isCalculating;
-  double get totalRevenue => _analytics.totalRevenue;
-  double get totalCollected => _analytics.totalCollected;
-  double get totalOutstanding => _analytics.totalOutstanding;
+  Decimal get totalRevenue => _analytics.totalRevenue;
+  Decimal get totalCollected => _analytics.totalCollected;
+  Decimal get totalOutstanding => _analytics.totalOutstanding;
   int get totalTransactions => _analytics.totalTransactions;
-  Map<String, double> get revenueBySource => _analytics.revenueBySource;
-  Map<String, double> get collectionsByStatus => _analytics.collectionsByStatus;
-  Map<String, double> get revenueByDocumentType =>
+  Map<String, Decimal> get revenueBySource => _analytics.revenueBySource;
+  Map<String, Decimal> get collectionsByStatus =>
+      _analytics.collectionsByStatus;
+  Map<String, Decimal> get revenueByDocumentType =>
       _analytics.revenueByDocumentType;
   AnalyticsCache? get analyticsCache => _analytics.cache;
-  double get collectionRate => _analytics.collectionRate;
+  Decimal get collectionRate => _analytics.collectionRate;
 
   // Download state
   double _downloadProgress = 0.0;
@@ -95,9 +104,12 @@ class FinanceChangeNotifier extends ChangeNotifier {
   bool get isDownloading => _isDownloading;
   bool _isDownloading = false;
 
-  double get totalAmount {
+  /// Sum of every filtered document's `documentAmount`, in [Decimal].
+  Decimal get totalAmount {
     return filteredDocuments.fold(
-        0.0, (sum, doc) => sum + (doc.documentAmount ?? 0));
+      Decimal.zero,
+      (sum, doc) => sum + doc.documentAmount,
+    );
   }
 
   // ==================== PROVIDER SCOPE ====================
@@ -117,7 +129,6 @@ class FinanceChangeNotifier extends ChangeNotifier {
 
     _providerId = newProviderId;
 
-    // Clear all document state.
     _documentOps.clear();
     _grouping.clear();
     _cache.clear();
@@ -358,9 +369,16 @@ class FinanceChangeNotifier extends ChangeNotifier {
     }
   }
 
+  /// Submit a payment for an invoice.
+  ///
+  /// [amount] is a [Decimal] — the wire field `payment_amount` is
+  /// `Optional[float]` on the server, but the client keeps it exact
+  /// until the JSON boundary. `InvoiceService.addFinancialDocument`
+  /// serialises it; if that helper expects a `double` it needs to
+  /// widen to `Decimal` (see the note at the bottom).
   Future<PaymentSubmitResult> submitPayment({
     required int invoiceId,
-    required double amount,
+    required Decimal amount,
     required String method,
     String status = "pending",
     String? notes,
@@ -373,7 +391,7 @@ class FinanceChangeNotifier extends ChangeNotifier {
       return const PaymentSubmitResult.failure(
           'No invoice linked to this document.');
     }
-    if (amount <= 0) {
+    if (amount <= Decimal.zero) {
       _log('submitPayment', 'REJECTED: amount <= 0');
       return const PaymentSubmitResult.failure(
           'Payment amount must be greater than zero.');
@@ -388,6 +406,10 @@ class FinanceChangeNotifier extends ChangeNotifier {
     try {
       final payment = await _invoiceService.addFinancialDocument({
         "payment_invoice_id": invoiceId,
+        // `InvoiceService.addFinancialDocument` takes a `dynamic`
+        // map, so it accepts `Decimal` as-is. If it `jsonEncode`s
+        // this map, the caller must convert to `num` first (see
+        // the note at the bottom).
         "payment_amount": amount,
         "payment_method": method,
         "payment_status": status,
@@ -479,19 +501,19 @@ class FinanceChangeNotifier extends ChangeNotifier {
 
   // ==================== STATISTICS HELPERS ====================
 
-  Map<String, double> getAmountByStatus() =>
+  Map<String, Decimal> getAmountByStatus() =>
       _analytics.getAmountByStatus(filteredDocuments);
 
   Map<String, int> getTransactionCountBySource() =>
       _analytics.getTransactionCountBySource(filteredDocuments);
 
-  Map<String, double> getAverageAmountByDocumentType() =>
+  Map<String, Decimal> getAverageAmountByDocumentType() =>
       _analytics.getAverageAmountByDocumentType(filteredDocuments);
 
-  Map<int, double> getTopCustomersByRevenue({int limit = 10}) =>
+  Map<int, Decimal> getTopCustomersByRevenue({int limit = 10}) =>
       _analytics.getTopCustomersByRevenue(filteredDocuments, limit: limit);
 
-  Map<DateTime, double> getDailyRevenueTrend({int days = 30}) =>
+  Map<DateTime, Decimal> getDailyRevenueTrend({int days = 30}) =>
       _analytics.getDailyRevenueTrend(filteredDocuments, days: days);
 
   // ==================== PRIVATE HELPERS ====================
@@ -556,10 +578,12 @@ class FinanceChangeNotifier extends ChangeNotifier {
         }
         if (doc.customerId?.toString().contains(query) == true) return true;
         if (doc.supplierId?.toString().contains(query) == true) return true;
-        if (doc.documentType?.toLowerCase().contains(query) == true)
+        if (doc.documentType?.toLowerCase().contains(query) == true) {
           return true;
-        if (doc.paymentStatus?.toLowerCase().contains(query) == true)
+        }
+        if (doc.paymentStatus?.toLowerCase().contains(query) == true) {
           return true;
+        }
         return false;
       }).toList();
     }
@@ -639,8 +663,13 @@ class FinanceDocumentFilter {
   final String? status;
   final DateTime? startDate;
   final DateTime? endDate;
-  final double? minAmount;
-  final double? maxAmount;
+
+  /// Minimum amount, in [Decimal]. `null` means "no lower bound".
+  final Decimal? minAmount;
+
+  /// Maximum amount, in [Decimal]. `null` means "no upper bound".
+  final Decimal? maxAmount;
+
   final int? supplierId;
   final int? personId;
   final int? clientId;
@@ -678,8 +707,8 @@ class FinanceDocumentFilter {
     String? status,
     DateTime? startDate,
     DateTime? endDate,
-    double? minAmount,
-    double? maxAmount,
+    Decimal? minAmount,
+    Decimal? maxAmount,
     int? supplierId,
     int? personId,
     int? clientId,
@@ -732,6 +761,9 @@ class FinanceDocumentFilter {
       hasAttachments == null &&
       isPaid == null;
 
+  /// Stable cache key. `Decimal.toString()` produces `"803.71"`, so
+  /// the joined string is the same shape a `double` produced for
+  /// two-decimal values.
   String toCacheKey() {
     return [
       documentType,
@@ -780,14 +812,14 @@ class PaymentSubmitResult {
 
 extension FinancialDocumentExtensions on FinancialDocument {
   bool get isPaid {
-    final status = paymentStatus?.toLowerCase() ?? '';
+    final status = paymentStatus.toLowerCase();
     return status.contains('paid') ||
         status.contains('fully_paid') ||
         status.contains('deposit_fully_covered');
   }
 
   bool get isUnpaid {
-    return !isPaid && paymentStatus?.toLowerCase().contains('unpaid') == true;
+    return !isPaid && paymentStatus.toLowerCase().contains('unpaid');
   }
 
   bool get isOverdue {
@@ -801,12 +833,24 @@ extension FinancialDocumentExtensions on FinancialDocument {
     return DateTime.now().difference(dueDate!).inDays;
   }
 
-  double get remainingAmount {
+  /// `documentAmount - (totalPaid + totalDeposited)`, in [Decimal].
+  Decimal get remainingAmount {
     return documentAmount - (totalPaid + totalDeposited);
   }
 
-  double get paymentPercentage {
-    if (documentAmount == 0) return 0;
-    return ((totalPaid + totalDeposited) / documentAmount * 100).clamp(0, 100);
+  /// Percentage of `documentAmount` that's been paid or deposited, in
+  /// [Decimal], clamped to `[0, 100]`.
+  ///
+  /// `.toDecimal(scaleOnInfinitePrecision: 2)` on the division: `Decimal / Decimal` returns a
+  /// `Rational`, which can't be assigned to a `Decimal`. The clamp is
+  /// a manual three-branch because `Decimal` has no `.clamp`.
+  Decimal get paymentPercentage {
+    if (documentAmount == Decimal.zero) return Decimal.zero;
+    final raw = ((totalPaid + totalDeposited) / documentAmount)
+            .toDecimal(scaleOnInfinitePrecision: 2) *
+        Decimal.fromInt(100);
+    if (raw < Decimal.zero) return Decimal.zero;
+    if (raw > Decimal.fromInt(100)) return Decimal.fromInt(100);
+    return raw;
   }
 }

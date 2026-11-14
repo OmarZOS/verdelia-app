@@ -7893,4 +7893,100 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get plansAllSubtitleFree => 'You\'re on the Free plan. Everything below is available when you need it.';
+
+  @override
+  String get deliveryDetailsTotalWeightLabel => 'Total weight';
+
+  @override
+  String get deliveryDetailsTotalWeightHelper => 'Weight of the whole shipment in kilograms';
+
+  @override
+  String get deliveryDetailsBrokerLabel => 'Shipping broker';
+
+  @override
+  String get deliveryDetailsBrokerNone => 'Unassigned';
+
+  @override
+  String get deliveryDetailsBrokerUnverified => 'Unverified';
+
+  @override
+  String get commonRetry => 'Retry';
+
+  @override
+  String get deliveryDetailsBrokerLoading => 'Loading brokers…';
+
+  @override
+  String get deliveryDetailsBrokerLoadFailed => 'Couldn\'t load brokers';
+
+  @override
+  String get deliveryDetailsBrokerNoneAvailable => 'No brokers available';
+
+  @override
+  String deliveryDetailsBrokerHelper(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count brokers available',
+      one: '1 broker available',
+      zero: 'No brokers',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get deliveryDetailsDimensionsLabel => 'Dimensions';
+
+  @override
+  String get deliveryDetailsUnitLabel => 'Unit';
+
+  @override
+  String get deliveryDetailsWeightUnitLabel => 'Weight unit';
+
+  @override
+  String get deliveryDetailsValidationDimensionsFormat => 'Use the format LxWxH, e.g. 5x5x5';
+
+  @override
+  String get vatRateExempt => 'Exempt from value-added tax';
+
+  @override
+  String get vatRateReduced => 'Reduced rate applies to this item';
+
+  @override
+  String get vatRateStandard => 'Standard rate applies to this item';
+
+  @override
+  String get metaUpdatedLabel => 'Updated';
+
+  @override
+  String get deliveryGoodsLabel => 'Goods';
+
+  @override
+  String get deliveryPackagesLabel => 'Packages';
+
+  @override
+  String get invoiceTotalLabel => 'Invoiced Total';
+
+  @override
+  String get costNotAvailable => 'Cost breakdown not available for this operation';
+
+  @override
+  String get itemBrandLabel => 'Brand';
+
+  @override
+  String get itemUnitLabel => 'Unit';
+
+  @override
+  String get itemBarcodeLabel => 'Barcode';
+
+  @override
+  String get itemAvailableLabel => 'Available';
+
+  @override
+  String get itemCategoryLabel => 'Category';
+
+  @override
+  String get itemProviderLabel => 'Provider';
+
+  @override
+  String get itemDescriptionLabel => 'Description';
 }

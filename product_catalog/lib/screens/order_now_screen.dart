@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:verdelia_core/business/finance/Cart.dart';
@@ -24,15 +25,27 @@ class _OrderNowScreenState extends State<OrderNowScreen> {
   bool _isSubmitting = false;
   final FocusNode _quantityFocusNode = FocusNode();
 
-  // Configurable values
-  static const double taxRate = 0.19;
-  static const double maxDiscount = 0.0;
+  // Configurable values, in Decimal.
+  static final Decimal _taxRate = Decimal.parse('0.19');
+  static final Decimal _maxDiscount = Decimal.zero;
 
   int get quantity => int.tryParse(_quantityController.text) ?? 1;
-  double get unitPrice => widget.product.product_price ?? 0.0;
-  double get subtotal => unitPrice * quantity;
-  double get taxAmount => subtotal * taxRate;
-  double get total => subtotal + taxAmount - maxDiscount;
+
+  /// Unit price, in [Decimal].
+  ///
+  /// `Product.product_price` is `Decimal?` after the Product
+  /// migration; `?? Decimal.zero` matches the old `?? 0.0`.
+  Decimal get unitPrice => widget.product.product_price ?? Decimal.zero;
+
+  /// Gross subtotal, in [Decimal]. `Decimal * int` isn't defined;
+  /// widen the quantity with `Decimal.fromInt`.
+  Decimal get subtotal => unitPrice * Decimal.fromInt(quantity);
+
+  /// Tax amount, in [Decimal].
+  Decimal get taxAmount => subtotal * _taxRate;
+
+  /// Grand total, in [Decimal].
+  Decimal get total => subtotal + taxAmount - _maxDiscount;
 
   @override
   void initState() {
@@ -62,12 +75,14 @@ class _OrderNowScreenState extends State<OrderNowScreen> {
     final userNotifier = context.read<AppUserNotifier>();
 
     try {
+      // `Order.buildSingleOrderData` takes `Decimal?` for
+      // `discount` and `taxRate` after the Order migration.
       final orderData = Order.buildSingleOrderData(
         product: widget.product,
         quantity: quantity,
         orderingUserId: userNotifier.appUser?.idAppUser ?? 0,
-        discount: maxDiscount,
-        taxRate: taxRate,
+        discount: _maxDiscount,
+        taxRate: _taxRate,
       );
 
       final orderNotifier = context.read<OrderChangeNotifier>();
@@ -129,23 +144,14 @@ class _OrderNowScreenState extends State<OrderNowScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Product header
                   _buildProductHeader(theme, localizations),
                   const SizedBox(height: 24),
-
-                  // Quantity selector
                   _buildQuantitySelector(localizations, theme),
                   const SizedBox(height: 24),
-
-                  // Price breakdown
                   _buildPriceBreakdown(localizations, theme),
                   const SizedBox(height: 24),
-
-                  // Total price
                   _buildTotalSection(localizations, theme),
                   const Spacer(),
-
-                  // Order button
                   _buildOrderButton(localizations, theme),
                 ],
               ),
@@ -176,6 +182,8 @@ class _OrderNowScreenState extends State<OrderNowScreen> {
         ),
         const SizedBox(height: 8),
         Text(
+          // `unitPrice` is `Decimal`; `toStringAsFixed(2)` produces
+          // the same two-decimal string the `double` path did.
           localizations.price(unitPrice.toStringAsFixed(2)),
           style: theme.textTheme.titleMedium?.copyWith(
             color: theme.colorScheme.primary,
@@ -294,15 +302,16 @@ class _OrderNowScreenState extends State<OrderNowScreen> {
           ),
           const SizedBox(height: 8),
           _buildPriceRow(
-            label: "${localizations.taxTxt} (${(taxRate * 100).toInt()}%)",
+            label:
+                "${localizations.taxTxt} (${(_taxRate * Decimal.fromInt(100)).toStringAsFixed(0)}%)",
             value: taxAmount,
             theme: theme,
           ),
-          if (maxDiscount > 0) ...[
+          if (_maxDiscount > Decimal.zero) ...[
             const SizedBox(height: 8),
             _buildPriceRow(
               label: localizations.discountText,
-              value: -maxDiscount,
+              value: -_maxDiscount,
               isDiscount: true,
               theme: theme,
             ),
@@ -314,7 +323,7 @@ class _OrderNowScreenState extends State<OrderNowScreen> {
 
   Widget _buildPriceRow({
     required String label,
-    required double value,
+    required Decimal value,
     bool isDiscount = false,
     required ThemeData theme,
   }) {
@@ -328,8 +337,10 @@ class _OrderNowScreenState extends State<OrderNowScreen> {
           ),
         ),
         Text(
+          // `value > 0` becomes `> Decimal.zero`. The
+          // `toStringAsFixed(2)` is unchanged.
           AppLocalizations.of(context)!.price(
-              "${isDiscount && value > 0 ? '-' : ''}${value.toStringAsFixed(2)}"),
+              "${isDiscount && value > Decimal.zero ? '-' : ''}${value.toStringAsFixed(2)}"),
           style: theme.textTheme.bodyMedium?.copyWith(
             color: isDiscount ? Colors.green : theme.colorScheme.onSurface,
             fontWeight: FontWeight.w600,

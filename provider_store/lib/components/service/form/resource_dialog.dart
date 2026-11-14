@@ -1,4 +1,5 @@
 // components/resource_dialog.dart
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:verdelia_core/business/finance/ProvidedService.dart';
@@ -45,25 +46,42 @@ class _ResourceRequirementDialogState extends State<ResourceRequirementDialog> {
     _initializeFields();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Resolve the product name once the provider tree is available.
+    // `Provider.of(..., listen: false)` throws in `initState` because
+    // `initState` runs before the first `build`, so we do it here.
+    final ref = _productRef;
+    if (ref != null && ref > 0 && _selectedProductName == null) {
+      try {
+        final productNotifier =
+            Provider.of<ProductNotifier>(context, listen: false);
+        final product = productNotifier.getProductByIdSync(ref);
+        final name = product?.product_name;
+        if (name != null && mounted) {
+          setState(() => _selectedProductName = name);
+        }
+      } catch (_) {
+        // Provider not reachable in this scope — leave the id-only label.
+      }
+    }
+  }
+
   void _initializeFields() {
     final existing = widget.existing;
     if (existing != null) {
       _nameController.text = existing.name;
       _typeController.text = existing.type;
+      // `quantity` and `costPerUnit` are `Decimal` now — emit with the
+      // same two-decimal precision the text field displays.
       _quantityController.text = existing.quantity.toString();
       _costPerUnitController.text = existing.costPerUnit.toStringAsFixed(2);
       _notesController.text = existing.notes ?? '';
       _isConsumable = existing.isConsumable;
       _productRef = existing.productRef;
-
-      if (_productRef != null && _productRef! > 0) {
-        try {
-          final productNotifier =
-              Provider.of<ProductNotifier>(context, listen: false);
-          final product = productNotifier.getProductByIdSync(_productRef!);
-          _selectedProductName = product?.product_name;
-        } catch (e) {}
-      }
+      // `_selectedProductName` is resolved in `didChangeDependencies`,
+      // once the provider tree is built.
     } else {
       _quantityController.text = '1';
       _costPerUnitController.text = '0.00';
@@ -138,8 +156,8 @@ class _ResourceRequirementDialogState extends State<ResourceRequirementDialog> {
                         if (value == null || value.isEmpty) {
                           return 'Please enter quantity';
                         }
-                        final qty = double.tryParse(value);
-                        if (qty == null || qty < 0) {
+                        final qty = Decimal.tryParse(value);
+                        if (qty == null || qty < Decimal.zero) {
                           return 'Please enter a valid number';
                         }
                         return null;
@@ -164,8 +182,8 @@ class _ResourceRequirementDialogState extends State<ResourceRequirementDialog> {
                         if (value == null || value.isEmpty) {
                           return 'Please enter cost per unit';
                         }
-                        final cost = double.tryParse(value);
-                        if (cost == null || cost < 0) {
+                        final cost = Decimal.tryParse(value);
+                        if (cost == null || cost < Decimal.zero) {
                           return 'Please enter a valid cost';
                         }
                         return null;
@@ -237,11 +255,16 @@ class _ResourceRequirementDialogState extends State<ResourceRequirementDialog> {
                 id: widget.existing?.id ?? 0,
                 name: _nameController.text,
                 type: _typeController.text,
-                quantity: double.parse(_quantityController.text),
+                // `ServiceResourceRequirement.quantity` and
+                // `.costPerUnit` are `Decimal` after the model
+                // migration. `double.parse` would fail here.
+                quantity:
+                    Decimal.tryParse(_quantityController.text) ?? Decimal.zero,
                 isConsumable: _isConsumable,
                 productRef: _productRef,
                 serviceId: widget.serviceId,
-                costPerUnit: double.parse(_costPerUnitController.text),
+                costPerUnit: Decimal.tryParse(_costPerUnitController.text) ??
+                    Decimal.zero,
                 notes: _notesController.text.isNotEmpty
                     ? _notesController.text
                     : null,
@@ -307,8 +330,10 @@ class _ResourceRequirementDialogState extends State<ResourceRequirementDialog> {
             }
             if (_costPerUnitController.text.isEmpty ||
                 _costPerUnitController.text == '0.00') {
-              _costPerUnitController.text =
-                  (selectedProduct.product_price ?? 0).toStringAsFixed(2);
+              // `product_price` is `Decimal?` after the Product
+              // migration. It may also be absent, so fall back to zero.
+              final price = selectedProduct.product_price ?? Decimal.zero;
+              _costPerUnitController.text = price.toStringAsFixed(2);
             }
           });
         }
@@ -360,9 +385,15 @@ class _ResourceRequirementDialogState extends State<ResourceRequirementDialog> {
     );
   }
 
-  double _calculateTotalCost() {
-    final quantity = double.tryParse(_quantityController.text) ?? 0;
-    final costPerUnit = double.tryParse(_costPerUnitController.text) ?? 0;
+  /// Sum of `quantity × costPerUnit`, in [Decimal]. Exact.
+  ///
+  /// Both sides are read from the text fields, so the result reflects
+  /// whatever the user is currently typing. Malformed input yields
+  /// zero — the validators catch it before save.
+  Decimal _calculateTotalCost() {
+    final quantity = Decimal.tryParse(_quantityController.text) ?? Decimal.zero;
+    final costPerUnit =
+        Decimal.tryParse(_costPerUnitController.text) ?? Decimal.zero;
     return quantity * costPerUnit;
   }
 }

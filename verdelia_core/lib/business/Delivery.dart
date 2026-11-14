@@ -1,4 +1,7 @@
-import 'dart:convert';
+// delivery.dart
+import 'package:decimal/decimal.dart';
+
+import 'package:verdelia_core/business/finance/OrderedItem.dart';
 
 import 'Supplier.dart';
 import 'finance/Order.dart';
@@ -24,7 +27,7 @@ class DeliveryAddress {
 
   factory DeliveryAddress.fromJson(Map<String, dynamic> json) {
     return DeliveryAddress(
-      idAddress: json['id_address'] as int? ?? 0,
+      idAddress: (json['id_address'] as num?)?.toInt() ?? 0,
       addressCity: json['address_city'] as String?,
       addressStreet: json['address_street'] as String?,
       addressPostalCode: json['address_postal_code'] as String?,
@@ -44,13 +47,16 @@ class DeliveryAddress {
 
   String get fullAddress {
     final parts = <String>[];
-    if (addressStreet != null && addressStreet!.isNotEmpty)
+    if (addressStreet != null && addressStreet!.isNotEmpty) {
       parts.add(addressStreet!);
+    }
     if (addressCity != null && addressCity!.isNotEmpty) parts.add(addressCity!);
-    if (addressPostalCode != null && addressPostalCode!.isNotEmpty)
+    if (addressPostalCode != null && addressPostalCode!.isNotEmpty) {
       parts.add(addressPostalCode!);
-    if (addressCountry != null && addressCountry!.isNotEmpty)
+    }
+    if (addressCountry != null && addressCountry!.isNotEmpty) {
       parts.add(addressCountry!);
+    }
     return parts.join(', ');
   }
 
@@ -62,9 +68,18 @@ class DeliveryAddress {
 // DELIVERY INVOICE
 // ============================================================================
 
+/// Invoice attached to a delivery.
+///
+/// ## Money
+///
+/// [invoiceTotalAmount] is [Decimal]. The `double` conversion happens
+/// only inside [toJson], at the JSON boundary.
 class DeliveryInvoice {
   final int invoiceId;
-  final double? invoiceTotalAmount;
+
+  /// Invoice grand total, in [Decimal].
+  final Decimal? invoiceTotalAmount;
+
   final String? invoiceStatus;
   final String? invoiceDueDate;
   final DateTime? invoiceCreatedAt;
@@ -75,8 +90,6 @@ class DeliveryInvoice {
   final DateTime? invoiceUpdatedAt;
   final int? invoiceTaxApplied;
   final List<dynamic>? cart;
-
-  /// Fully-typed orders attached to this invoice.
   final List<Order>? placedOrder;
 
   DeliveryInvoice({
@@ -100,10 +113,10 @@ class DeliveryInvoice {
     final rawOrders = json['placed_order'];
     if (rawOrders is List) {
       orders = rawOrders
-          .whereType<Map<String, dynamic>>()
+          .whereType<Map>()
           .map((o) {
             try {
-              return Order.fromJson(o);
+              return Order.fromJson(Map<String, dynamic>.from(o));
             } catch (_) {
               return null;
             }
@@ -112,18 +125,31 @@ class DeliveryInvoice {
           .toList();
     }
 
+    // Read-side names:
+    //   grand_total         (write model: invoice_total_amount)
+    //   invoice_reference   (write model: invoice_number)
+    //   created_at          (write model: invoice_created_at)
+    //   updated_at          (write model: invoice_updated_at)
     return DeliveryInvoice(
-      invoiceId: json['invoice_id'] as int? ?? 0,
-      invoiceTotalAmount: (json['invoice_total_amount'] as num?)?.toDouble(),
+      invoiceId: (json['invoice_id'] as num?)?.toInt() ?? 0,
+      invoiceTotalAmount: _readDecimal(
+        json['grand_total'] ?? json['invoice_total_amount'],
+      ),
       invoiceStatus: json['invoice_status'] as String?,
       invoiceDueDate: json['invoice_due_date'] as String?,
-      invoiceCreatedAt: _safeDateTime(json['invoice_created_at']),
+      invoiceCreatedAt: _safeDateTime(
+        json['created_at'] ?? json['invoice_created_at'],
+      ),
       invoiceType: json['invoice_type'] as String?,
-      invoiceNumber: json['invoice_number'] as String?,
+      invoiceNumber:
+          (json['invoice_reference'] ?? json['invoice_number']) as String?,
       invoiceIssueDate: json['invoice_issue_date'] as String?,
       invoiceNotes: json['invoice_notes'] as String?,
-      invoiceUpdatedAt: _safeDateTime(json['invoice_updated_at']),
-      invoiceTaxApplied: json['invoice_tax_applied'] as int?,
+      invoiceUpdatedAt: _safeDateTime(
+        json['updated_at'] ?? json['invoice_updated_at'],
+      ),
+      invoiceTaxApplied:
+          (json['tax_amount'] ?? json['invoice_tax_applied'] as num?)?.toInt(),
       cart: json['cart'] as List?,
       placedOrder: orders,
     );
@@ -133,7 +159,7 @@ class DeliveryInvoice {
     return {
       'invoice_id': invoiceId,
       if (invoiceTotalAmount != null)
-        'invoice_total_amount': invoiceTotalAmount,
+        'invoice_total_amount': _decimalToWire(invoiceTotalAmount!),
       if (invoiceStatus != null) 'invoice_status': invoiceStatus,
       if (invoiceDueDate != null) 'invoice_due_date': invoiceDueDate,
       if (invoiceCreatedAt != null)
@@ -152,7 +178,7 @@ class DeliveryInvoice {
   }
 
   String get formattedTotal =>
-      'DA ${(invoiceTotalAmount ?? 0).toStringAsFixed(2)}';
+      'DA ${(invoiceTotalAmount ?? Decimal.zero).toStringAsFixed(2)}';
 
   static DateTime? _safeDateTime(dynamic value) {
     if (value == null) return null;
@@ -179,7 +205,6 @@ enum DeliveryStatus {
   returned,
   refunded;
 
-  /// The string value the database and API use (`snake_case`).
   String get wireValue {
     switch (this) {
       case DeliveryStatus.pending:
@@ -207,8 +232,6 @@ enum DeliveryStatus {
     }
   }
 
-  /// Human-readable English label. For localized UI use the
-  /// `AppLocalizations.deliveryStatus*` keys instead.
   String get label {
     switch (this) {
       case DeliveryStatus.pending:
@@ -236,9 +259,6 @@ enum DeliveryStatus {
     }
   }
 
-  /// Parse a wire string into an enum value. Case-insensitive.
-  /// Returns [DeliveryStatus.pending] for unknown values so the UI
-  /// never crashes on unexpected data.
   static DeliveryStatus fromWire(String? raw) {
     if (raw == null || raw.isEmpty) return DeliveryStatus.pending;
     switch (raw.toLowerCase().trim()) {
@@ -270,8 +290,6 @@ enum DeliveryStatus {
     }
   }
 
-  // ── Semantic helpers ──
-
   bool get isPending => this == DeliveryStatus.pending;
   bool get isProcessing => this == DeliveryStatus.processing;
   bool get isConfirmed => this == DeliveryStatus.confirmed;
@@ -284,7 +302,6 @@ enum DeliveryStatus {
   bool get isReturned => this == DeliveryStatus.returned;
   bool get isRefunded => this == DeliveryStatus.refunded;
 
-  /// Whether the delivery is still in flight and can be modified.
   bool get isActive =>
       isPending ||
       isProcessing ||
@@ -293,24 +310,10 @@ enum DeliveryStatus {
       isInTransit ||
       isOutForDelivery;
 
-  /// Whether the delivery is finished (delivered, failed, cancelled,
-  /// returned, or refunded).
   bool get isTerminal =>
       isDelivered || isFailed || isCancelled || isReturned || isRefunded;
 
-  // ── Policy-aligned transition predicates ──
-  //
-  // These mirror the server's DeliveryPolicy. The server is still the
-  // authority — a client-side button that uses these is a hint, not a
-  // bypass. Where the two disagree, the client is wrong.
-
-  /// Cancellable only before the goods leave the warehouse.
-  /// Policy permits: pending, processing, confirmed.
   bool get canBeCancelled => isPending || isProcessing || isConfirmed;
-
-  /// Modifiable while the delivery is still moving through the graph.
-  /// Terminal states (delivered, cancelled, returned, refunded) can't
-  /// be updated; failed is terminal too.
   bool get canBeUpdated => !isTerminal;
 }
 
@@ -318,12 +321,25 @@ enum DeliveryStatus {
 // DELIVERY
 // ============================================================================
 
+/// A delivery record.
+///
+/// ## Money
+///
+/// [delivery_fee] and [delivery_total_weight] are [Decimal]. Every
+/// aggregation getter that touches money — [deliverySubtotal],
+/// [orderDiscount], [deliveryNetTotal], [formattedFee],
+/// [formattedWeight] — returns [Decimal] (or a string built from one).
+/// The `double` conversion happens only inside [toJson], at the JSON
+/// boundary.
 class Delivery {
   int id_delivery;
   int recipient_person;
   int recipient_provider;
   int? delivery_package_count;
-  double? delivery_total_weight;
+
+  /// Total cargo weight, in [Decimal]. Multiply-safe.
+  Decimal? delivery_total_weight;
+
   String? delivery_cargo_dimensions;
   String? delivery_goods_description;
   String? hs_code;
@@ -334,7 +350,10 @@ class Delivery {
 
   int? delivery_address_id;
   int? delivery_current_address_id;
-  double? delivery_fee;
+
+  /// Delivery fee, in [Decimal].
+  Decimal? delivery_fee;
+
   int? delivery_invoice_ref;
   int? delivery_provider_id;
   int? delivery_broker_id;
@@ -376,8 +395,6 @@ class Delivery {
     this.delivery_broker,
   });
 
-  // ==================== FACTORY CONSTRUCTORS ====================
-
   factory Delivery.fromJson(Map<String, dynamic> json) {
     Supplier? provider;
     if (json['delivery_provider'] != null) {
@@ -406,43 +423,75 @@ class Delivery {
       } catch (_) {}
     }
 
-    int? providerId = _safeIntNull(json['delivery_provider_id']);
+    // Provider FK: read-side emits `delivery_provider_id`; also try
+    // `delivery_provider` as a fallback FK; last resort, provider id
+    // from the nested snapshot.
+    int? providerId = _safeIntNull(
+      json['delivery_provider_id'] ?? json['delivery_provider'],
+    );
     if (providerId == null && provider != null) {
       providerId = provider.idProductProvider;
     }
 
+    // Recipient FKs: read-side emits `recipient_person_id` /
+    // `recipient_provider_id`, but `Delivery_API` uses `recipient_person`
+    // / `recipient_provider`. Accept both.
+    final recipientPerson = _safeInt(
+      json['recipient_person_id'] ?? json['recipient_person'],
+    );
+    final recipientProvider = _safeInt(
+      json['recipient_provider_id'] ?? json['recipient_provider'],
+    );
+
+    // Address FKs: read-side emits `address_id` /
+    // `current_address_id`; `Delivery_API` uses `delivery_address_id`
+    // / `delivery_current_address_id`. Accept both.
+    final addressId = _safeIntNull(
+      json['address_id'] ?? json['delivery_address_id'],
+    );
+    final currentAddressId = _safeIntNull(
+      json['current_address_id'] ?? json['delivery_current_address_id'],
+    );
+
     return Delivery(
       id_delivery: _safeInt(json['id_delivery']),
-      recipient_person: _safeInt(json['recipient_person']),
-      recipient_provider: _safeInt(json['recipient_provider']),
+      recipient_person: recipientPerson,
+      recipient_provider: recipientProvider,
       delivery_package_count: _safeIntNull(json['delivery_package_count']),
-      delivery_total_weight: _safeDoubleNull(json['delivery_total_weight']),
+      delivery_total_weight: _readDecimal(json['delivery_total_weight']),
       delivery_cargo_dimensions: json['delivery_cargo_dimensions'] as String?,
       delivery_goods_description: json['delivery_goods_description'] as String?,
       hs_code: json['hs_code'] as String?,
       delivery_merchant_name: json['delivery_merchant_name'] as String?,
       delivery_shipping_method:
-          json['delivery_shipping_method'] as String? ?? 'standard',
+          (json['delivery_shipping_method'] as String?) ?? 'standard',
       delivery_special_instructions:
           json['delivery_special_instructions'] as String?,
       delivery_status: DeliveryStatus.fromWire(
         json['delivery_status'] as String?,
       ),
-      delivery_address_id: _safeIntNull(json['delivery_address_id']),
-      delivery_current_address_id:
-          _safeIntNull(json['delivery_current_address_id']),
-      delivery_fee: _safeDoubleNull(json['delivery_fee']),
-      delivery_invoice_ref: _safeIntNull(json['delivery_invoice_ref']),
+      delivery_address_id: addressId,
+      delivery_current_address_id: currentAddressId,
+      delivery_fee: _readDecimal(json['delivery_fee']),
+      delivery_invoice_ref: _safeIntNull(
+        json['delivery_invoice_ref'] ?? json['invoice_id'],
+      ),
       delivery_provider_id: providerId,
       delivery_broker_id: _safeIntNull(json['delivery_broker_id']),
       delivery_source_type: json['delivery_source_type'] as String?,
       delivery_source_id: _safeIntNull(json['delivery_source_id']),
-      delivery_created_at: _safeDateTime(json['delivery_created_at']),
-      delivery_updated_at: _safeDateTime(json['delivery_updated_at']),
+      delivery_created_at: _safeDateTime(
+        json['created_at'] ?? json['delivery_created_at'],
+      ),
+      delivery_updated_at: _safeDateTime(
+        json['updated_at'] ?? json['delivery_updated_at'],
+      ),
       delivery_provider: provider,
       delivery_address: address,
       invoice: invoice,
-      delivery_broker: json['delivery_broker'] as Map<String, dynamic>?,
+      delivery_broker: json['delivery_broker'] is Map
+          ? Map<String, dynamic>.from(json['delivery_broker'] as Map)
+          : null,
     );
   }
 
@@ -471,8 +520,6 @@ class Delivery {
     );
   }
 
-  // ==================== HELPERS ====================
-
   static int _safeInt(dynamic value) {
     if (value == null) return 0;
     if (value is int) return value;
@@ -489,14 +536,6 @@ class Delivery {
     return null;
   }
 
-  static double? _safeDoubleNull(dynamic value) {
-    if (value == null) return null;
-    if (value is double) return value;
-    if (value is int) return value.toDouble();
-    if (value is String) return double.tryParse(value);
-    return null;
-  }
-
   static DateTime? _safeDateTime(dynamic value) {
     if (value == null) return null;
     if (value is DateTime) return value;
@@ -504,16 +543,15 @@ class Delivery {
     return null;
   }
 
-  // ==================== TO JSON ====================
-
   Map<String, dynamic> toJson() {
     return {
       'id_delivery': id_delivery,
       'recipient_person': recipient_person,
       'recipient_provider': recipient_provider,
-      'delivery_package_count': delivery_cargo_dimensions?.split(',') ?? 0,
+      if (delivery_package_count != null)
+        'delivery_package_count': delivery_package_count,
       if (delivery_total_weight != null)
-        'delivery_total_weight': delivery_total_weight,
+        'delivery_total_weight': _decimalToWire(delivery_total_weight!),
       if (delivery_cargo_dimensions != null)
         'delivery_cargo_dimensions': delivery_cargo_dimensions,
       if (delivery_goods_description != null)
@@ -529,7 +567,7 @@ class Delivery {
         'delivery_address_id': delivery_address_id,
       if (delivery_current_address_id != null)
         'delivery_current_address_id': delivery_current_address_id,
-      if (delivery_fee != null) 'delivery_fee': delivery_fee,
+      if (delivery_fee != null) 'delivery_fee': _decimalToWire(delivery_fee!),
       if (delivery_invoice_ref != null)
         'delivery_invoice_ref': delivery_invoice_ref,
       if (delivery_provider_id != null)
@@ -551,14 +589,12 @@ class Delivery {
     };
   }
 
-  // ==================== COPY WITH ====================
-
   Delivery copyWith({
     int? id_delivery,
     int? recipient_person,
     int? recipient_provider,
     int? delivery_package_count,
-    double? delivery_total_weight,
+    Decimal? delivery_total_weight,
     String? delivery_cargo_dimensions,
     String? delivery_goods_description,
     String? hs_code,
@@ -568,7 +604,7 @@ class Delivery {
     DeliveryStatus? delivery_status,
     int? delivery_address_id,
     int? delivery_current_address_id,
-    double? delivery_fee,
+    Decimal? delivery_fee,
     int? delivery_invoice_ref,
     int? delivery_provider_id,
     int? delivery_broker_id,
@@ -619,8 +655,6 @@ class Delivery {
     );
   }
 
-  // ==================== GETTERS ====================
-
   int? get providerId =>
       delivery_provider?.idProductProvider ?? delivery_provider_id;
   String? get providerName =>
@@ -633,8 +667,6 @@ class Delivery {
   String get addressFull => delivery_address?.fullAddress ?? 'No address';
   String get invoiceTotal => invoice?.formattedTotal ?? 'DA 0.00';
 
-  // ==================== STATUS HELPERS ====================
-
   bool get isPending => delivery_status.isPending;
   bool get isProcessing => delivery_status.isProcessing;
   bool get isInTransit => delivery_status.isInTransit;
@@ -644,12 +676,8 @@ class Delivery {
   bool get isFailed => delivery_status.isFailed;
   bool get isReturned => delivery_status.isReturned;
 
-  /// Delegates to the status enum, which mirrors the server's
-  /// DeliveryPolicy. Do not re-derive here.
   bool get canBeCancelled => delivery_status.canBeCancelled;
   bool get canBeUpdated => delivery_status.canBeUpdated;
-
-  // ==================== SHIPPING METHODS ====================
 
   static const Map<String, String> shippingMethodLabels = {
     'standard': 'Standard Delivery',
@@ -665,42 +693,27 @@ class Delivery {
   String get shippingMethodLabel =>
       shippingMethodLabels[delivery_shipping_method] ?? 'Standard Delivery';
 
-  // ==================== FORMATTED DISPLAY ====================
-
   String get formattedWeight =>
-      '${(delivery_total_weight ?? 0.0).toStringAsFixed(2)} kg';
+      '${(delivery_total_weight ?? Decimal.zero).toStringAsFixed(2)} kg';
 
-  String get formattedFee => 'DA ${(delivery_fee ?? 0.0).toStringAsFixed(2)}';
+  String get formattedFee =>
+      'DA ${(delivery_fee ?? Decimal.zero).toStringAsFixed(2)}';
 
   String get formattedPackageCount {
     final count = delivery_package_count ?? 0;
     return '$count ${count == 1 ? 'package' : 'packages'}';
   }
 
-  // ==================== ORDER / ITEM ACCESS ====================
-
-  /// The primary order attached to this delivery, if any.
   Order? get order {
     final list = invoice?.placedOrder;
     if (list == null || list.isEmpty) return null;
     return list.first;
   }
 
-  /// Every item on the primary order, unfiltered.
   List<OrderedItem> get allOrderItems => order?.items ?? const [];
 
-  /// The owner user id of this delivery's provider, if known.
-  ///
-  /// The API sends `delivery_provider.product_provider_owner` inside the
-  /// nested `delivery_provider` block.
   int? get deliveryProviderOwnerId => delivery_provider?.productProviderOwnerId;
 
-  /// Items belonging to this delivery's provider.
-  ///
-  /// The embedded `ordered_product` payload carries `product_provider_id`,
-  /// so the filter compares that to `delivery_provider_id`. When the
-  /// payload doesn't include the embedded product, fall back to owner
-  /// comparison. When neither side carries a value, keep the item.
   List<OrderedItem> get orderItems => itemsForDelivery();
 
   List<OrderedItem> itemsForDelivery() {
@@ -713,46 +726,33 @@ class Delivery {
     return all.where((item) {
       final embedded = item.orderedProduct;
 
-      // Path 1 — provider id, when both sides are present.
       if (embedded != null &&
           embedded.productProviderId > 0 &&
           targetProviderId != null) {
         return embedded.productProviderId == targetProviderId;
       }
 
-      // Path 2 — owner id fallback.
       if (embedded != null &&
           embedded.productOwner > 0 &&
           targetOwnerId != null) {
         return embedded.productOwner == targetOwnerId;
       }
 
-      // No discriminators available — keep the item.
       return true;
     }).toList();
   }
 
-  /// Whether the delivery carries a detailed, filterable order.
   bool get hasDetailedOrder => allOrderItems.isNotEmpty;
 
-  /// Line total of the filtered items (with VAT already applied by
-  /// [OrderedItem.totalPrice]).
-  double deliverySubtotal() =>
-      orderItems.fold(0.0, (sum, item) => sum + item.totalPrice);
+  /// Sum of every line's [OrderedItem.totalPrice], in [Decimal].
+  Decimal deliverySubtotal() =>
+      orderItems.fold(Decimal.zero, (sum, item) => sum + item.totalPrice);
 
-  /// Discount recorded on the parent order, if any.
-  double get orderDiscount => order?.orderDiscount ?? 0.0;
+  /// [Order.orderDiscount] as a [Decimal], or `Decimal.zero`.
+  Decimal get orderDiscount => order?.orderDiscount ?? Decimal.zero;
 
-  /// Subtotal minus the order-level discount.
-  double get deliveryNetTotal => deliverySubtotal() - orderDiscount;
-
-  // ==================== VALIDATION ====================
-  //
-  // The gate a client uses before POSTing a new delivery. It matches
-  // the server's DeliveryPolicy, which requires only a destination
-  // (address, current address, or a recipient). Package count and
-  // weight are packing details and are filled in later — often at
-  // `confirm` time via an action body.
+  /// [deliverySubtotal] minus [orderDiscount], in [Decimal].
+  Decimal get deliveryNetTotal => deliverySubtotal() - orderDiscount;
 
   bool get isValidForCreation {
     return (delivery_address_id ?? 0) > 0 ||
@@ -760,8 +760,6 @@ class Delivery {
         recipient_person > 0 ||
         recipient_provider > 0;
   }
-
-  // ==================== TO STRING / EQUALITY ====================
 
   @override
   String toString() {
@@ -785,12 +783,23 @@ class Delivery {
 // DELIVERY DATA (LEGACY)
 // ============================================================================
 
+/// Legacy snapshot of a delivery. Kept for backward compatibility with
+/// callers that reference `DeliveryData` directly; new code should use
+/// [Delivery].
+///
+/// ## Money
+///
+/// [deliveryTotalWeight] and [deliveryFee] are [Decimal], matching
+/// [Delivery].
 class DeliveryData {
   int idDelivery;
   int recipientPerson;
   int recipientProvider;
   int? deliveryPackageCount;
-  double? deliveryTotalWeight;
+
+  /// Total cargo weight, in [Decimal].
+  Decimal? deliveryTotalWeight;
+
   String? deliveryCargoDimensions;
   String? deliveryGoodsDescription;
   String? hsCode;
@@ -800,7 +809,10 @@ class DeliveryData {
   String deliveryStatus;
   int? deliveryAddressId;
   int? deliveryCurrentAddressId;
-  double? deliveryFee;
+
+  /// Delivery fee, in [Decimal].
+  Decimal? deliveryFee;
+
   int? deliveryInvoiceRef;
   int? deliveryProviderId;
   int? deliveryBrokerId;
@@ -857,11 +869,17 @@ class DeliveryData {
 
   factory DeliveryData.fromJson(Map<String, dynamic> json) {
     return DeliveryData(
-      idDelivery: json['id_delivery'] as int? ?? 0,
-      recipientPerson: json['recipient_person'] as int? ?? 0,
-      recipientProvider: json['recipient_provider'] as int? ?? 0,
-      deliveryPackageCount: json['delivery_package_count'] as int?,
-      deliveryTotalWeight: (json['delivery_total_weight'] as num?)?.toDouble(),
+      idDelivery: (json['id_delivery'] as num?)?.toInt() ?? 0,
+      recipientPerson:
+          ((json['recipient_person_id'] ?? json['recipient_person']) as num?)
+                  ?.toInt() ??
+              0,
+      recipientProvider: ((json['recipient_provider_id'] ??
+                  json['recipient_provider']) as num?)
+              ?.toInt() ??
+          0,
+      deliveryPackageCount: (json['delivery_package_count'] as num?)?.toInt(),
+      deliveryTotalWeight: _readDecimal(json['delivery_total_weight']),
       deliveryCargoDimensions: json['delivery_cargo_dimensions'] as String?,
       deliveryGoodsDescription: json['delivery_goods_description'] as String?,
       hsCode: json['hs_code'] as String?,
@@ -871,14 +889,22 @@ class DeliveryData {
       deliverySpecialInstructions:
           json['delivery_special_instructions'] as String?,
       deliveryStatus: json['delivery_status'] as String? ?? 'pending',
-      deliveryAddressId: json['delivery_address_id'] as int?,
-      deliveryCurrentAddressId: json['delivery_current_address_id'] as int?,
-      deliveryFee: (json['delivery_fee'] as num?)?.toDouble(),
-      deliveryInvoiceRef: json['delivery_invoice_ref'] as int?,
-      deliveryProviderId: json['delivery_provider_id'] as int?,
-      deliveryBrokerId: json['delivery_broker_id'] as int?,
+      deliveryAddressId:
+          ((json['address_id'] ?? json['delivery_address_id']) as num?)
+              ?.toInt(),
+      deliveryCurrentAddressId: ((json['current_address_id'] ??
+              json['delivery_current_address_id']) as num?)
+          ?.toInt(),
+      deliveryFee: _readDecimal(json['delivery_fee']),
+      deliveryInvoiceRef:
+          ((json['invoice_id'] ?? json['delivery_invoice_ref']) as num?)
+              ?.toInt(),
+      deliveryProviderId:
+          ((json['delivery_provider_id'] ?? json['delivery_provider']) as num?)
+              ?.toInt(),
+      deliveryBrokerId: (json['delivery_broker_id'] as num?)?.toInt(),
       deliverySourceType: json['delivery_source_type'] as String?,
-      deliverySourceId: json['delivery_source_id'] as int?,
+      deliverySourceId: (json['delivery_source_id'] as num?)?.toInt(),
     );
   }
 
@@ -887,7 +913,7 @@ class DeliveryData {
     int? recipientPerson,
     int? recipientProvider,
     int? deliveryPackageCount,
-    double? deliveryTotalWeight,
+    Decimal? deliveryTotalWeight,
     String? deliveryCargoDimensions,
     String? deliveryGoodsDescription,
     String? hsCode,
@@ -897,7 +923,7 @@ class DeliveryData {
     String? deliveryStatus,
     int? deliveryAddressId,
     int? deliveryCurrentAddressId,
-    double? deliveryFee,
+    Decimal? deliveryFee,
     int? deliveryInvoiceRef,
     int? deliveryProviderId,
     int? deliveryBrokerId,
@@ -943,7 +969,7 @@ class DeliveryData {
       if (deliveryPackageCount != null)
         'delivery_package_count': deliveryPackageCount,
       if (deliveryTotalWeight != null)
-        'delivery_total_weight': deliveryTotalWeight,
+        'delivery_total_weight': _decimalToWire(deliveryTotalWeight!),
       if (deliveryCargoDimensions != null)
         'delivery_cargo_dimensions': deliveryCargoDimensions,
       if (deliveryGoodsDescription != null)
@@ -958,7 +984,7 @@ class DeliveryData {
       if (deliveryAddressId != null) 'delivery_address_id': deliveryAddressId,
       if (deliveryCurrentAddressId != null)
         'delivery_current_address_id': deliveryCurrentAddressId,
-      if (deliveryFee != null) 'delivery_fee': deliveryFee,
+      if (deliveryFee != null) 'delivery_fee': _decimalToWire(deliveryFee!),
       if (deliveryInvoiceRef != null)
         'delivery_invoice_ref': deliveryInvoiceRef,
       if (deliveryProviderId != null)
@@ -982,3 +1008,27 @@ extension DeliveryConversion on DeliveryData {
 extension DeliveryDataConversion on Delivery {
   DeliveryData toDeliveryData() => DeliveryData.fromDelivery(this);
 }
+
+// ============================================================================
+// Decimal helpers
+// ============================================================================
+
+/// Coerces any JSON value to [Decimal].
+Decimal? _readDecimal(dynamic v) {
+  if (v == null) return null;
+  if (v is Decimal) return v;
+  if (v is int) return Decimal.fromInt(v);
+  if (v is double) {
+    if (v.isNaN || v.isInfinite) return null;
+    return Decimal.tryParse(v.toString());
+  }
+  if (v is String) return Decimal.tryParse(v);
+  return null;
+}
+
+/// Converts a [Decimal] to the shortest `double` that round-trips.
+/// For the JSON wire boundary only — never use this for arithmetic.
+double _decimalToDouble(Decimal v) => double.parse(v.toString());
+
+/// Serialises a [Decimal] for JSON.
+num _decimalToWire(Decimal v) => _decimalToDouble(v);

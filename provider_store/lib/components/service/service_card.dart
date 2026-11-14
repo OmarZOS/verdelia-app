@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_core/business/finance/ProvidedService.dart';
@@ -21,9 +22,6 @@ class ServiceCard extends StatelessWidget {
     this.onDelete,
   });
 
-  /// Width below which the card switches to a compact layout:
-  /// smaller leading icon, fewer chips, tighter padding, and the
-  /// price is stacked under the title instead of beside it.
   static const double _compactBreakpoint = 360;
   static const double _tightBreakpoint = 320;
 
@@ -51,7 +49,7 @@ class ServiceCard extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════
-// Shell — decoration + the right-colored stripe
+// Shell
 // ══════════════════════════════════════════════════════════════════
 
 class _CardShell extends StatelessWidget {
@@ -90,7 +88,6 @@ class _CardShell extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Right-edge category stripe.
           Positioned(
             right: 0,
             top: 0,
@@ -106,10 +103,6 @@ class _CardShell extends StatelessWidget {
               ),
             ),
           ),
-
-          // Content. Two layouts: a wide row that shows everything side
-          // by side, and a compact column that stacks the price under
-          // the header so the middle column has room to breathe.
           Padding(
             padding: EdgeInsets.all(padding),
             child: compact
@@ -146,7 +139,7 @@ class _CardShell extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════
-// Wide layout — leading icon | text | price | menu
+// Wide layout
 // ══════════════════════════════════════════════════════════════════
 
 class _WideLayout extends StatelessWidget {
@@ -176,9 +169,6 @@ class _WideLayout extends StatelessWidget {
           iconSize: 28,
         ),
         const SizedBox(width: 16),
-
-        // Middle column is the only expanding child. Everything that
-        // needs to shrink lives inside it.
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,13 +185,10 @@ class _WideLayout extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-
-        // Price column: bounded so it can't grab more than its share.
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 120),
           child: ServicePriceColumn(service: service),
         ),
-
         if (canManage) _ActionMenu(onEdit: onEdit, onDelete: onDelete),
       ],
     );
@@ -209,7 +196,7 @@ class _WideLayout extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════
-// Compact layout — icon + text on top, price + menu below
+// Compact layout
 // ══════════════════════════════════════════════════════════════════
 
 class _CompactLayout extends StatelessWidget {
@@ -235,8 +222,6 @@ class _CompactLayout extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Top row: leading icon + title + action menu. The menu is on
-        // the right of the title so it doesn't take a whole column.
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -259,21 +244,14 @@ class _CompactLayout extends StatelessWidget {
             ],
           ],
         ),
-
-        // Description on its own line, full width available.
         if ((service.description).trim().isNotEmpty) ...[
           SizedBox(height: tight ? 8 : 10),
           _ServiceDescription(service: service, maxLines: 2),
         ],
-
-        // Chips: hidden on the tightest screens to save vertical space.
         if (!tight) ...[
           const SizedBox(height: 12),
           _ServiceChips(service: service, loc: loc),
         ],
-
-        // Price row: full width, right-aligned. Doesn't compete with
-        // the title for horizontal space.
         SizedBox(height: tight ? 8 : 10),
         Align(
           alignment: AlignmentDirectional.centerEnd,
@@ -415,6 +393,12 @@ class _ServiceChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
+    // `discountPercentage` is `Decimal` after the ProvidedService
+    // migration. `> Decimal.zero` matches the old `> 0`; the
+    // `toStringAsFixed(0)` renders the same whole-number percent
+    // the `double` path did.
+    final Decimal discount = service.discountPercentage;
+
     return Wrap(
       spacing: 6,
       runSpacing: 6,
@@ -425,9 +409,9 @@ class _ServiceChips extends StatelessWidget {
             loc?.status_active ?? 'Active',
             colorScheme: cs,
           ),
-        if (service.discountPercentage > 0)
+        if (discount > Decimal.zero)
           ServiceChip.discount(
-            '${service.discountPercentage.toStringAsFixed(0)}%',
+            '${discount.toStringAsFixed(0)}%',
             colorScheme: cs,
           ),
       ],
@@ -457,9 +441,6 @@ class _ActionMenu extends StatelessWidget {
         size: compact ? 20 : 24,
       ),
       padding: EdgeInsets.zero,
-      // Compact variant: 32dp tap target instead of the default 48.
-      // Keeps the menu discoverable without dominating the card on
-      // narrow screens.
       constraints:
           compact ? const BoxConstraints(minWidth: 32, minHeight: 32) : null,
       iconSize: compact ? 20 : 24,

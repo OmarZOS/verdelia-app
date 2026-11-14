@@ -1,5 +1,6 @@
 // lib/provider_store/components/selling_point/selling_items/item_card_with_controls.dart
 
+import 'package:decimal/decimal.dart';
 import 'package:event/service_change_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -433,8 +434,11 @@ class _ItemContent extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final loc = AppLocalizations.of(context)!;
     final product = item as Product;
-    final price = product.product_price ?? 0;
-    final stock = product.product_quantity ?? 0;
+
+    // `product_price` is `Decimal?` after the Product migration;
+    // `product_quantity` is still `int?` (backward-compat accessor).
+    final Decimal price = product.product_price ?? Decimal.zero;
+    final int stock = product.product_quantity ?? 0;
 
     final titleSize = (13 * scale).clamp(11.0, 16.0);
     final metaSize = (10 * scale).clamp(9.0, 12.0);
@@ -447,7 +451,7 @@ class _ItemContent extends StatelessWidget {
         // Name stays at its natural 2-line height. It's the primary
         // content and we never want it squeezed.
         Text(
-          product.product_name ?? 'Unnamed Product',
+          product.product_name,
           style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w600,
             fontSize: titleSize,
@@ -455,10 +459,10 @@ class _ItemContent extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        if ((product.product_brand ?? '').isNotEmpty) ...[
+        if (product.product_brand?.isNotEmpty == true) ...[
           const SizedBox(height: 2),
           Text(
-            product.product_brand!,
+            product.product_brand ?? "",
             style: theme.textTheme.labelSmall?.copyWith(
               color: colorScheme.onSurfaceVariant,
               fontSize: metaSize,
@@ -481,6 +485,8 @@ class _ItemContent extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
+                  // `Decimal.toStringAsFixed(2)` gives the same
+                  // two-decimal string a `double` produced.
                   '${price.toStringAsFixed(2)} '
                   '${loc.currencySymbol ?? 'DA'}',
                   style: theme.textTheme.titleSmall?.copyWith(
@@ -574,6 +580,8 @@ class _ItemContent extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
+                  // `finalPrice` is `Decimal` (non-null) after the
+                  // ProvidedService migration.
                   '${service.finalPrice.toStringAsFixed(2)} '
                   '${loc.currencySymbol ?? 'DA'}',
                   style: theme.textTheme.titleSmall?.copyWith(

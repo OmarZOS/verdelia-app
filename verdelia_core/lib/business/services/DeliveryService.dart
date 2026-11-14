@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:verdelia_core/app/TraceableService.dart';
 import 'package:verdelia_core/business/Delivery.dart';
+import 'package:verdelia_core/business/DeliveryBroker.dart';
 
 // DeliveryService.dart
 abstract class DeliveryService extends TraceableService {
@@ -23,6 +24,20 @@ abstract class DeliveryService extends TraceableService {
 
   Future<int?> deleteDelivery(String productId, {String? callerKey}) async {
     return null;
+  }
+
+  Future<List<DeliveryBroker>> getAllDeliveryBrokers({
+    int offset = 0,
+    int limit = 100,
+    bool? verifiedOnly,
+    String? searchQuery,
+    String? callerKey,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  Future<DeliveryBroker?> getBroker(String id, {String? callerKey}) async {
+    throw UnimplementedError();
   }
 
   // ── Lifecycle ops ──────────────────────────────────────────────

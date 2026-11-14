@@ -1,3 +1,6 @@
+// lib/business/finance/finance_grouping.dart
+import 'package:decimal/decimal.dart';
+
 import 'package:verdelia_core/business/finance/FinancialDocument.dart';
 
 class FinanceGrouping {
@@ -13,7 +16,8 @@ class FinanceGrouping {
     final sourceIdToDocuments = <int, List<FinancialDocument>>{};
 
     for (final doc in allDocuments) {
-      final sourceId = doc.sourceId ?? 0;
+      // `sourceId` is non-null on the migrated `FinancialDocument`.
+      final sourceId = doc.sourceId;
       if (sourceId == 0) continue;
       sourceIdToDocuments.putIfAbsent(sourceId, () => []);
       sourceIdToDocuments[sourceId]!.add(doc);
@@ -32,21 +36,21 @@ class FinanceGrouping {
 
       final relatedIds = documents
           .where((d) => d.documentId != primaryDoc.documentId)
-          .map((d) => d.documentId ?? 0)
+          // `documentId` is non-null; no `?? 0` needed.
+          .map((d) => d.documentId)
           .where((id) => id > 0)
           .toList();
 
       if (relatedIds.isNotEmpty) {
-        _documentGroups[primaryDoc.documentId ?? 0] = relatedIds;
+        _documentGroups[primaryDoc.documentId] = relatedIds;
       }
 
       _updatePrimaryDocument(primaryDoc, documents);
     }
 
     primaryDocuments.sort((a, b) {
-      final dateA = a.issueDate ?? DateTime(1970);
-      final dateB = b.issueDate ?? DateTime(1970);
-      return dateB.compareTo(dateA);
+      // `issueDate` is non-null on the migrated `FinancialDocument`.
+      return b.issueDate.compareTo(a.issueDate);
     });
 
     return primaryDocuments;
@@ -62,8 +66,9 @@ class FinanceGrouping {
       'pending_cart': 5,
     };
     documents.sort((a, b) {
-      final aOrder = order[a.documentType?.toLowerCase() ?? ''] ?? 99;
-      final bOrder = order[b.documentType?.toLowerCase() ?? ''] ?? 99;
+      // `documentType` is non-null.
+      final aOrder = order[a.documentType.toLowerCase()] ?? 99;
+      final bOrder = order[b.documentType.toLowerCase()] ?? 99;
       return aOrder.compareTo(bOrder);
     });
   }
@@ -72,38 +77,38 @@ class FinanceGrouping {
       FinancialDocument primaryDoc, List<FinancialDocument> group) {
     if (group.length <= 1) return;
 
-    double maxCartInvoiceAmount = 0.0;
-    double totalPaid = 0.0;
-    double totalDeposited = 0.0;
+    Decimal maxCartInvoiceAmount = Decimal.zero;
+    Decimal totalPaid = Decimal.zero;
+    Decimal totalDeposited = Decimal.zero;
     final countedPaymentIds = <String>{};
     final countedDepositIds = <String>{};
 
     // First pass: Find main cart/invoice
     for (final doc in group) {
-      final docType = doc.documentType?.toLowerCase() ?? '';
+      final docType = doc.documentType.toLowerCase();
       if (docType.contains('cart') || docType == 'invoice') {
-        final docAmount = doc.documentAmount ?? 0.0;
+        final docAmount = doc.documentAmount;
         if (docAmount > maxCartInvoiceAmount) {
           maxCartInvoiceAmount = docAmount;
         }
-        totalPaid += doc.totalPaid ?? 0.0;
-        totalDeposited += doc.totalDeposited ?? 0.0;
+        totalPaid += doc.totalPaid;
+        totalDeposited += doc.totalDeposited;
       }
     }
 
     // Second pass: Add receipts and deposits
     for (final doc in group) {
-      final docType = doc.documentType?.toLowerCase() ?? '';
+      final docType = doc.documentType.toLowerCase();
       final docId = '${doc.documentType}_${doc.documentId}';
 
       if (docType == 'receipt') {
-        final receiptAmount = doc.documentAmount ?? 0.0;
+        final receiptAmount = doc.documentAmount;
         if (!countedPaymentIds.contains(docId)) {
           totalPaid += receiptAmount;
           countedPaymentIds.add(docId);
         }
       } else if (docType == 'deposit') {
-        final depositAmount = doc.documentAmount ?? 0.0;
+        final depositAmount = doc.documentAmount;
         if (!countedDepositIds.contains(docId)) {
           totalDeposited += depositAmount;
           countedDepositIds.add(docId);
@@ -111,9 +116,17 @@ class FinanceGrouping {
       }
     }
 
-    final outstandingBalance =
-        (maxCartInvoiceAmount - totalPaid - totalDeposited)
-            .clamp(0.0, maxCartInvoiceAmount);
+    // Manual clamp — `num.clamp` isn't available on `Decimal`.
+    final diff = maxCartInvoiceAmount - totalPaid - totalDeposited;
+    final Decimal outstandingBalance;
+    if (diff < Decimal.zero) {
+      outstandingBalance = Decimal.zero;
+    } else if (diff > maxCartInvoiceAmount) {
+      outstandingBalance = maxCartInvoiceAmount;
+    } else {
+      outstandingBalance = diff;
+    }
+
     final combinedStatus = _determineCombinedStatus(
         group, maxCartInvoiceAmount, totalPaid, totalDeposited);
 
@@ -129,12 +142,13 @@ class FinanceGrouping {
       customerType: primaryDoc.customerType,
       customerPersonId: primaryDoc.customerPersonId,
       sellerId: primaryDoc.sellerId,
+      // All money fields are `Decimal` after migration.
       documentAmount: maxCartInvoiceAmount,
       issueDate: primaryDoc.issueDate,
       dueDate: primaryDoc.dueDate,
       totalPaid: totalPaid,
       totalDeposited: totalDeposited,
-      additionalFees: 0.0,
+      additionalFees: Decimal.zero,
       outstandingBalance: outstandingBalance,
       documentStatus: primaryDoc.documentStatus,
       paymentStatus: combinedStatus,
@@ -151,27 +165,27 @@ class FinanceGrouping {
 
   String _determineCombinedStatus(
     List<FinancialDocument> group,
-    double baseAmount,
-    double totalPaid,
-    double totalDeposited,
+    Decimal baseAmount,
+    Decimal totalPaid,
+    Decimal totalDeposited,
   ) {
     final totalPayments = totalPaid + totalDeposited;
 
-    if (baseAmount == 0) return 'unknown';
+    if (baseAmount == Decimal.zero) return 'unknown';
     if (totalPayments >= baseAmount) return 'paid';
 
     final hasDepositDoc =
-        group.any((d) => d.documentType?.toLowerCase() == 'deposit');
+        group.any((d) => d.documentType.toLowerCase() == 'deposit');
     final hasReceiptDoc =
-        group.any((d) => d.documentType?.toLowerCase() == 'receipt');
+        group.any((d) => d.documentType.toLowerCase() == 'receipt');
 
-    if (hasDepositDoc && !hasReceiptDoc && totalDeposited > 0) {
+    if (hasDepositDoc && !hasReceiptDoc && totalDeposited > Decimal.zero) {
       return 'deposited';
     }
-    if (!hasDepositDoc && hasReceiptDoc && totalPaid > 0) {
+    if (!hasDepositDoc && hasReceiptDoc && totalPaid > Decimal.zero) {
       return 'partially_paid';
     }
-    if (totalPayments > 0) return 'partially_paid';
+    if (totalPayments > Decimal.zero) return 'partially_paid';
 
     return 'unpaid';
   }

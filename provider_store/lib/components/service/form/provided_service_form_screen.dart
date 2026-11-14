@@ -1,6 +1,8 @@
 // service_form_screen.dart
 import 'dart:convert';
 import 'dart:developer' as developer;
+
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:verdelia_core/app/VerdeliaException.dart';
@@ -53,8 +55,13 @@ class _ProvidedServiceFormScreenState extends State<ProvidedServiceFormScreen>
   String _serviceDescription = '';
   int _categoryId = 0;
   int _providerId = 0;
-  double _basePrice = 0.0;
-  double _finalPrice = 0.0;
+
+  /// Base price, in [Decimal].
+  Decimal _basePrice = Decimal.zero;
+
+  /// Final price, in [Decimal].
+  Decimal _finalPrice = Decimal.zero;
+
   int _actualDuration = 0;
 
   final List<ServiceResourceRequirement> _resourceRequirements = [];
@@ -147,6 +154,7 @@ class _ProvidedServiceFormScreenState extends State<ProvidedServiceFormScreen>
         _providerId = service.productProviderId > 0
             ? service.productProviderId
             : (routeProviderId > 0 ? routeProviderId : currentProviderId);
+        // `basePrice` and `finalPrice` are `Decimal` after migration.
         _basePrice = service.basePrice;
         _finalPrice = service.finalPrice;
         _actualDuration = service.actualDuration;
@@ -231,7 +239,10 @@ class _ProvidedServiceFormScreenState extends State<ProvidedServiceFormScreen>
           _providerId > 0 &&
           _actualDuration > 0;
 
-      _pricingCompleted = _basePrice > 0 && _finalPrice > 0;
+      // Both prices are `Decimal`, so the comparison uses
+      // `Decimal.zero` rather than the numeric literal.
+      _pricingCompleted =
+          _basePrice > Decimal.zero && _finalPrice > Decimal.zero;
 
       _pricingConfigCompleted = _ageGroup.isNotEmpty ||
           _sampleType.isNotEmpty ||
@@ -244,45 +255,65 @@ class _ProvidedServiceFormScreenState extends State<ProvidedServiceFormScreen>
 
       _resourcesCompleted = true;
       _staffCompleted = true;
-      _costSummaryCompleted = _finalPrice > 0;
+      _costSummaryCompleted = _finalPrice > Decimal.zero;
 
       // Update warnings
-      _showDiscountWarning = _basePrice > 0 && _finalPrice > _basePrice;
-      _showProfitWarning = _finalPrice > 0 && _finalPrice < _totalCost;
+      _showDiscountWarning =
+          _basePrice > Decimal.zero && _finalPrice > _basePrice;
+      _showProfitWarning =
+          _finalPrice > Decimal.zero && _finalPrice < _totalCost;
     });
   }
 
   // ===================== CALCULATIONS =====================
 
-  double get _totalResourceCost {
+  /// Sum of `costPerUnit × quantity` across resource requirements,
+  /// in [Decimal].
+  Decimal get _totalResourceCost {
     return _resourceRequirements.fold(
-      0.0,
-      (total, req) => total + (req.costPerUnit * req.quantity),
+      Decimal.zero,
+      (total, req) => total + req.totalCost,
     );
   }
 
-  double get _totalStaffCost {
+  /// Sum of `hourlyRate × allocatedHours × average(head count)` across
+  /// staff requirements, in [Decimal].
+  ///
+  /// Average head count is `(min + max) / 2`. Doing that division in
+  /// `Decimal` keeps fractional averages exact (`1 + 2` → `1.5`), so
+  /// the preview cost matches [ServiceStaffRequirement.averageCost].
+  Decimal get _totalStaffCost {
     return _staffRequirements.fold(
-      0.0,
-      (total, req) =>
-          total +
-          (req.hourlyRate *
-              req.allocatedHours *
-              ((req.minCount + req.maxCount) / 2)),
+      Decimal.zero,
+      (total, req) => total + req.averageCost,
     );
   }
 
-  double get _totalCost => _totalResourceCost + _totalStaffCost;
+  Decimal get _totalCost => _totalResourceCost + _totalStaffCost;
 
-  double get _profitMargin {
-    if (_finalPrice <= 0) return 0;
-    return ((_finalPrice - _totalCost) / _finalPrice * 100)
-        .clamp(-100.0, 100.0);
+  /// Profit margin as a percentage, in [Decimal], clamped to
+  /// `[-100, 100]`.
+  ///
+  /// `.toDecimal(scaleOnInfinitePrecision: 2)` on the division: `Decimal / Decimal` returns a
+  /// `Rational`, which can't be assigned to a `Decimal`.
+  Decimal get _profitMargin {
+    if (_finalPrice <= Decimal.zero) return Decimal.zero;
+    final raw = ((_finalPrice - _totalCost) / _finalPrice)
+            .toDecimal(scaleOnInfinitePrecision: 2) *
+        Decimal.fromInt(100);
+    if (raw < Decimal.fromInt(-100)) return Decimal.fromInt(-100);
+    if (raw > Decimal.fromInt(100)) return Decimal.fromInt(100);
+    return raw;
   }
 
-  double get _discountPercentage {
-    if (_basePrice == 0) return 0;
-    return ((_basePrice - _finalPrice) / _basePrice * 100);
+  /// Discount percentage, in [Decimal].
+  ///
+  /// `.toDecimal(scaleOnInfinitePrecision: 2)` on the division, same reason as [_profitMargin].
+  Decimal get _discountPercentage {
+    if (_basePrice == Decimal.zero) return Decimal.zero;
+    return ((_basePrice - _finalPrice) / _basePrice)
+            .toDecimal(scaleOnInfinitePrecision: 2) *
+        Decimal.fromInt(100);
   }
 
   // ===================== BUSINESS VALIDATION =====================
@@ -291,8 +322,8 @@ class _ProvidedServiceFormScreenState extends State<ProvidedServiceFormScreen>
     if (_providerId <= 0) return loc.validationProviderRequired;
     if (_categoryId <= 0) return loc.validationCategoryRequired;
     if (_actualDuration <= 0) return loc.validationDurationPositive;
-    if (_basePrice <= 0) return loc.validationBasePricePositive;
-    if (_finalPrice <= 0) return loc.validationFinalPricePositive;
+    if (_basePrice <= Decimal.zero) return loc.validationBasePricePositive;
+    if (_finalPrice <= Decimal.zero) return loc.validationFinalPricePositive;
     if (_finalPrice > _basePrice) {
       return loc.validationFinalPriceExceedsBase;
     }
@@ -344,6 +375,7 @@ class _ProvidedServiceFormScreenState extends State<ProvidedServiceFormScreen>
         description: _serviceDescription,
         categoryId: _categoryId,
         productProviderId: _providerId,
+        // `basePrice` and `finalPrice` are `Decimal` after migration.
         basePrice: _basePrice,
         finalPrice: _finalPrice,
         actualDuration: _actualDuration,
@@ -574,7 +606,8 @@ class _ProvidedServiceFormScreenState extends State<ProvidedServiceFormScreen>
                         },
                         onChanged: (_) => _updateCompletionStates(),
                       ),
-                      if (_basePrice > 0 || _finalPrice > 0) ...[
+                      if (_basePrice > Decimal.zero ||
+                          _finalPrice > Decimal.zero) ...[
                         const SizedBox(height: 12),
                         DiscountIndicator(
                           basePrice: _basePrice,
@@ -723,10 +756,12 @@ class _ProvidedServiceFormScreenState extends State<ProvidedServiceFormScreen>
                         ..._resourceRequirements.asMap().entries.map((entry) {
                           final index = entry.key;
                           final req = entry.value;
+                          // `costPerUnit` and `quantity` are `Decimal`;
+                          // `toStringAsFixed(2)` works on both.
                           return RequirementCard(
                             title: req.name,
                             subtitle:
-                                '${req.quantity} × DZD ${req.costPerUnit.toStringAsFixed(2)} = DZD ${(req.costPerUnit * req.quantity).toStringAsFixed(2)}',
+                                '${req.quantity} × DZD ${req.costPerUnit.toStringAsFixed(2)} = DZD ${req.totalCost.toStringAsFixed(2)}',
                             onEdit: () => _showResourceDialog(
                               existing: req,
                               index: index,
@@ -775,11 +810,14 @@ class _ProvidedServiceFormScreenState extends State<ProvidedServiceFormScreen>
                         ..._staffRequirements.asMap().entries.map((entry) {
                           final index = entry.key;
                           final req = entry.value;
+                          // `averageCost` handles the `(min + max) / 2`
+                          // arithmetic in `Decimal` and returns the
+                          // exact preview amount.
                           return RequirementCard(
                             title:
                                 '${_roleName(req.role, loc)} (${req.minCount}-${req.maxCount})',
                             subtitle:
-                                '${req.allocatedHours}h × DZD ${req.hourlyRate.toStringAsFixed(2)}/h ≈ DZD ${(req.hourlyRate * req.allocatedHours * ((req.minCount + req.maxCount) / 2)).toStringAsFixed(2)}',
+                                '${req.allocatedHours}h × DZD ${req.hourlyRate.toStringAsFixed(2)}/h ≈ DZD ${req.averageCost.toStringAsFixed(2)}',
                             onEdit: () => _showStaffDialog(
                               existing: req,
                               index: index,
@@ -857,12 +895,6 @@ class _ProvidedServiceFormScreenState extends State<ProvidedServiceFormScreen>
 
   // ===================== DURATION FIELD =====================
 
-  /// Duration input backed by a [CupertinoTimerPicker].
-  ///
-  /// The picker is always a valid Duration, so the old "must be > 0"
-  /// validator is unreachable at the widget level. The submit-time
-  /// business validation (`validationDurationPositive`) still catches
-  /// a zero value.
   Widget _buildDurationField(AppLocalizations loc) {
     return DurationPickerField(
       label: loc.durationLabel,

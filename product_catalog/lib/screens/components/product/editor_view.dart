@@ -64,7 +64,7 @@ class _EditorProductViewState extends State<EditorProductView> {
     if (localized.isNotEmpty) return localized;
 
     // 3. Raw flat name from the backend.
-    final raw = (widget.product.product_nameRaw ?? '').trim();
+    final raw = (widget.product.genericNameRaw ?? '').trim();
     if (raw.isNotEmpty) return raw;
 
     // 4. Nothing usable — let the caller decide the placeholder.

@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:event/service_change_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -33,6 +34,8 @@ class ServiceRequirementsSection extends StatelessWidget {
                     child: RequirementCard.resource(
                       loc: localizations,
                       name: resource.name,
+                      // `quantity` and `totalCost` are `Decimal` after
+                      // the ServiceResourceRequirement migration.
                       quantity: resource.quantity,
                       totalCost: resource.totalCost,
                       type: resource.type,
@@ -59,6 +62,9 @@ class ServiceRequirementsSection extends StatelessWidget {
                       ),
                       Text(
                         localizations.price(
+                          // `totalResourceCost` is `Decimal` after the
+                          // ProvidedService migration;
+                          // `toStringAsFixed(2)` works on both types.
                           service.totalResourceCost.toStringAsFixed(2),
                         ),
                         style:
@@ -84,10 +90,6 @@ class ServiceRequirementsSection extends StatelessWidget {
             child: Column(
               children: [
                 ...service.staffRequirements.map((staff) {
-                  // Three-tier resolution:
-                  //   1. Inline role from the service payload.
-                  //   2. Notifier's cached role list (by id).
-                  //   3. Raw id as a last resort.
                   final inline = staff.roleNameFor(localeLang);
                   final cached = context
                       .read<ServiceNotifier>()
@@ -103,6 +105,9 @@ class ServiceRequirementsSection extends StatelessWidget {
                       role: roleName,
                       minCount: staff.minCount,
                       maxCount: staff.maxCount,
+                      // `allocatedHours`, `hourlyRate` and `averageCost`
+                      // are `Decimal` after the ServiceStaffRequirement
+                      // migration.
                       allocatedHours: staff.allocatedHours,
                       hourlyRate: staff.hourlyRate,
                       averageCost: staff.averageCost,
@@ -187,12 +192,15 @@ class ServiceRequirementsSection extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: service.profitMargin >= 0
+                  // `profitMargin` is `Decimal` after the
+                  // ProvidedService migration; the sign check and
+                  // colour branch are `>= Decimal.zero`.
+                  color: service.profitMargin >= Decimal.zero
                       ? Colors.green.withOpacity(0.1)
                       : Colors.red.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: service.profitMargin >= 0
+                    color: service.profitMargin >= Decimal.zero
                         ? Colors.green.withOpacity(0.3)
                         : Colors.red.withOpacity(0.3),
                   ),
@@ -201,11 +209,12 @@ class ServiceRequirementsSection extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      service.profitMargin >= 0
+                      service.profitMargin >= Decimal.zero
                           ? Icons.trending_up
                           : Icons.trending_down,
-                      color:
-                          service.profitMargin >= 0 ? Colors.green : Colors.red,
+                      color: service.profitMargin >= Decimal.zero
+                          ? Colors.green
+                          : Colors.red,
                     ),
                     const SizedBox(width: 12),
                     Text(
@@ -213,11 +222,13 @@ class ServiceRequirementsSection extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                     Text(
+                      // `Decimal.toStringAsFixed(1)` renders the same
+                      // one-decimal string the `double` path did.
                       '${service.profitMargin.toStringAsFixed(1)}%',
                       style:
                           Theme.of(context).textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.w800,
-                                color: service.profitMargin >= 0
+                                color: service.profitMargin >= Decimal.zero
                                     ? Colors.green
                                     : Colors.red,
                               ),
@@ -235,7 +246,7 @@ class ServiceRequirementsSection extends StatelessWidget {
   Widget _buildSummaryRow(
     BuildContext context,
     String label,
-    double value,
+    Decimal value,
     Color color, {
     bool isBold = false,
   }) {
@@ -252,6 +263,8 @@ class ServiceRequirementsSection extends StatelessWidget {
               ),
         ),
         Text(
+          // `Decimal.toStringAsFixed(2)` produces the same formatted
+          // string the `double` path did.
           loc.price(value.toStringAsFixed(2)),
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: color,

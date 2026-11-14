@@ -1,10 +1,15 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 
 class RequirementCard extends StatelessWidget {
   final String title;
   final String subtitle;
-  final double cost;
+
+  /// Cost (total for a resource, or average for a staff requirement),
+  /// in [Decimal].
+  final Decimal cost;
+
   final String? details;
   final IconData icon;
   final Color color;
@@ -41,25 +46,32 @@ class RequirementCard extends StatelessWidget {
     }
   }
 
+  /// Resource requirement card.
+  ///
+  /// [quantity] and [totalCost] are [Decimal] after the
+  /// ServiceResourceRequirement migration.
   factory RequirementCard.resource({
     required AppLocalizations loc,
     required String name,
-    required double quantity,
+    required Decimal quantity,
     required String type,
     required bool isConsumable,
-    required double totalCost,
+    required Decimal totalCost,
     String? notes,
   }) {
     final unitLabel =
         isConsumable ? loc.resourceUnitsLabel : loc.resourceItemsLabel;
 
-    // Localize the backend `type` token. Unknown values fall through to
-    // the raw string so a new backend enum doesn't blank out the card.
     final typeLabel = _localizeResourceType(type, loc);
 
+    // `Decimal.toString()` gives the shortest round-trip string
+    // (`Decimal("10")` → `"10"`, `Decimal("10.5")` → `"10.5"`), which
+    // is what the substring `'$quantity $unitLabel'` produced with
+    // a `double` in the common cases. If you want a fixed decimal
+    // presentation, swap for `quantity.toStringAsFixed(2)`.
     return RequirementCard(
       title: name,
-      subtitle: '$quantity $unitLabel • $typeLabel',
+      subtitle: '${quantity.toString()} $unitLabel • $typeLabel',
       cost: totalCost,
       details: notes,
       icon: isConsumable ? Icons.inventory : Icons.build,
@@ -67,14 +79,18 @@ class RequirementCard extends StatelessWidget {
     );
   }
 
+  /// Staff requirement card.
+  ///
+  /// [allocatedHours], [hourlyRate] and [averageCost] are [Decimal]
+  /// after the ServiceStaffRequirement migration.
   factory RequirementCard.staff({
     required AppLocalizations loc,
     required String role,
     required int minCount,
     required int maxCount,
-    required double allocatedHours,
-    required double hourlyRate,
-    required double averageCost,
+    required Decimal allocatedHours,
+    required Decimal hourlyRate,
+    required Decimal averageCost,
     String? notes,
   }) {
     // Count label: "2" when min == max, "1-3" otherwise.
@@ -82,7 +98,9 @@ class RequirementCard extends StatelessWidget {
     final staffLabel = loc.staffCountLabel(range);
 
     // Hours label — drops the decimal when it's a whole number.
-    final hoursValue = allocatedHours == allocatedHours.roundToDouble()
+    // `.truncate()` returns the integer part as `Decimal`; when it
+    // equals the original value, the value was whole.
+    final hoursValue = allocatedHours == allocatedHours.truncate()
         ? allocatedHours.toStringAsFixed(0)
         : allocatedHours.toStringAsFixed(1);
     final hoursLabel = loc.staffHoursEachLabel(hoursValue);
@@ -159,6 +177,8 @@ class RequirementCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
+            // `Decimal.toStringAsFixed(2)` produces the same
+            // two-decimal string the `double` path did.
             loc.price(cost.toStringAsFixed(2)),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,

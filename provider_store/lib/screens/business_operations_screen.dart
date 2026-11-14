@@ -1,5 +1,6 @@
 // lib/screens/business_operations_screen.dart
 
+import 'package:decimal/decimal.dart';
 import 'package:event/views/business_ops_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -48,17 +49,11 @@ class _BusinessOperationsScreenState extends State<BusinessOperationsScreen> {
   void initState() {
     super.initState();
 
-    // Pull the service from the locator, not from a provider above this
-    // widget. Using context.read here would fail because initState runs
-    // before the widget is attached to the tree in a way that provider
-    // can resolve.
     _notifier = BusinessOperationNotifier(
       service: AppLocator.get<BusinessOperationService>(),
       defaultPageSize: 50,
     );
 
-    // Apply the initial filters, then load. Use a post-frame callback so
-    // the widget is fully mounted before we start touching state.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
 
@@ -73,7 +68,6 @@ class _BusinessOperationsScreenState extends State<BusinessOperationsScreen> {
         );
       }
 
-      // If neither filter setter triggered a load, load now.
       if (widget.supplierId == 0 && widget.initialDateFrom == null) {
         await _notifier.load();
       }
@@ -111,12 +105,9 @@ class _BusinessOperationsScreenState extends State<BusinessOperationsScreen> {
                 controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
-                  // Header
                   const SliverToBoxAdapter(
                     child: BusinessOperationsHeader(),
                   ),
-
-                  // KPI strip from stats.totals
                   if (notifier.totals != null)
                     SliverToBoxAdapter(
                       child: _KpiStrip(
@@ -125,20 +116,14 @@ class _BusinessOperationsScreenState extends State<BusinessOperationsScreen> {
                         counts: notifier.counts,
                       ),
                     ),
-
-                  // Filters
                   const SliverToBoxAdapter(
                     child: BusinessOperationsFilters(),
                   ),
-
-                  // Time window banner
                   if (notifier.window.dateFrom != null ||
                       notifier.window.dateTo != null)
                     SliverToBoxAdapter(
                       child: _TimeWindowBanner(window: notifier.window),
                     ),
-
-                  // Initial loading
                   if (notifier.isLoading && !notifier.hasOperations)
                     const SliverToBoxAdapter(
                       child: Padding(
@@ -146,8 +131,6 @@ class _BusinessOperationsScreenState extends State<BusinessOperationsScreen> {
                         child: Center(child: CircularProgressIndicator()),
                       ),
                     ),
-
-                  // Error
                   if (notifier.hasError)
                     SliverToBoxAdapter(
                       child: _ErrorState(
@@ -155,17 +138,13 @@ class _BusinessOperationsScreenState extends State<BusinessOperationsScreen> {
                         onRetry: notifier.load,
                       ),
                     ),
-
-                  // Stats summary
-                  if (notifier.hasOperations && notifier.stats != null)
-                    SliverToBoxAdapter(
-                      child: BusinessOperationsStats(
-                        stats: notifier.stats,
-                        operations: notifier.operations,
-                      ),
-                    ),
-
-                  // Operations list
+                  // if (notifier.hasOperations && notifier.stats != null)
+                  //   SliverToBoxAdapter(
+                  //     child: BusinessOperationsStats(
+                  //       stats: notifier.stats,
+                  //       operations: notifier.operations,
+                  //     ),
+                  //   ),
                   if (notifier.hasOperations)
                     BusinessOperationsList(
                       operations: notifier.operations,
@@ -175,8 +154,6 @@ class _BusinessOperationsScreenState extends State<BusinessOperationsScreen> {
                       onTapOperation: (op) =>
                           _openDetails(context, op, notifier),
                     ),
-
-                  // Pagination footer
                   if (notifier.hasOperations)
                     SliverToBoxAdapter(
                       child: _PaginationFooter(
@@ -189,14 +166,11 @@ class _BusinessOperationsScreenState extends State<BusinessOperationsScreen> {
                         onNext: notifier.nextPage,
                       ),
                     ),
-
-                  // Empty state
                   if (notifier.isEmpty)
                     SliverFillRemaining(
                       hasScrollBody: false,
                       child: _EmptyState(onRetry: notifier.refresh),
                     ),
-
                   const SliverToBoxAdapter(child: SizedBox(height: 32)),
                 ],
               ),
@@ -240,6 +214,16 @@ class _KpiStrip extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
+    // All money fields on `BusinessOperationsTotals` /
+    // `BusinessOperationsRatios` are `Decimal` after the
+    // business_operation.dart migration.
+    final Decimal grandTotal = totals.grandTotal;
+    final Decimal marginAmount = totals.marginAmount;
+    final Decimal dueAmount = totals.dueAmount;
+    final Decimal paidAmount = totals.paidAmount;
+    final Decimal averageTicket = ratios?.averageTicket ?? Decimal.zero;
+    final Decimal? overallRoi = ratios?.overallRoi;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
       child: Column(
@@ -251,34 +235,35 @@ class _KpiStrip extends StatelessWidget {
               children: [
                 _Kpi(
                   label: 'Revenue',
-                  value: totals.grandTotal,
+                  value: grandTotal,
                   color: cs.primary,
                 ),
                 _Kpi(
                   label: 'Margin',
-                  value: totals.marginAmount,
-                  color: totals.marginAmount >= 0 ? Colors.green : cs.error,
+                  value: marginAmount,
+                  color: marginAmount >= Decimal.zero ? Colors.green : cs.error,
                 ),
                 _Kpi(
                   label: 'Due',
-                  value: totals.dueAmount,
-                  color: totals.dueAmount > 0 ? Colors.orange : Colors.green,
+                  value: dueAmount,
+                  color:
+                      dueAmount > Decimal.zero ? Colors.orange : Colors.green,
                 ),
                 _Kpi(
                   label: 'Paid',
-                  value: totals.paidAmount,
+                  value: paidAmount,
                   color: Colors.teal,
                 ),
-                if (ratios?.overallRoi != null)
+                if (overallRoi != null)
                   _Kpi(
                     label: 'ROI',
-                    value: ratios!.overallRoi!,
-                    color: ratios!.overallRoi! >= 0 ? Colors.green : cs.error,
+                    value: overallRoi,
+                    color: overallRoi >= Decimal.zero ? Colors.green : cs.error,
                     isRatio: true,
                   ),
                 _Kpi(
                   label: 'Avg Ticket',
-                  value: ratios?.averageTicket ?? 0,
+                  value: averageTicket,
                   color: cs.primary,
                 ),
               ],
@@ -313,7 +298,12 @@ class _KpiStrip extends StatelessWidget {
 
 class _Kpi extends StatelessWidget {
   final String label;
-  final double value;
+
+  /// Value to display, in [Decimal]. Interpreted as a money amount
+  /// when [isRatio] is false, and as a ratio (`* 100` = percent) when
+  /// true.
+  final Decimal value;
+
   final Color color;
   final bool isRatio;
 
@@ -327,8 +317,12 @@ class _Kpi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    // `Decimal` has `toStringAsFixed`, so the money path is
+    // unchanged. The ratio path multiplies by `Decimal.fromInt(100)`
+    // first — `Decimal * Decimal` — then formats.
     final display = isRatio
-        ? '${(value * 100).toStringAsFixed(1)}%'
+        ? '${(value * Decimal.fromInt(100)).toStringAsFixed(1)}%'
         : value.toStringAsFixed(2);
 
     return Container(

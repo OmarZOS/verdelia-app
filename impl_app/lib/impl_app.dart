@@ -299,7 +299,7 @@ class AppUserServiceImpl extends AppUserService {
     final key = callerKey ?? _getCallerKey('searchAppUsers', suffix: query);
     try {
       final data = await _storageService.getAll(
-        '${AppConstants.apiBaseUrl}${AppConstants.searchAppUserEndpoint}/$query?offset=$offset&limit=$limit',
+        '${AppConstants.apiBaseUrl}${AppConstants.searchAppUserEndpoint}?token=$query&=$offset&limit=$limit',
         callerKey: key,
       );
       if (data == null) {

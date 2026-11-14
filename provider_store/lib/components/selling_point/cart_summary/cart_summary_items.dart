@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:verdelia_core/business/finance/Cart.dart';
@@ -131,15 +132,24 @@ class _CartItemRow extends StatelessWidget {
     final itemName = product?.product_name ?? service?.name ?? '';
 
     // ── Price computation ──
-    // Prefer the CartItem helpers so custom price and discount are respected.
-    // Fallbacks keep this working even if CartItem hasn't been extended yet.
-    final catalogPrice =
-        _catalogPrice(product?.product_price, service?.finalPrice);
-    final effectivePrice = cartItem.customPrice ?? catalogPrice;
-    final hasDiscount = effectivePrice < catalogPrice;
-    final unitDiscount = hasDiscount ? catalogPrice - effectivePrice : 0.0;
-    final lineDiscount = unitDiscount * cartItem.quantity;
-    final subtotal = effectivePrice * cartItem.quantity;
+    // `Product.product_price` is `Decimal?`; `ProvidedService.finalPrice`
+    // is `Decimal` (non-null). The old `_catalogPrice(double?, double?)`
+    // helper becomes a `Decimal` version below.
+    final Decimal catalogPrice = _catalogPrice(
+      product?.product_price,
+      service?.finalPrice,
+    );
+
+    // `CartItem.customPrice` is `Decimal?`. `unitPrice` on `CartItem`
+    // resolves the override if set, falling back to catalog.
+    final Decimal effectivePrice = cartItem.customPrice ?? catalogPrice;
+    final bool hasDiscount = effectivePrice < catalogPrice;
+    final Decimal unitDiscount =
+        hasDiscount ? catalogPrice - effectivePrice : Decimal.zero;
+    final Decimal lineDiscount =
+        unitDiscount * Decimal.fromInt(cartItem.quantity);
+    final Decimal subtotal =
+        effectivePrice * Decimal.fromInt(cartItem.quantity);
 
     return Container(
       margin: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
@@ -248,6 +258,7 @@ class _CartItemRow extends StatelessWidget {
                     child: _DiscountChip(
                       unitDiscount: unitDiscount,
                       lineDiscount: lineDiscount,
+                      catalogPrice: catalogPrice,
                       quantity: cartItem.quantity,
                       colorScheme: colorScheme,
                       loc: loc,
@@ -273,8 +284,8 @@ class _CartItemRow extends StatelessWidget {
             children: [
               if (hasDiscount) ...[
                 Text(
-                  loc.price(
-                      (catalogPrice * cartItem.quantity).toStringAsFixed(2)),
+                  loc.price((catalogPrice * Decimal.fromInt(cartItem.quantity))
+                      .toStringAsFixed(2)),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                     decoration: TextDecoration.lineThrough,
@@ -315,9 +326,14 @@ class _CartItemRow extends StatelessWidget {
     );
   }
 
-  /// Returns the catalog price, falling back to 0 if both are null.
-  double _catalogPrice(double? productPrice, double? servicePrice) {
-    return productPrice ?? servicePrice ?? 0.0;
+  /// Returns the catalog price as a [Decimal], defaulting to zero
+  /// when neither side carries one.
+  ///
+  /// `Product.product_price` is `Decimal?` after the Product migration;
+  /// `ProvidedService.finalPrice` is `Decimal` (non-null) after the
+  /// ProvidedService migration.
+  Decimal _catalogPrice(Decimal? productPrice, Decimal? servicePrice) {
+    return productPrice ?? servicePrice ?? Decimal.zero;
   }
 }
 
@@ -326,8 +342,14 @@ class _CartItemRow extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────
 
 class _DiscountChip extends StatelessWidget {
-  final double unitDiscount;
-  final double lineDiscount;
+  final Decimal unitDiscount;
+  final Decimal lineDiscount;
+
+  /// Catalog price of one unit. Needed to compute the discount
+  /// percentage. The original `_effectivePrice()` helper always
+  /// returned `0.0`, so the percent always rendered as `100%`.
+  final Decimal catalogPrice;
+
   final int quantity;
   final ColorScheme colorScheme;
   final AppLocalizations loc;
@@ -335,6 +357,7 @@ class _DiscountChip extends StatelessWidget {
   const _DiscountChip({
     required this.unitDiscount,
     required this.lineDiscount,
+    required this.catalogPrice,
     required this.quantity,
     required this.colorScheme,
     required this.loc,
@@ -343,9 +366,24 @@ class _DiscountChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final percent = unitDiscount > 0
-        ? (unitDiscount / (unitDiscount + _effectivePrice())) * 100
-        : 0.0;
+
+    // `.toDecimal(scaleOnInfinitePrecision: 2)` on the division: `Decimal / Decimal` returns a
+    // `Rational`, which can't be assigned to a `Decimal`. The
+    // percent is `unitDiscount / catalogPrice * 100`, clamped to
+    // `[0, 100]` — `Decimal` has no `.clamp`, so manual compare.
+    Decimal percent = Decimal.zero;
+    if (catalogPrice > Decimal.zero) {
+      final raw =
+          (unitDiscount / catalogPrice).toDecimal(scaleOnInfinitePrecision: 2) *
+              Decimal.fromInt(100);
+      if (raw < Decimal.zero) {
+        percent = Decimal.zero;
+      } else if (raw > Decimal.fromInt(100)) {
+        percent = Decimal.fromInt(100);
+      } else {
+        percent = raw;
+      }
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -378,11 +416,6 @@ class _DiscountChip extends StatelessWidget {
       ),
     );
   }
-
-  /// Reverse-engineered effective price to compute the discount percent.
-  /// effective = unitDiscount + (lineDiscount / quantity) − unitDiscount ...
-  /// Simpler: caller passes effective via a hidden field if needed.
-  double _effectivePrice() => 0.0;
 }
 
 class _QuantityControls extends StatelessWidget {

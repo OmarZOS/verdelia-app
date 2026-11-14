@@ -14,14 +14,7 @@ enum AppUserType {
   guest,
 }
 
-// lib/business/finance/Wallet.dart
-
 /// Wallet snapshot, when the backend inlines it on a payload.
-///
-/// The `app_user` row carries `app_user_wallet_id` as an FK; when the
-/// API joins through it, this object is populated. Null when the wallet
-/// wasn't inlined — the FK being set doesn't imply the snapshot is
-/// present.
 class Wallet {
   final int? idWallet;
   final String walletType;
@@ -60,18 +53,12 @@ class Wallet {
         'wallet_version': walletVersion,
       };
 
-  // ==================== Status helpers ====================
-
   bool get isActive => walletStatus == 'active';
   bool get isPendingVerification => walletStatus == 'pending_verification';
   bool get isSuspended => walletStatus == 'suspended';
   bool get isClosed => walletStatus == 'closed';
   bool get isInactive => walletStatus == 'inactive';
-
-  /// True when the wallet can transact — active and not closed.
   bool get canTransact => isActive;
-
-  /// True when the wallet has a positive balance. Display purposes.
   bool get hasFunds => walletBalance > 0;
 
   @override
@@ -107,12 +94,6 @@ extension AppUserTypeExtension on AppUserType {
   }
 }
 
-/// Whether the user's account has been verified by the backend.
-///
-/// The DB column is a TINYINT (`0`, `1`, or null). Null means the
-/// verification flow hasn't been run — distinct from an explicit
-/// "unverified" state for UI purposes, so it's modelled as a nullable
-/// enum rather than a bool.
 enum VerifiedAppUser {
   unverified,
   verified,
@@ -143,10 +124,6 @@ enum VerifiedAppUser {
   bool get isVerified => this == VerifiedAppUser.verified;
 }
 
-/// The authentication method the user signed up with.
-///
-/// Mirrors the DB enum on `app_user.app_user_login_option`. Null when
-/// the account was created before the field existed.
 enum LoginOption {
   google,
   verdelia;
@@ -173,16 +150,8 @@ enum LoginOption {
   }
 }
 
-/// Subscription snapshot, when the backend inlines it on the user
-/// payload.
-///
-/// The `app_user` row carries `app_user_subscription_ref` as an FK;
-/// when the API joins through it, this object is populated. Null when
-/// the user has no subscription.
-
 class AppUser {
-  // ==================== User fields ====================
-
+  // ── User fields ────────────────────────────────────────────────
   final int? idAppUser;
   final String? appUserName;
   final String? appUserPassword;
@@ -192,51 +161,41 @@ class AppUser {
   final String? appUserImageUrl;
   final AppUserType? appUserType;
 
-  /// FK to the user's current subscription. Null for free-tier users.
+  /// **Wire name:** `app_user_subscription_id`. The old model read
+  /// `app_user_subscription_ref`, which the API never emits — so
+  /// [hasSubscription] was always false for real payloads.
   final int? appUserSubscriptionRef;
 
-  /// FK to the user's wallet. Null until a wallet has been provisioned.
+  /// **Wire name:** `app_user_wallet_id`.
   final int? appUserWalletId;
 
-  /// How the user authenticates. Null for accounts created before the
-  /// field existed.
   final LoginOption? appUserLoginOption;
-
-  /// Verification state. Null when the backend hasn't run the
-  /// verification flow yet.
   final VerifiedAppUser? verifiedAppUser;
 
   /// Local quota mirror. Decremented by the workflow, refreshed on
-  /// subscription changes.
+  /// subscription changes. Not present in the user payload — the
+  /// quota lives on the subscription row as `subscription_quota`.
   final int? userQuota;
 
-  // ==================== Timestamps ====================
-
+  // ── Timestamps ────────────────────────────────────────────────
   final DateTime? appUserCreation;
   final DateTime? appUserLastUpdated;
   final DateTime? appUserLastActive;
 
-  // ==================== Person fields ====================
-
+  // ── Person fields ─────────────────────────────────────────────
   final int? idPerson;
   final int? personDetailsId;
   final int? idPersonDetails;
   final String? personFirstName;
   final String? personLastName;
   final String? personBirthDate;
-
-  /// Typed gender. Serialized as lowercase via [Gender.wireValue].
-  /// Defaults to [Gender.unspecified] when the payload didn't carry a
-  /// value.
   final Gender personGender;
-
   final String? personCountryCode;
   final String? bloodType;
   final String? personPhone;
   final String? personEmail;
 
-  // ==================== Location fields ====================
-
+  // ── Location fields ───────────────────────────────────────────
   final int? idLocation;
   final double? locationLatitude;
   final double? locationLongitude;
@@ -248,59 +207,30 @@ class AppUser {
   final String? addressPostalCode;
   final String? addressCountry;
 
-  // ==================== Nested snapshots ====================
-
-  /// Inlined subscription, when the API joins through
-  /// `app_user_subscription_ref`. Null otherwise.
+  // ── Nested snapshots ─────────────────────────────────────────
+  /// **Wire name:** `app_user_subscription`. The old model read
+  /// `subscription`, which the API never emits.
   final Subscription? subscription;
 
-  /// Inlined wallet, when the API joins through `app_user_wallet_id`.
-  /// Null otherwise — check the FK on [appUserWalletId] to know
-  /// whether a wallet exists at all.
+  /// **Wire name:** `app_user_wallet`.
   final Wallet? wallet;
 
-  // ==================== Privileges ====================
-
+  // ── Privileges ────────────────────────────────────────────────
   final List<ManagementRule>? privileges;
 
-  // ==================== Derived getters ====================
-
+  // ── Derived getters ───────────────────────────────────────────
   bool get isAdmin => appUserType == AppUserType.provider;
-
-  /// True when the user has a subscription ref on the user row.
   bool get hasSubscription => appUserSubscriptionRef != null;
-
-  /// True when the subscription is present *and* not expired.
-  /// Returns false when the nested snapshot wasn't inlined, even if
-  /// `appUserSubscriptionRef` is set — call the subscription endpoint
-  /// to check status in that case.
   bool get hasActiveSubscription =>
       subscription != null && subscription!.isActive;
-
-  /// True when the user has a wallet FK on the user row.
   bool get hasWallet => appUserWalletId != null;
-
-  /// True when the wallet snapshot was inlined in this payload. False
-  /// when the API didn't join through — fetch it from the wallet
-  /// endpoint in that case.
   bool get hasInlinedWallet => wallet != null;
-
-  /// Current wallet balance, or null when the snapshot wasn't inlined.
-  /// Zero when the snapshot is present but the balance is genuinely 0.
   double? get walletBalance => wallet?.walletBalance;
-
-  /// Whether the wallet can transact. False when there's no wallet or
-  /// the snapshot wasn't inlined.
   bool get isWalletActive => wallet?.isActive ?? false;
-
   bool get isVerified => verifiedAppUser?.isVerified ?? false;
-
-  int get quota => userQuota ?? 0;
-
-  // ==================== Constructor ====================
+  int get quota => userQuota ?? subscription?.subscriptionQuota?.toInt() ?? 0;
 
   AppUser({
-    // User
     this.idAppUser,
     this.appUserName,
     this.appUserPassword,
@@ -314,11 +244,9 @@ class AppUser {
     this.appUserLoginOption,
     this.verifiedAppUser,
     this.userQuota,
-    // Timestamps
     this.appUserCreation,
     this.appUserLastUpdated,
     this.appUserLastActive,
-    // Person
     this.idPerson,
     this.personDetailsId,
     this.idPersonDetails,
@@ -330,7 +258,6 @@ class AppUser {
     this.bloodType,
     this.personPhone,
     this.personEmail,
-    // Location
     this.idLocation,
     this.locationLatitude,
     this.locationLongitude,
@@ -341,16 +268,43 @@ class AppUser {
     this.addressCity,
     this.addressPostalCode,
     this.addressCountry,
-    // Nested
     this.subscription,
     this.wallet,
-    // Privileges
     this.privileges,
   });
 
-  // ==================== FACTORY METHODS ====================
+  // ==================== fromJson ====================
 
-  /// Main fromJson - handles full AppUser structure
+  /// Parse the canonical user payload.
+  ///
+  /// Wire shape (abbreviated):
+  /// ```json
+  /// {
+  ///   "id_app_user": 13,
+  ///   "app_user_name": "...",
+  ///   "app_user_person_id": 12,
+  ///   "app_user_subscription_id": 26,          ← FK
+  ///   "app_user_wallet_id": 21,                 ← FK
+  ///   "app_user_preferences": "\"{...}\"",     ← double-encoded
+  ///   "app_user_wallet": { ... },              ← inline snapshot
+  ///   "app_user_subscription": { ... },        ← inline snapshot
+  ///   "app_user_person": {
+  ///     "id_person": 12,
+  ///     "person_blood_type": null,
+  ///     "person_details": {
+  ///       "id_person_details": 12,
+  ///       "person_first_name": "Amina",
+  ///       "person_gender": "Female",
+  ///       ...
+  ///     },
+  ///     "person_location": {
+  ///       "id_location": 12,
+  ///       "position_wkt": "POINT(-2.7 36.3)",   ← negative lng
+  ///       "location_address": { ... }
+  ///     }
+  ///   }
+  /// }
+  /// ```
   factory AppUser.fromJson(Map<String, dynamic> json) {
     final appUserPerson =
         json['app_user_person'] as Map<String, dynamic>? ?? {};
@@ -361,36 +315,22 @@ class AppUser {
     final locationAddress =
         personLocation['location_address'] as Map<String, dynamic>? ?? {};
 
-    // Parse location coordinates from position_wkt (POINT(lng lat))
-    double lat = 0.0, lng = 0.0;
-    final positionWkt = personLocation['position_wkt']?.toString() ?? '';
-    if (positionWkt.isNotEmpty) {
-      final match =
-          RegExp(r'POINT\(([0-9.]+)\s+([0-9.]+)\)').firstMatch(positionWkt);
-      if (match != null) {
-        lng = double.tryParse(match.group(1) ?? '0') ?? 0.0;
-        lat = double.tryParse(match.group(2) ?? '0') ?? 0.0;
-      }
-    }
+    final coords = _parseWkt(personLocation['position_wkt']?.toString());
 
-    // Get user type
     AppUserType? userType;
     final userTypeStr = json['app_user_type'];
-    if (userTypeStr != null && userTypeStr is String) {
+    if (userTypeStr is String) {
       userType = AppUserTypeExtension.fromString(userTypeStr);
     }
 
-    // Nested subscription, when present.
     Subscription? subscription;
-    final subJson = json['subscription'];
+    final subJson = json['app_user_subscription'];
     if (subJson is Map) {
       subscription = Subscription.fromJson(
         Map<String, dynamic>.from(subJson),
       );
     }
 
-    // Nested wallet, when present. The API nests it under
-    // `app_user_wallet`, not `wallet`.
     Wallet? wallet;
     final walletJson = json['app_user_wallet'];
     if (walletJson is Map) {
@@ -398,44 +338,43 @@ class AppUser {
     }
 
     return AppUser(
-      // User fields
       idAppUser: _asInt(json['id_app_user']),
       appUserName: json['app_user_name'],
       appUserPassword: json['app_user_password'],
       appUserPersonId: _asInt(json['app_user_person_id']),
-      appUserPreferences: json['app_user_preferences'],
+      appUserPreferences: _normalizePreferences(json['app_user_preferences']),
       appUserEmail: json['app_user_email'],
       appUserImageUrl: json['app_user_image_url'],
       appUserType: userType,
-      appUserSubscriptionRef: _asInt(json['app_user_subscription_ref']),
+      appUserSubscriptionRef: _asInt(
+        json['app_user_subscription_id'] ?? json['app_user_subscription_ref'],
+      ),
       appUserWalletId: _asInt(json['app_user_wallet_id']),
       appUserLoginOption: LoginOption.fromWire(json['app_user_login_option']),
       verifiedAppUser: VerifiedAppUser.fromWire(json['verified_app_user']),
       userQuota: _asInt(json['user_quota']),
-
-      // Timestamps
       appUserCreation: _parseDate(json['app_user_creation']),
       appUserLastUpdated: _parseDate(json['app_user_last_updated']),
       appUserLastActive: _parseDate(json['app_user_last_active']),
-
-      // Person fields
       idPerson: _asInt(appUserPerson['id_person']),
-      personDetailsId: _asInt(appUserPerson['person_details_id']),
+      personDetailsId: _asInt(
+        appUserPerson['person_details_id'] ??
+            personDetails['id_person_details'],
+      ),
       idPersonDetails: _asInt(personDetails['id_person_details']),
       personFirstName: personDetails['person_first_name'],
       personLastName: personDetails['person_last_name'],
       personBirthDate: personDetails['person_birth_date'],
-      personGender:
-          Gender.fromString(personDetails['person_gender'] as String?),
+      personGender: Gender.fromString(
+        (personDetails['person_gender'] as String?)?.toLowerCase(),
+      ),
       personCountryCode: personDetails['person_country_code'],
       bloodType: appUserPerson['person_blood_type'],
       personPhone: personDetails['person_phone'],
       personEmail: personDetails['person_email'],
-
-      // Location fields
       idLocation: _asInt(personLocation['id_location']),
-      locationLatitude: lat,
-      locationLongitude: lng,
+      locationLatitude: coords?.$2,
+      locationLongitude: coords?.$1,
       locationName: personLocation['location_name'],
       locationAddressId: _asInt(personLocation['location_address_id']),
       idAddress: _asInt(locationAddress['id_address']),
@@ -443,16 +382,21 @@ class AppUser {
       addressCity: locationAddress['address_city'],
       addressPostalCode: locationAddress['address_postal_code'],
       addressCountry: locationAddress['address_country'],
-
-      // Nested
       subscription: subscription,
       wallet: wallet,
-
       privileges: null,
     );
   }
 
-  /// Parse from Person object (search endpoint result)
+  static String _buildFullName(String? firstName, String? lastName) {
+    final first = firstName ?? '';
+    final last = lastName ?? '';
+    if (first.isEmpty && last.isEmpty) return 'Unknown';
+    if (first.isEmpty) return last;
+    if (last.isEmpty) return first;
+    return '$first $last';
+  }
+
   factory AppUser.fromPerson(Person person) {
     return AppUser(
       idAppUser: person.id_person,
@@ -481,7 +425,6 @@ class AppUser {
     );
   }
 
-  /// Parse from search endpoint JSON (Person structure with nested person_details)
   factory AppUser.fromPersonSearchJson(Map<String, dynamic> json) {
     final personDetails = json['person_details'] as Map<String, dynamic>? ?? {};
 
@@ -504,8 +447,9 @@ class AppUser {
       personFirstName: personDetails['person_first_name'],
       personLastName: personDetails['person_last_name'],
       personBirthDate: personDetails['person_birth_date'],
-      personGender:
-          Gender.fromString(personDetails['person_gender'] as String?),
+      personGender: Gender.fromString(
+        (personDetails['person_gender'] as String?)?.toLowerCase(),
+      ),
       personCountryCode: personDetails['person_country_code'],
       bloodType: json['person_blood_type'],
       personPhone: personDetails['person_phone'],
@@ -514,7 +458,6 @@ class AppUser {
     );
   }
 
-  /// Parse from persisted JSON
   factory AppUser.fromPersistedJson(Map<String, dynamic> json) {
     final userData = json['user'] as Map<String, dynamic>? ?? {};
     final personData = json['person_record'] as Map<String, dynamic>? ?? {};
@@ -522,12 +465,15 @@ class AppUser {
 
     AppUserType? userType;
     final userTypeStr = userData['app_user_type'];
-    if (userTypeStr != null && userTypeStr is String) {
+    if (userTypeStr is String) {
       userType = AppUserTypeExtension.fromString(userTypeStr);
     }
 
+    // Persisted shape uses `subscription` and `app_user_wallet`,
+    // matching what toJson emits below.
     Subscription? subscription;
-    final subJson = userData['subscription'];
+    final subJson =
+        userData['subscription'] ?? userData['app_user_subscription'];
     if (subJson is Map) {
       subscription = Subscription.fromJson(
         Map<String, dynamic>.from(subJson),
@@ -535,7 +481,7 @@ class AppUser {
     }
 
     Wallet? wallet;
-    final walletJson = userData['app_user_wallet'];
+    final walletJson = userData['app_user_wallet'] ?? userData['wallet'];
     if (walletJson is Map) {
       wallet = Wallet.fromJson(Map<String, dynamic>.from(walletJson));
     }
@@ -545,11 +491,15 @@ class AppUser {
       appUserName: userData['app_user_name'],
       appUserPassword: userData['app_user_password'],
       appUserPersonId: _asInt(userData['app_user_person_id']),
-      appUserPreferences: userData['app_user_preferences'],
+      appUserPreferences:
+          _normalizePreferences(userData['app_user_preferences']),
       appUserEmail: userData['app_user_email'],
       appUserImageUrl: userData['app_user_image_url'],
       appUserType: userType,
-      appUserSubscriptionRef: _asInt(userData['app_user_subscription_ref']),
+      appUserSubscriptionRef: _asInt(
+        userData['app_user_subscription_id'] ??
+            userData['app_user_subscription_ref'],
+      ),
       appUserWalletId: _asInt(userData['app_user_wallet_id']),
       appUserLoginOption:
           LoginOption.fromWire(userData['app_user_login_option']),
@@ -559,19 +509,23 @@ class AppUser {
       appUserLastUpdated: _parseDate(userData['app_user_last_updated']),
       appUserLastActive: _parseDate(userData['app_user_last_active']),
       idPerson: _asInt(personData['id_person']),
-      personDetailsId: _asInt(personData['person_details_id']),
+      personDetailsId: _asInt(
+        personData['person_details_id'] ?? personData['id_person_details'],
+      ),
       idPersonDetails: _asInt(personData['id_person_details']),
       personFirstName: personData['person_first_name'],
       personLastName: personData['person_last_name'],
       personBirthDate: personData['person_birth_date'],
-      personGender: Gender.fromString(personData['person_gender'] as String?),
+      personGender: Gender.fromString(
+        (personData['person_gender'] as String?)?.toLowerCase(),
+      ),
       personCountryCode: personData['person_country_code'],
       bloodType: personData['blood_type'],
       personPhone: personData['person_phone'],
       personEmail: personData['person_email'],
       idLocation: _asInt(locationData['id_location']),
-      locationLatitude: locationData['location_latitude']?.toDouble(),
-      locationLongitude: locationData['location_longitude']?.toDouble(),
+      locationLatitude: _asDouble(locationData['location_latitude']),
+      locationLongitude: _asDouble(locationData['location_longitude']),
       locationName: locationData['location_name'],
       locationAddressId: _asInt(locationData['location_address_id']),
       idAddress: _asInt(locationData['id_address']),
@@ -585,7 +539,6 @@ class AppUser {
     );
   }
 
-  /// Parse from Google JSON
   factory AppUser.fromGoogleJson(Map<String, dynamic> json) {
     final userData = json['user'];
     final tokenData = json['token'];
@@ -630,7 +583,6 @@ class AppUser {
     );
   }
 
-  /// Create empty user
   factory AppUser.empty() {
     return AppUser(
       idAppUser: 0,
@@ -645,18 +597,7 @@ class AppUser {
     );
   }
 
-  // ==================== HELPER METHODS ====================
-
-  static String _buildFullName(String? firstName, String? lastName) {
-    final first = firstName ?? '';
-    final last = lastName ?? '';
-    if (first.isEmpty && last.isEmpty) return 'Unknown';
-    if (first.isEmpty) return last;
-    if (last.isEmpty) return first;
-    return '$first $last';
-  }
-
-  // ==================== TO JSON METHODS ====================
+  // ==================== toJson ====================
 
   Map<String, dynamic> toJson() {
     return {
@@ -669,9 +610,9 @@ class AppUser {
         "app_user_email": appUserEmail,
         "app_user_image_url": appUserImageUrl,
         "app_user_type": appUserType?.value,
-        // New fields
+        // Emit the wire name the server reads.
         if (appUserSubscriptionRef != null)
-          "app_user_subscription_ref": appUserSubscriptionRef,
+          "app_user_subscription_id": appUserSubscriptionRef,
         if (appUserWalletId != null) "app_user_wallet_id": appUserWalletId,
         if (appUserLoginOption != null)
           "app_user_login_option": appUserLoginOption!.wireValue,
@@ -684,7 +625,8 @@ class AppUser {
           "app_user_last_updated": appUserLastUpdated!.toIso8601String(),
         if (appUserLastActive != null)
           "app_user_last_active": appUserLastActive!.toIso8601String(),
-        if (subscription != null) "subscription": subscription!.toJson(),
+        if (subscription != null)
+          "app_user_subscription": subscription!.toJson(),
         if (wallet != null) "app_user_wallet": wallet!.toJson(),
       },
       "person_record": {
@@ -728,7 +670,7 @@ class AppUser {
     };
   }
 
-  // ==================== COPY WITH ====================
+  // ==================== copyWith ====================
 
   AppUser copyWith({
     int? idAppUser,
@@ -817,7 +759,7 @@ class AppUser {
     );
   }
 
-  // ==================== LIST HELPERS ====================
+  // ==================== List helpers ====================
 
   static List<AppUser> fromJsonList(List<dynamic> jsonList) {
     return jsonList
@@ -836,7 +778,7 @@ class AppUser {
     return people.map((person) => AppUser.fromPerson(person)).toList();
   }
 
-  // ==================== DISPLAY HELPERS ====================
+  // ==================== Display helpers ====================
 
   String get displayName {
     if (appUserName != null && appUserName!.isNotEmpty) {
@@ -898,7 +840,59 @@ class AppUserCategory {
   }
 }
 
-// ==================== Parse helpers ====================
+// ==================== Shared parse helpers ====================
+
+/// Parse a WKT `POINT(lng lat)`. Returns `(longitude, latitude)`.
+///
+/// FIX: the previous inline regex was `POINT\(([0-9.]+)\s+([0-9.]+)\)`,
+/// which rejects **negative** coordinates. Every real payload has a
+/// negative longitude (Algeria is west of the prime meridian), so the
+/// old code silently produced `(0.0, 0.0)` for every user. The
+/// corrected pattern accepts an optional leading `-`.
+(double, double)? _parseWkt(String? raw) {
+  if (raw == null || raw.isEmpty) return null;
+  final match = RegExp(
+    r'POINT\s*\(\s*([-+]?\d+(?:\.\d+)?)\s+([-+]?\d+(?:\.\d+)?)\s*\)',
+    caseSensitive: false,
+  ).firstMatch(raw.trim());
+  if (match == null) return null;
+  final lng = double.tryParse(match.group(1)!);
+  final lat = double.tryParse(match.group(2)!);
+  if (lng == null || lat == null) return null;
+  return (lng, lat);
+}
+
+/// Preferences arrive as a **double-encoded** JSON string in the
+/// sample payload:
+///
+///   `"\"{\\\"theme\\\": \\\"dark\\\", ...}\""`
+///
+/// That is: a JSON string containing a JSON string. Decoding once
+/// yields `"{...}"`; decoding again yields the actual map. The old
+/// code stored the raw string and callers had to decode twice. This
+/// helper decodes as many layers as exist and returns a **flat JSON
+/// string** — a single decode for the caller.
+String? _normalizePreferences(dynamic raw) {
+  if (raw == null) return null;
+  if (raw is! String) return raw.toString();
+  var current = raw;
+  for (var i = 0; i < 3; i++) {
+    try {
+      final decoded = jsonDecode(current);
+      if (decoded is String) {
+        current = decoded;
+        continue;
+      }
+      if (decoded is Map) {
+        return jsonEncode(decoded);
+      }
+      return current;
+    } catch (_) {
+      return current;
+    }
+  }
+  return current;
+}
 
 int? _asInt(dynamic v) {
   if (v == null) return null;

@@ -42,6 +42,12 @@ class FormStateManager {
     formData.typeId = 1;
     formData.ownerId = ownerId;
 
+    // VAT is not seeded here. `PricingState` owns its own default
+    // (19% on its side), and `ProductFormFields` is what reconciles
+    // the two representations. Leaving `productVatValue` null on
+    // create means the write path omits the field and the server
+    // applies whatever default the jurisdiction and category imply.
+
     // Optional provider hint from the caller.
     if (providerId > 0) {
       formData.selectedProviderId = providerId;
@@ -61,6 +67,11 @@ class FormStateManager {
   /// - Syncs controllers to the hydrated values.
   /// - Preserves the provider from the product unless the caller
   ///   explicitly supplies a different one.
+  ///
+  /// `populateFromProduct` already carries `productVatValue` across
+  /// from the Product, so an edit session starts with the product's
+  /// own VAT rate. The pricing section reads it from `formData` when
+  /// it seeds `PricingState`.
   void initializeForUpdate({
     required Product product,
     required int ownerId,

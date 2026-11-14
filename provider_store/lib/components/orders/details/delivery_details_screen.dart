@@ -12,12 +12,14 @@
 // shows underneath it.
 
 import 'package:app_constants/app_routes.dart';
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:verdelia_core/business/Delivery.dart';
 import 'package:verdelia_core/business/finance/Order.dart';
 import 'package:event/delivery_change_notifier.dart';
 import 'package:event/product_change_notifier.dart';
+import 'package:verdelia_core/business/finance/OrderedItem.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:provider_store/components/delivery/DeliveryDetailsSheet.dart';
@@ -210,15 +212,15 @@ class DeliveryDetailScreen extends StatelessWidget {
   ) async {
     final out = <int>{};
     for (final item in live.orderItems) {
+      // `orderedProductId` and `idProduct` are non-null after the
+      // migrations, but they still represent "unset" as `0` / `null`.
       final id = item.orderedProductId ?? 0;
       if (id <= 0) continue;
 
       final embedded = item.orderedProduct;
-      if (embedded != null &&
-          embedded.idProduct != null &&
-          embedded.idProduct! > 0) {
+      if (embedded != null && embedded.idProduct > 0) {
         if (providerId <= 0 || embedded.productProviderId == providerId) {
-          out.add(embedded.idProduct!);
+          out.add(embedded.idProduct);
         }
         continue;
       }
@@ -359,6 +361,12 @@ class _StatusHero extends StatelessWidget {
     final cs = theme.colorScheme;
     final l10n = AppLocalizations.of(context)!;
 
+    // `delivery_fee` is `Decimal?` after the Delivery migration. Format
+    // with `toStringAsFixed(2)` — same two-decimal output a `double`
+    // produced, unlike `Decimal.toString()` which can lose trailing
+    // zeros.
+    final Decimal? fee = delivery.delivery_fee;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -420,7 +428,7 @@ class _StatusHero extends StatelessWidget {
               ],
             ),
           ),
-          if (delivery.delivery_fee != null)
+          if (fee != null)
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -432,7 +440,7 @@ class _StatusHero extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  l10n.price(delivery.delivery_fee.toString()),
+                  l10n.price(fee.toStringAsFixed(2)),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: cs.onSurface,
@@ -642,10 +650,6 @@ class _InfoRow extends StatelessWidget {
     );
   }
 }
-
-// ============================================================================
-// CUSTOMER BLOCK
-// ============================================================================
 
 // ============================================================================
 // CUSTOMER BLOCK
@@ -958,7 +962,8 @@ class _ResolvedItemRowState extends State<_ResolvedItemRow> {
     final item = widget.item;
 
     final embedded = item.orderedProduct;
-    final embeddedName = embedded?.productName?.trim();
+    // `productName` on `OrderedProduct` is non-null after migration.
+    final embeddedName = embedded?.productName.trim();
     if (embeddedName != null && embeddedName.isNotEmpty) {
       return _ResolvedProduct(
         name: embeddedName,
@@ -973,15 +978,15 @@ class _ResolvedItemRowState extends State<_ResolvedItemRow> {
     if (id > 0) {
       final cached = await widget.productNotifier.getProductById(id);
       if (cached != null) {
-        final name = cached.product_name?.trim();
+        // `product_name` on `Product` is non-null (the getter walks
+        // the trilingual fallback chain).
+        final name = cached.product_name.trim();
         return _ResolvedProduct(
-          name: (name != null && name.isNotEmpty)
-              ? name
-              : l10n.deliveryDetailProductFallback(id),
+          name: name.isNotEmpty ? name : l10n.deliveryDetailProductFallback(id),
           brand: cached.product_brand,
           barcode: cached.product_barcode,
           quantifier: cached.product_quantifier,
-          found: (name != null && name.isNotEmpty),
+          found: name.isNotEmpty,
         );
       }
     }
@@ -1074,6 +1079,7 @@ class _ResolvedProduct {
   final String? brand;
   final String? barcode;
   final String? quantifier;
+  final String? vat;
   final bool found;
 
   const _ResolvedProduct({
@@ -1081,6 +1087,7 @@ class _ResolvedProduct {
     this.brand,
     this.barcode,
     this.quantifier,
+    this.vat,
     required this.found,
   });
 }
@@ -1095,6 +1102,7 @@ class _ItemRow extends StatelessWidget {
   final String? brand;
   final String? barcode;
   final String? quantifier;
+
   final bool isResolved;
 
   const _ItemRow({
@@ -1119,6 +1127,9 @@ class _ItemRow extends StatelessWidget {
     ];
     final subline = sublineParts.join(' · ');
 
+    // `unitPrice` and `appliedVat` are `Decimal` after the
+    // `OrderedItem` migration. `toStringAsFixed(2)` / `(1)` give the
+    // same display strings as before.
     final unitLine = l10n.deliveryDetailItemUnitLine(
       item.unitPrice.toStringAsFixed(2),
       quantifier ?? '',
@@ -1203,6 +1214,8 @@ class _ItemRow extends StatelessWidget {
           ),
         ),
         Text(
+          // `totalPrice` is `Decimal` after migration; `toStringAsFixed(2)`
+          // renders `"803.71"` same as the `double` path.
           l10n.price(item.totalPrice.toStringAsFixed(2)),
           style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w700,
@@ -1229,9 +1242,13 @@ class _TotalsBlock extends StatelessWidget {
     final cs = theme.colorScheme;
     final l10n = AppLocalizations.of(context)!;
 
-    final subtotal = delivery.deliverySubtotal();
-    final discount = delivery.orderDiscount;
-    final net = delivery.deliveryNetTotal;
+    // All three money values are `Decimal` after the Delivery
+    // migration: `deliverySubtotal()` returns `Decimal`,
+    // `orderDiscount` is a `Decimal` getter (defaults to zero),
+    // `deliveryNetTotal` is `Decimal`.
+    final Decimal subtotal = delivery.deliverySubtotal();
+    final Decimal discount = delivery.orderDiscount;
+    final Decimal net = delivery.deliveryNetTotal;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -1247,7 +1264,7 @@ class _TotalsBlock extends StatelessWidget {
             l10n.deliveryDetailTotalsSubtotal,
             l10n.price(subtotal.toStringAsFixed(2)),
           ),
-          if (discount > 0) ...[
+          if (discount > Decimal.zero) ...[
             const SizedBox(height: 6),
             _line(
               theme,
@@ -1378,6 +1395,9 @@ class _ShippingBlock extends StatelessWidget {
       );
     }
     if (delivery.delivery_total_weight != null) {
+      // `delivery_total_weight` is `Decimal?` after the Delivery
+      // migration; `toStringAsFixed(2)` gives the two-decimal kg
+      // string.
       add(
         l10n.deliveryDetailFieldTotalWeight,
         l10n.deliveryDetailWeightKg(
@@ -1401,9 +1421,11 @@ class _ShippingBlock extends StatelessWidget {
       add(l10n.deliveryDetailFieldInstructions,
           delivery.delivery_special_instructions!);
     }
+    // `delivery_fee` is `Decimal?`; `?? Decimal.zero` for the
+    // missing-value case, then `toStringAsFixed(2)`.
     add(
       l10n.deliveryDetailFieldFee,
-      l10n.price((delivery.delivery_fee ?? 0).toStringAsFixed(2)),
+      l10n.price((delivery.delivery_fee ?? Decimal.zero).toStringAsFixed(2)),
     );
 
     if (rows.isEmpty) {

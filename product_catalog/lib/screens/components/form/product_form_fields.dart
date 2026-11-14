@@ -2,8 +2,10 @@
 
 import 'package:app_constants/app_constants.dart';
 import 'package:app_constants/app_routes.dart';
+import 'package:decimal/decimal.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:product_catalog/screens/components/smart_form.dart';
 import 'package:provider/provider.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:verdelia_core/business/Supplier.dart';
@@ -20,7 +22,6 @@ import 'package:ui/components/pricing_config_card.dart';
 import 'package:ui/components/supplier/supplier_picker.dart';
 import 'package:product_catalog/screens/components/form/form_controllers.dart';
 import 'package:product_catalog/screens/components/form/pricing_state.dart';
-import 'package:product_catalog/screens/components/smart_form.dart';
 
 class ProductFormFields extends StatefulWidget {
   final ProductFormData formData;
@@ -50,9 +51,14 @@ class _ProductFormFieldsState extends State<ProductFormFields> {
   @override
   void initState() {
     super.initState();
+    // `ProductFormData.productBasePrice`, `.price` and `.productVatValue`
+    // are `Decimal?` after the form-data migration. `PricingState.load`
+    // is expected to take `Decimal` after its own migration.
     context.read<PricingState>().load(
-          basePrice: formData.productBasePrice ?? 0,
-          finalPrice: formData.price ?? 0,
+          basePrice: formData.productBasePrice ?? Decimal.zero,
+          taxPercentage: (formData.productVatValue ?? Decimal.parse('0.19')) *
+              Decimal.fromInt(100),
+          finalPrice: formData.price ?? Decimal.zero,
           mode: PricingMode.byFinalPrice,
         );
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -172,20 +178,28 @@ class _ProductFormFieldsState extends State<ProductFormFields> {
     final priceField = assistantNotifier
         .getFieldData(ProductAssistedFields.IPRODUCT_ESTIMATED_PRICE_DA);
     final hasAIPrice = priceField?.value != null && !priceField!.isEdited;
-    final aiPrice =
-        hasAIPrice ? double.tryParse(priceField!.value.toString()) : null;
+
+    // The assistant's price value is a JSON scalar — `num` or `String`.
+    // `_readDecimal` normalises it without going through `double`.
+    final Decimal? aiPrice =
+        hasAIPrice ? _readDecimal(priceField!.value) : null;
 
     return Consumer<PricingState>(
       builder: (context, pricingState, _) {
-        // Single helper: whatever PricingState derives, push it into the
-        // external controllers and formData. Called after every mutation
-        // so the two representations never diverge.
+        // Single helper: whatever PricingState derives, push it into
+        // the external controllers and formData. Called after every
+        // mutation so the two representations never diverge.
         void syncOut() {
-          final finalPrice = pricingState.finalPrice;
-          final basePrice = pricingState.basePrice;
+          // `PricingState` is `Decimal`-typed after its migration.
+          final Decimal finalPrice = pricingState.finalPrice;
+          final Decimal basePrice = pricingState.basePrice;
+          final Decimal taxFraction =
+              (pricingState.taxPercentage / Decimal.fromInt(100))
+                  .toDecimal(scaleOnInfinitePrecision: 2);
 
           formData.price = finalPrice;
           formData.productBasePrice = basePrice;
+          formData.productVatValue = taxFraction;
 
           controllers.price.text = finalPrice.toStringAsFixed(2);
           controllers.basePrice.text = basePrice.toStringAsFixed(2);
@@ -235,7 +249,7 @@ class _ProductFormFieldsState extends State<ProductFormFields> {
           },
           onAcceptAiPrice: () {
             final ai = aiPrice;
-            if (ai == null || ai <= 0) return;
+            if (ai == null || ai <= Decimal.zero) return;
             pricingState.applyAiPrice(ai);
             syncOut();
           },
@@ -399,10 +413,13 @@ class _ProductFormFieldsState extends State<ProductFormFields> {
         formData.productBarcode = value;
         break;
       case ProductAssistedFields.IPRODUCT_BASE_PRICE:
-        formData.productBasePrice = double.tryParse(value ?? '0.0');
+        // `ProductFormData.productBasePrice` is `Decimal?` after the
+        // form-data migration; parse text directly into `Decimal`.
+        formData.productBasePrice = _readDecimal(value);
         break;
       case ProductAssistedFields.IPRODUCT_ESTIMATED_PRICE_DA:
-        formData.price = double.tryParse(value ?? '0.0');
+        // `ProductFormData.price` is `Decimal?`.
+        formData.price = _readDecimal(value);
         break;
       case ProductAssistedFields.QUANTITY:
         formData.quantity = int.tryParse(value ?? '0');
@@ -593,9 +610,9 @@ class _ProductFormFieldsState extends State<ProductFormFields> {
         }
 
         if (priceField != null && !priceField.isEdited) {
-          controllers.price.text = priceField.value?.toString() ?? '';
-          formData.price =
-              double.tryParse(priceField.value?.toString() ?? '0.0');
+          final Decimal? price = _readDecimal(priceField.value);
+          controllers.price.text = price?.toStringAsFixed(2) ?? '';
+          formData.price = price;
         }
       });
 
@@ -663,4 +680,26 @@ class _LockedSupplierRow extends StatelessWidget {
       ],
     );
   }
+}
+
+// ==================================================================
+// Decimal helper
+// ==================================================================
+
+/// Parses a JSON scalar or text into a [Decimal]. Accepts `Decimal`,
+/// `num`, or `String`. Rejects non-finite doubles.
+Decimal? _readDecimal(dynamic v) {
+  if (v == null) return null;
+  if (v is Decimal) return v;
+  if (v is int) return Decimal.fromInt(v);
+  if (v is double) {
+    if (v.isNaN || v.isInfinite) return null;
+    return Decimal.tryParse(v.toString());
+  }
+  if (v is String) {
+    final trimmed = v.trim();
+    if (trimmed.isEmpty) return null;
+    return Decimal.tryParse(trimmed);
+  }
+  return null;
 }

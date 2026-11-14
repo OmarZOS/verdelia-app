@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:event/cart_change_notifier.dart';
@@ -10,7 +11,10 @@ class PaymentSection extends StatelessWidget {
   final String paymentType;
   final String paymentMethod;
   final ValueChanged<String> onPaymentTypeChanged;
-  final ValueChanged<double> onDepositChanged;
+
+  /// Fires with the deposit amount, in [Decimal].
+  final ValueChanged<Decimal> onDepositChanged;
+
   final ValueChanged<DateTime> onInstallmentDateChanged;
   final ValueChanged<String> onPaymentMethodChanged;
   final ValueChanged<String?> onCardDetailsChanged;
@@ -39,32 +43,21 @@ class PaymentSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row(
-          //   children: [
-          //     Icon(
-          //       Icons.payment,
-          //       color: Theme.of(context).colorScheme.primary,
-          //       size: 20,
-          //     ),
-          //     const SizedBox(width: 8),
-          //     Text(
-          //       AppLocalizations.of(context)!.payment,
-          //       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          //             fontWeight: FontWeight.w600,
-          //           ),
-          //     ),
-          //   ],
-          // ),
           const SizedBox(height: 12),
 
           // Payment Type
           PaymentTypeSection(
             selectedType: paymentType,
-            // onChanged: onPaymentTypeChanged,
+            // `CartChangeNotifier.cartTotal` is `Decimal` after the
+            // notifier migration; `PaymentTypeSection.totalAmount`
+            // is expected to be `Decimal` after its own migration.
             totalAmount: context.read<CartChangeNotifier>().cartTotal,
             onTypeChanged: onPaymentTypeChanged,
             onDepositChanged: (d) {
-              onDepositChanged.call(d ?? 0.0);
+              // `d` is `Decimal?` from PaymentTypeSection's
+              // `ValueChanged<Decimal?>` callback. Forward with the
+              // zero fallback the old `?? 0.0` provided.
+              onDepositChanged.call(d ?? Decimal.zero);
             },
             onInstallmentDateChanged: (DateTime? value) {
               onInstallmentDateChanged

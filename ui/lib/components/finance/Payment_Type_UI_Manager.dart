@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 
@@ -53,7 +54,7 @@ class PaymentTypeUIManager {
   }
 
   // Format amount display
-  static String formatAmount(double amount, AppLocalizations loc) {
+  static String formatAmount(Decimal amount, AppLocalizations loc) {
     return loc.price(amount.toStringAsFixed(2));
   }
 
@@ -81,17 +82,17 @@ class PaymentTypeUIManager {
   }
 
   // Validate deposit amount
-  static String? validateDepositAmount(String? value, double totalAmount) {
+  static String? validateDepositAmount(String? value, Decimal totalAmount) {
     if (value == null || value.isEmpty) {
       return 'Please enter a deposit amount';
     }
 
-    final deposit = double.tryParse(value);
+    final deposit = Decimal.tryParse(value);
     if (deposit == null) {
       return 'Please enter a valid number';
     }
 
-    if (deposit <= 0) {
+    if (deposit <= Decimal.zero) {
       return 'Deposit must be greater than zero';
     }
 
@@ -251,7 +252,7 @@ class PaymentTypeUIManager {
   // Build full payment details widget
   static Widget buildFullPaymentDetails({
     required BuildContext context,
-    required double totalAmount,
+    required Decimal totalAmount,
   }) {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
@@ -312,8 +313,8 @@ class PaymentTypeUIManager {
   static Widget buildDepositDetails({
     required BuildContext context,
     required TextEditingController depositController,
-    required double totalAmount,
-    required double? depositAmount,
+    required Decimal totalAmount,
+    required Decimal? depositAmount,
     required ValueChanged<String> onDepositChanged,
   }) {
     final theme = Theme.of(context);
@@ -380,7 +381,7 @@ class PaymentTypeUIManager {
             ],
           ),
           const SizedBox(height: 8),
-          if (depositAmount != null && depositAmount > 0)
+          if (depositAmount != null && depositAmount > Decimal.zero)
             Row(
               children: [
                 Icon(
@@ -409,7 +410,7 @@ class PaymentTypeUIManager {
     required BuildContext context,
     required DateTime? selectedDate,
     required String formattedDate,
-    required double totalAmount,
+    required Decimal totalAmount,
     required VoidCallback onDateTap,
     required String selectDateText,
   }) {
@@ -586,7 +587,7 @@ class PaymentType {
 
 class PaymentDetails {
   final String type;
-  final double? depositAmount;
+  final Decimal? depositAmount;
   final DateTime? installmentDate;
 
   const PaymentDetails({
@@ -597,7 +598,7 @@ class PaymentDetails {
 
   PaymentDetails copyWith({
     String? type,
-    double? depositAmount,
+    Decimal? depositAmount,
     DateTime? installmentDate,
   }) {
     return PaymentDetails(

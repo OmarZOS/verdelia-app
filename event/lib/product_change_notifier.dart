@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:decimal/decimal.dart';
 import 'package:event/components/product/product_cache.dart';
 import 'package:event/components/product/product_cart.dart';
 import 'package:event/components/product/product_category_persistence.dart';
@@ -34,9 +35,6 @@ class ProductNotifier extends ChangeNotifier {
 
   ProductNotifier() {
     _initComponents();
-    // Bootstrap: restore persisted categories, and if that yields
-    // nothing, immediately hit the network so the notifier is never
-    // left with an empty category list.
     _categoryBootstrap = _bootstrapCategories();
   }
 
@@ -58,12 +56,8 @@ class ProductNotifier extends ChangeNotifier {
   bool get hasMoreProducts => _state.hasMoreProducts;
   List<String> get categories => categoriesFor();
 
-  /// Categories, always non-empty after bootstrap when the backend has
-  /// any. Reading this getter kicks off a fetch if the list is still
-  /// empty and no request is in flight.
   List<ProductCategory> get productCategories {
     if (_state.categories.isEmpty && _categoriesInFlight == null) {
-      // Fire-and-forget; listeners will be notified when it completes.
       unawaited(fetchCategories());
     }
     return _state.categories;
@@ -73,19 +67,14 @@ class ProductNotifier extends ChangeNotifier {
   bool get isCacheEnabled => _cache.isEnabled;
   bool get includeHidden => _state.includeHidden;
 
-  /// Products hidden from buyers but visible to the current editor.
   List<Product> get hiddenProducts =>
       _state.products.where((p) => !p.isVisible).toList();
 
-  /// Products currently visible in the public catalog.
   List<Product> get visibleProducts =>
       _state.products.where((p) => p.isVisible).toList();
 
   // ============ CATEGORIES ============
 
-  /// Ensures categories are loaded. Safe to call from `initState`,
-  /// `build`, or anywhere else — it de-dupes concurrent requests and
-  /// returns the cached list when already populated.
   Future<List<ProductCategory>> ensureCategoriesLoaded({
     bool forceRefresh = false,
     String? callerKey,
@@ -98,13 +87,10 @@ class ProductNotifier extends ChangeNotifier {
   }) async {
     await _categoryBootstrap;
 
-    // Return what we have unless a refresh was explicitly requested.
     if (!forceRefresh && _state.categories.isNotEmpty) {
       return _state.categories;
     }
 
-    // Only trust a non-empty cache; an empty cached list means we
-    // never actually loaded categories.
     if (!forceRefresh) {
       final cached = _cache.getCategories();
       if (cached != null && cached.isNotEmpty) {
@@ -113,15 +99,12 @@ class ProductNotifier extends ChangeNotifier {
       }
     }
 
-    // Coalesce concurrent callers onto a single in-flight request.
     final pending = _categoriesInFlight;
     if (pending != null) {
       if (!forceRefresh) return pending;
       try {
         await pending;
-      } catch (_) {
-        // Forced refresh still gets a chance after a failed request.
-      }
+      } catch (_) {}
     }
 
     final request = _fetchAndPersistCategories(
@@ -138,11 +121,9 @@ class ProductNotifier extends ChangeNotifier {
     }
   }
 
-  /// Restore persisted categories; if there are none, fetch them.
   Future<void> _bootstrapCategories() async {
     await _restorePersistedCategories();
 
-    // If persistence gave us nothing, fetch from the network.
     if (_state.categories.isEmpty) {
       try {
         await fetchCategories();
@@ -159,7 +140,6 @@ class ProductNotifier extends ChangeNotifier {
     try {
       final persisted = await _categoryPersistence.load();
       if (persisted == null || persisted.isEmpty) {
-        // Clear any stale in-memory state so the bootstrap fetch runs.
         _state.categories = const [];
         return;
       }
@@ -181,8 +161,6 @@ class ProductNotifier extends ChangeNotifier {
       callerKey: callerKey,
     );
 
-    // A successful-but-empty response should not be cached or treated
-    // as authoritative — leave state empty so the next call retries.
     final categories = fetched ?? const <ProductCategory>[];
     if (categories.isEmpty) {
       debugPrint(
@@ -231,9 +209,6 @@ class ProductNotifier extends ChangeNotifier {
     return '';
   }
 
-  /// Return all category leaves that belong to the given domain (and
-  /// optional subdomain). Matches the `domain.subdomain.category`
-  /// convention used by the backend.
   List<ProductCategory> categoriesForDomain({
     required String domain,
     String? subdomain,
@@ -321,7 +296,11 @@ class ProductNotifier extends ChangeNotifier {
   int getCartQuantity(int productId) => _cart.getQuantity(productId);
   bool isInCart(int productId) => _cart.contains(productId);
   int get totalCartItems => _cart.totalItems;
-  double get totalCartPrice => _cart.totalPrice;
+
+  /// Sum of `product_price × quantity` across every cart line, in
+  /// [Decimal]. Delegates to [ProductCart.totalPrice], which is now
+  /// `Decimal`.
+  Decimal get totalCartPrice => _cart.totalPrice;
 
   // ============ CRUD OPERATIONS ============
 
@@ -342,14 +321,6 @@ class ProductNotifier extends ChangeNotifier {
 
   // ============ VISIBILITY ============
 
-  /// Flip a product between `VISIBLE` and `HIDDEN`.
-  ///
-  /// Returns the HTTP-style status code (200 on success, non-200 on
-  /// failure) so callers such as the form's visibility switch can react
-  /// without catching exceptions for the common failure path.
-  ///
-  /// Accepts only the two canonical values; anything else is rejected
-  /// locally without hitting the network.
   Future<int> updateProductVisibility(
     int productId,
     String visibility, {
@@ -383,22 +354,14 @@ class ProductNotifier extends ChangeNotifier {
         return 500;
       }
 
-      // 1. Replace the product in the in-memory list so any open grid
-      //    reflects the new visibility immediately.
       _replaceInState(updated);
-
-      // 2. Invalidate the cache entry so the next fetch picks up the
-      //    change from the backend instead of serving a stale copy.
       _cache.invalidateProduct(productId);
 
-      // 3. Drop any cached supplier lists that contained this product.
       final supplierId = updated.product_provider_id ?? 0;
       if (supplierId > 0) {
         _cache.invalidateSupplierCacheAll(supplierId);
       }
 
-      // 4. If the product was hidden and the current list is a buyer
-      //    catalog (includeHidden == false), drop it from the list.
       if (!_state.includeHidden && !updated.isVisible) {
         _state.products.removeWhere((p) => p.id_product == productId);
       }
@@ -411,15 +374,12 @@ class ProductNotifier extends ChangeNotifier {
     }
   }
 
-  /// Convenience helper: mark a product visible.
   Future<int> showProduct(int productId, {String? callerKey}) =>
       updateProductVisibility(productId, 'VISIBLE', callerKey: callerKey);
 
-  /// Convenience helper: mark a product hidden.
   Future<int> hideProduct(int productId, {String? callerKey}) =>
       updateProductVisibility(productId, 'HIDDEN', callerKey: callerKey);
 
-  /// Toggle visibility without knowing the current value.
   Future<int> toggleProductVisibility(
     int productId, {
     String? callerKey,
@@ -438,9 +398,6 @@ class ProductNotifier extends ChangeNotifier {
     }
   }
 
-  /// Remove a product image from the in-memory product and product cache.
-  /// This is used for resources that fail to load; it does not delete the
-  /// image from the backend.
   bool removeProductImage({
     required Product product,
     required ProductImage image,
@@ -476,15 +433,6 @@ class ProductNotifier extends ChangeNotifier {
 
   // ============ FETCH OPERATIONS ============
 
-  /// Fetch products.
-  ///
-  /// [includeHidden] defaults to false, matching the buyer-facing
-  /// semantics of the service. Editors should pass `includeHidden: true`
-  /// to load the full catalog.
-  ///
-  /// [domain] and [subdomain] filter by category hierarchy. `subdomain`
-  /// requires `domain`; if only `subdomain` is provided, the fetch
-  /// silently drops it and logs a warning.
   Future<void> fetchProducts({
     int categoryId = 0,
     int userId = 0,
@@ -533,9 +481,6 @@ class ProductNotifier extends ChangeNotifier {
   List<Product> filterProductsBySupplier(int supplierId) =>
       _fetch.filterBySupplier(supplierId);
 
-  /// Re-run the current search against the newly active domain /
-  /// subdomain filters. Useful when the user changes the picker without
-  /// typing a new query.
   Future<void> applyCategoryFilters({
     String? domain,
     String? subdomain,
@@ -594,14 +539,6 @@ class ProductNotifier extends ChangeNotifier {
   }) =>
       _supplier.getCached(supplierId, includeHidden: includeHidden);
 
-  /// Fetch a supplier's products.
-  ///
-  /// [includeHidden] defaults to `false` (buyer-facing semantics,
-  /// matching the service contract). Editors pass `true` to load hidden
-  /// products alongside visible ones.
-  ///
-  /// The flag participates in the cache key, so a buyer fetch and an
-  /// editor fetch for the same supplier never overwrite each other.
   Future<List<Product>> fetchSupplierProducts(
     int supplierId, {
     bool forceRefresh = false,
@@ -624,7 +561,6 @@ class ProductNotifier extends ChangeNotifier {
     _notify();
   }
 
-  /// Invalidate every cached variant for a supplier (buyer + editor).
   void invalidateSupplierCacheAll(int supplierId) {
     _cache.invalidateSupplierCacheAll(supplierId);
     _notify();
@@ -705,8 +641,6 @@ class ProductNotifier extends ChangeNotifier {
 
   // ============ HELPERS ============
 
-  /// Trim + lowercase a domain / subdomain segment. Returns null when
-  /// the input is null or blank, so downstream calls skip the filter.
   String? _cleanSegment(String? value) {
     if (value == null) return null;
     final cleaned = value.trim().toLowerCase();

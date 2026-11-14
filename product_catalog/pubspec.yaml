@@ -61,6 +61,7 @@ dependencies:
     sdk: flutter
   flutter_speed_dial: ^4.6.6
   shimmer: ^3.0.0
+  decimal: ^3.0.2
   # eventsource: ^0.4.0
   # http: ^0.13.3
 # dependency_overrides:

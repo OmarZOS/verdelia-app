@@ -2,6 +2,8 @@
 
 import 'dart:developer';
 
+import 'package:decimal/decimal.dart';
+
 import '../app/VerdeliaImage.dart';
 import 'NamingContribution.dart';
 import 'iProduct.dart';
@@ -9,9 +11,16 @@ import 'iProduct.dart';
 /// A single product as returned by the API.
 ///
 /// The model carries the fields the payload actually contains. Helper
-/// coercers (`_asInt`, `_asDouble`, `_asString`) tolerate the shapes the
-/// backend occasionally emits (numeric strings, `1.0` for `1`, null for
-/// absent values) so parsing never throws.
+/// coercers (`_asInt`, `_readDecimal`, `_asString`) tolerate the shapes
+/// the backend occasionally emits (numeric strings, `1.0` for `1`, null
+/// for absent values) so parsing never throws.
+///
+/// ## Money
+///
+/// [unit_price], [base_price], [vat_rate], [total_quantity] and
+/// [reserved_quantity] are [Decimal]. [unitMargin] and
+/// [unitMarginPercent] are [Decimal] getters. The `double` conversion
+/// happens only inside [toJson], at the JSON boundary.
 
 /// One row of `product_image` as it arrives in a product payload.
 ///
@@ -62,22 +71,27 @@ class ProductImage {
   String toString() => 'ProductImage(id: $id, url: $url)';
 }
 
-class Product {
-  // ==================== Identity ====================
+// ==================== Product ====================
 
+class Product {
+  // ── Identity ──────────────────────────────────────────────────
   final int? id_product;
   final int? product_provider_id;
   final int? product_category_id;
   final int? id_product_category;
   final int? product_ref_id;
   final int? product_owner_id;
+
+  /// The importer row id (`iproduct.id_iproduct`). Null for
+  /// seller-created products with no imported origin.
   final int? product_origin_id;
 
-  // ==================== Descriptive ====================
+  // ── Descriptive ───────────────────────────────────────────────
 
-  /// Raw flat name from the payload. The public [product_name] getter
-  /// composes from this and the nested naming contribution.
-  final String? product_nameRaw;
+  /// Flat English name from the payload's `generic_name` (or
+  /// `product_name` on write). Prefer the [product_name] getter —
+  /// it walks the trilingual fallback chain.
+  final String? genericNameRaw;
 
   final String? product_brand;
   final String? product_barcode;
@@ -85,45 +99,65 @@ class Product {
   final String? product_description;
   final String? product_category_name;
 
-  // ==================== Pricing & stock ====================
+  // ── Pricing & stock ───────────────────────────────────────────
 
-  final double? product_price;
-  final double? product_base_price;
-  final int? product_quantity;
-  final int? product_reserved_quantity;
+  /// **API wire name:** `unit_price`. This is the customer-facing,
+  /// VAT-inclusive price the server bills against.
+  ///
+  /// The old model called this `product_price`, which the API never
+  /// emitted — so the field was always null and every downstream
+  /// invoice/order total came out zero. See the class docstring.
+  final Decimal? unit_price;
 
-  // ==================== Status ====================
+  /// **API wire name:** `product_base_price`. Supplier-side cost.
+  final Decimal? base_price;
 
+  /// **API wire name:** `vat_rate` on the read response,
+  /// `product_vat_value` on the write payload. Stored once under the
+  /// write name so `toJson` is a straight projection.
+  final Decimal? vat_rate;
+
+  /// **API wire name:** `product_quantity` (total on-hand). Response
+  /// emits it as a number, so parse with `_readDecimal` and cast at
+  /// the accessor boundary if you need an int.
+  final Decimal? total_quantity;
+
+  /// **API wire name:** `reserved_quantity`. Same numeric handling as
+  /// [total_quantity].
+  final Decimal? reserved_quantity;
+
+  /// **API wire name:** `available_quantity`. The server already
+  /// computes `on_hand - reserved` — prefer this authoritative value
+  /// in [product_available_quantity].
+  final int? server_available_quantity;
+
+  // ── Status ────────────────────────────────────────────────────
   final String? product_visibility;
 
-  // ==================== Timestamps ====================
-
+  // ── Timestamps ────────────────────────────────────────────────
   final DateTime? product_created_at;
   final DateTime? product_last_updated;
 
-  // ==================== Media ====================
+  // ── Media ─────────────────────────────────────────────────────
 
   VerdeliaImage? productImage;
 
-  /// Full gallery, in payload order. Empty when the payload has no
-  /// images. This is the single source of truth for the product's
-  /// image URLs — order it, index it, take the first, whatever the
-  /// caller needs.
+  /// Full gallery, in payload order (origin reference first, then
+  /// seller-uploaded images). The single source of truth for the
+  /// product's image URLs.
   final List<ProductImage> product_images;
 
-  // ==================== Nested snapshots ====================
+  // ── Nested snapshots ─────────────────────────────────────────
 
   final Map<String, dynamic>? product_category;
   final Map<String, dynamic>? product_provider;
 
-  /// Linked imported product, when the backend includes it.
-  ///
-  /// Carries the trilingual naming contribution and the AI-provenance
-  /// metadata that the flat Product row doesn't have. Null for
-  /// products without an origin.
+  /// Linked imported product, when the response includes an `origin`
+  /// object. Carries the trilingual naming contribution and the
+  /// AI-provenance metadata the flat Product row doesn't have.
   final IProduct? product_origin;
 
-  // ==================== Constructor ====================
+  // ── Constructor ──────────────────────────────────────────────
 
   Product({
     required this.id_product,
@@ -131,19 +165,21 @@ class Product {
     required this.product_category_id,
     required this.id_product_category,
     required this.product_ref_id,
-    required this.product_nameRaw,
+    required this.genericNameRaw,
     required this.product_brand,
     required this.product_quantifier,
     required this.product_barcode,
     required this.product_category_name,
-    required this.product_price,
-    required this.product_quantity,
+    required this.unit_price,
+    required this.total_quantity,
     required this.product_description,
     required this.product_created_at,
     required this.product_last_updated,
     required this.product_owner_id,
-    this.product_base_price,
-    this.product_reserved_quantity,
+    this.base_price,
+    this.vat_rate,
+    this.reserved_quantity,
+    this.server_available_quantity,
     this.product_visibility,
     this.product_origin_id,
     this.product_category,
@@ -152,17 +188,13 @@ class Product {
     this.product_images = const [],
   });
 
-  // ==================== Name access ====================
+  // ── Name access ──────────────────────────────────────────────
 
-  /// Customer-facing name. Always English unless the caller opts into
-  /// another language via [nameFor] or [preferredNameLanguage].
   String get product_name => _resolveName(_nameLanguage);
-
   String get productNameEn => _resolveName('en');
   String get productNameAr => _resolveName('ar');
   String get productNameFr => _resolveName('fr');
 
-  /// Resolve the name in a specific language without mutating state.
   String nameFor(String lang) => _resolveName(lang);
 
   String _nameLanguage = 'en';
@@ -171,43 +203,35 @@ class Product {
     _nameLanguage = lang;
   }
 
-  /// Resolve a name for a given language, falling back in order:
-  /// requested language → English → Arabic → French → flat field → ''.
+  /// Trilingual fallback: requested → en → ar → fr → flat → ''.
   ///
-  /// Delegates the trilingual fallback to [NamingContribution.nameFor]
-  /// so the fallback policy lives in one place. When there's no naming
-  /// contribution at all, uses the flat `product_nameRaw` field.
+  /// The naming contribution lives on the imported product's `origin`
+  /// block (the payload key is `origin`, not `product_origin`). When
+  /// it's absent, falls back to `genericNameRaw`.
   String _resolveName(String lang) {
     final naming = product_origin?.namingContribution;
     if (naming != null) {
       final resolved = naming.nameFor(lang);
       if (resolved.isNotEmpty) return resolved;
     }
-    return (product_nameRaw ?? '').trim();
+    return (genericNameRaw ?? '').trim();
   }
 
-  // ==================== Image access ====================
+  // ── Image access ─────────────────────────────────────────────
 
-  /// First image, or null when the gallery is empty.
   ProductImage? get primaryImage =>
       product_images.isNotEmpty ? product_images.first : null;
 
-  /// Convenience: URL of the first image, or null when there is none.
-  /// Replaces the old flat `product_image_url` field.
   String? get primaryImageUrl => primaryImage?.url;
 
-  /// True when there is more than one image.
   bool get hasGallery => product_images.length > 1;
 
-  /// Every usable URL, in payload order. Malformed entries are filtered
-  /// out at parse time, so this is safe to hand straight to a
-  /// `PageView` or a carousel.
   List<String> get imageUrls => product_images
       .where((img) => img.hasUrl)
       .map((img) => img.url!)
       .toList(growable: false);
 
-  // ==================== Factories ====================
+  // ── Factories ────────────────────────────────────────────────
 
   factory Product.empty() {
     return Product(
@@ -216,19 +240,20 @@ class Product {
       product_category_id: null,
       id_product_category: null,
       product_ref_id: null,
-      product_nameRaw: '',
+      genericNameRaw: '',
       product_brand: '',
       product_quantifier: '',
       product_barcode: '',
       product_category_name: '',
-      product_price: 0.0,
-      product_quantity: 0,
+      unit_price: Decimal.zero,
+      total_quantity: Decimal.zero,
       product_description: '',
       product_created_at: null,
       product_last_updated: null,
       product_owner_id: null,
-      product_base_price: 0.0,
-      product_reserved_quantity: 0,
+      base_price: Decimal.zero,
+      reserved_quantity: Decimal.zero,
+      server_available_quantity: 0,
       product_visibility: 'VISIBLE',
       product_origin_id: null,
       product_category: null,
@@ -238,25 +263,32 @@ class Product {
     );
   }
 
+  /// Parse a product response.
+  ///
+  /// Wire-name mapping:
+  ///   * `unit_price`        → [unit_price]
+  ///   * `product_base_price`→ [base_price]
+  ///   * `vat_rate`          → [vat_rate]
+  ///   * `product_quantity`  → [total_quantity]  (double on wire)
+  ///   * `reserved_quantity` → [reserved_quantity] (double on wire)
+  ///   * `available_quantity`→ [server_available_quantity]
+  ///   * `generic_name`      → [genericNameRaw] (falls back to `product_name`)
+  ///   * `origin`            → [product_origin] (payload key is `origin`)
+  ///   * `product_image`     → [product_images]
   factory Product.fromJson(dynamic json) {
     final map = _asMap(json);
     if (map.isEmpty) return Product.empty();
 
-    // Seller gallery first.
     final sellerImages = _parseProductImages(map['product_image']);
 
     final categoryMap = _asMapOrNull(map['product_category']);
     final providerMap = _asMapOrNull(map['product_provider']);
-    final originMap = _asMapOrNull(map['product_origin']);
 
-    // Parse the origin once — we need its image URL for the gallery.
+    final originMap =
+        _asMapOrNull(map['origin']) ?? _asMapOrNull(map['product_origin']);
+
     final origin = originMap == null ? null : IProduct.fromJson(originMap);
 
-    // Compose the final gallery: the origin's reference image (if any)
-    // goes first, followed by the seller's own images.
-    //
-    // Deduplicate so the same URL isn't shown twice when the seller
-    // happened to attach the reference image alongside their own.
     final images = _composeGallery(
       originImageUrl: origin?.iproductImageUrl,
       sellerImages: sellerImages,
@@ -266,32 +298,67 @@ class Product {
         _asString(map['product_category_name']) ??
         'Missing';
 
+    // The flat write shape uses `product_provider_id`, but the read
+    // shape (both the inner `ordered_item.product` block and the
+    // `getAllProducts` response) uses `provider_id` at the top level
+    // and `product_provider.id_product_provider` when nested. Read
+    // all three, in that order.
     final providerId = _asIntOrNull(map['product_provider_id']) ??
-        _asIntOrNull(providerMap?['id_product_provider']) ??
-        0;
+        _asIntOrNull(map['provider_id']) ??
+        _asIntOrNull(providerMap?['id_product_provider']);
+
+    // Same story for the category id. The read shape uses
+    // `category_id` at the top level; the write shape uses
+    // `product_category_id` / `id_product_category`; the nested
+    // object uses `id_product_category`.
+    final categoryId = _asIntOrNull(map['product_category_id']) ??
+        _asIntOrNull(map['category_id']) ??
+        _asIntOrNull(map['id_product_category']) ??
+        _asIntOrNull(categoryMap?['id_product_category']);
 
     return Product(
       id_product: _asIntOrNull(map['id_product']),
       product_provider_id: providerId,
-      product_category_id: _asIntOrNull(map['product_category_id']),
-      id_product_category: _asIntOrNull(map['product_category_id']),
+      product_category_id: categoryId,
+      id_product_category: categoryId,
       product_ref_id: _asIntOrNull(map['product_ref_id']),
-      product_nameRaw: _asString(map['product_name']) ?? '',
-      product_brand: _asString(map['product_brand']) ?? '',
-      product_barcode: _asString(map['product_barcode']) ?? '',
-      product_quantifier: _asString(map['product_quantifier']) ?? '',
+      genericNameRaw: _asString(map['generic_name']) ??
+          _asString(map['product_name']) ??
+          '',
+      product_brand:
+          _asString(map['brand']) ?? _asString(map['product_brand']) ?? '',
+      product_barcode:
+          _asString(map['barcode']) ?? _asString(map['product_barcode']) ?? '',
+      product_quantifier: _asString(map['quantifier']) ??
+          _asString(map['product_quantifier']) ??
+          '',
       product_category_name: categoryName,
       product_images: images,
-      product_price: _asDoubleOrNull(map['product_price']),
-      product_quantity: _asIntOrNull(map['product_quantity']),
+      unit_price: _readDecimal(
+        map['unit_price'] ?? map['product_price'],
+      ),
+      base_price: _readDecimal(
+        map['product_base_price'] ?? map['base_price'],
+      ),
+      vat_rate: _readDecimal(
+        map['vat_rate'] ?? map['product_vat_value'],
+      ),
+      total_quantity: _readDecimal(
+        map['product_quantity'] ?? map['available_quantity'],
+      ),
+      reserved_quantity: _readDecimal(
+        map['reserved_quantity'] ?? map['product_reserved_quantity'],
+      ),
+      server_available_quantity: _asIntOrNull(map['available_quantity']),
       product_description: _asString(map['product_description']) ?? '',
       product_created_at: _parseDate(map['created']),
       product_last_updated: _parseDate(map['last_updated']),
-      product_owner_id: _asIntOrNull(map['product_owner']),
-      product_base_price: _asDoubleOrNull(map['product_base_price']),
-      product_reserved_quantity: _asIntOrNull(map['product_reserved_quantity']),
-      product_visibility: _asString(map['product_visibility']) ?? 'VISIBLE',
-      product_origin_id: _asIntOrNull(map['product_origin_id']),
+      product_owner_id: _asIntOrNull(map['user_id'] ?? map['product_owner']),
+      product_visibility:
+          _asString(map['visibility'] ?? map['product_visibility']) ??
+              'VISIBLE',
+      product_origin_id:
+          _asIntOrNull(map['origin_id'] ?? map['product_origin_id']),
       product_category: categoryMap,
       product_provider: providerMap,
       product_origin: origin,
@@ -303,7 +370,7 @@ class Product {
     return Product.fromJson(json);
   }
 
-  // ==================== copyWith ====================
+  // ── copyWith ─────────────────────────────────────────────────
 
   Product copyWith({
     int? id_product,
@@ -313,16 +380,18 @@ class Product {
     int? product_ref_id,
     int? product_owner_id,
     int? product_origin_id,
-    String? product_nameRaw,
+    String? genericNameRaw,
     String? product_brand,
     String? product_barcode,
     String? product_quantifier,
     String? product_description,
     String? product_category_name,
-    double? product_price,
-    double? product_base_price,
-    int? product_quantity,
-    int? product_reserved_quantity,
+    Decimal? unit_price,
+    Decimal? base_price,
+    Decimal? vat_rate,
+    Decimal? total_quantity,
+    Decimal? reserved_quantity,
+    int? server_available_quantity,
     String? product_visibility,
     DateTime? product_created_at,
     DateTime? product_last_updated,
@@ -339,18 +408,20 @@ class Product {
       product_ref_id: product_ref_id ?? this.product_ref_id,
       product_owner_id: product_owner_id ?? this.product_owner_id,
       product_origin_id: product_origin_id ?? this.product_origin_id,
-      product_nameRaw: product_nameRaw ?? this.product_nameRaw,
+      genericNameRaw: genericNameRaw ?? this.genericNameRaw,
       product_brand: product_brand ?? this.product_brand,
       product_barcode: product_barcode ?? this.product_barcode,
       product_quantifier: product_quantifier ?? this.product_quantifier,
       product_description: product_description ?? this.product_description,
       product_category_name:
           product_category_name ?? this.product_category_name,
-      product_price: product_price ?? this.product_price,
-      product_base_price: product_base_price ?? this.product_base_price,
-      product_quantity: product_quantity ?? this.product_quantity,
-      product_reserved_quantity:
-          product_reserved_quantity ?? this.product_reserved_quantity,
+      unit_price: unit_price ?? this.unit_price,
+      base_price: base_price ?? this.base_price,
+      vat_rate: vat_rate ?? this.vat_rate,
+      total_quantity: total_quantity ?? this.total_quantity,
+      reserved_quantity: reserved_quantity ?? this.reserved_quantity,
+      server_available_quantity:
+          server_available_quantity ?? this.server_available_quantity,
       product_visibility: product_visibility ?? this.product_visibility,
       product_created_at: product_created_at ?? this.product_created_at,
       product_last_updated: product_last_updated ?? this.product_last_updated,
@@ -361,28 +432,14 @@ class Product {
     );
   }
 
-  // ==================== Serialisation ====================
+  // ── Serialisation ────────────────────────────────────────────
 
   Map<String, dynamic> toJson() {
     final originJson = product_origin?.toJson();
 
-    // The write path sends ONE image per call. The server owns the rest
-    // of the gallery; it's only told about the specific row that
-    // changed — either a new upload (id 0) or an in-place update of an
-    // existing row.
-    //
-    // Selection rule:
-    //   1. Any entry with `id == 0` → a freshly-uploaded image that
-    //      hasn't been persisted yet. Send it.
-    //   2. Otherwise → the first gallery entry (the primary image).
-    //      Sending it unchanged is a harmless no-op on the server.
-    //
-    // This keeps the client-side gallery complete for rendering while
-    // respecting the API's single-image-per-write contract.
     final newImage = product_images
         .cast<ProductImage?>()
         .firstWhere((img) => img?.id == 0, orElse: () => null);
-
     final imageToSend = newImage ?? primaryImage;
 
     final imageJson = imageToSend == null
@@ -398,32 +455,45 @@ class Product {
         'id_product': id_product ?? 0,
         'product_provider_id': product_provider_id ?? 0,
         'product_category_id': product_category_id ?? 0,
-        'id_product_category': product_category_id ?? 0,
-        'product_name': product_nameRaw ?? '',
+        'id_product_category': id_product_category ?? 0,
+        'product_name': genericNameRaw ?? '',
         'product_brand': product_brand ?? '',
         'product_barcode': product_barcode ?? '',
         'product_quantifier': product_quantifier ?? '',
         'product_category_desc': product_category_name ?? '',
-        'product_price': product_price ?? 0,
-        'product_base_price': product_base_price ?? 0,
-        'product_quantity': product_quantity ?? 0,
-        'product_reserved_quantity': product_reserved_quantity ?? 0,
+        'unit_price': _decimalToWire(unit_price ?? Decimal.zero),
+        'product_base_price': _decimalToWire(base_price ?? Decimal.zero),
+        'product_vat_value': _decimalToWire(vat_rate ?? Decimal.zero),
+        'product_quantity': _decimalToWire(total_quantity ?? Decimal.zero),
+        'product_reserved_quantity':
+            _decimalToWire(reserved_quantity ?? Decimal.zero),
         'product_visibility': product_visibility ?? 'VISIBLE',
         'product_description': product_description ?? '',
         'product_owner': product_owner_id ?? 0,
-        if (product_origin_id != null) 'product_origin_id': product_origin_id,
+        // NOTE: `product_origin_id` is intentionally omitted. It is
+        // not on `Product_API`. The origin is attached via the
+        // `iproduct` sibling on the create payload (see
+        // [toCreateJson]).
       },
       if (imageJson != null) 'image': imageJson,
       if (originJson != null) 'product_origin': originJson,
     };
   }
 
-  // ==================== Convenience getters ====================
+  // ── Convenience getters ─────────────────────────────────────
 
+  /// On-hand quantity minus reserved quantity. Prefers the server's
+  /// authoritative `available_quantity` when the response included
+  /// one; falls back to arithmetic when it didn't.
   int get product_available_quantity {
-    final total = product_quantity ?? 0;
-    final reserved = product_reserved_quantity ?? 0;
-    return (total - reserved).clamp(0, total);
+    final server = server_available_quantity;
+    if (server != null) return server;
+    final total = total_quantity?.toBigInt().toInt() ?? 0;
+    final reserved = reserved_quantity?.toBigInt().toInt() ?? 0;
+    final diff = total - reserved;
+    if (diff < 0) return 0;
+    if (diff > total) return total;
+    return diff;
   }
 
   bool get isVisible =>
@@ -431,19 +501,44 @@ class Product {
 
   bool get isInStock => product_available_quantity > 0;
 
-  double? get unitMargin {
-    final base = product_base_price ?? 0;
-    if (base <= 0) return null;
-    return (product_price ?? 0) - base;
+  /// Kept for backward compatibility with callers that read
+  /// `product.product_price`. Equivalent to [unit_price].
+  Decimal? get product_price => unit_price;
+
+  /// Kept for backward compatibility. Equivalent to [base_price].
+  Decimal? get product_base_price => base_price;
+
+  /// Kept for backward compatibility. Equivalent to [vat_rate].
+  Decimal? get product_vat_value => vat_rate;
+
+  /// Kept for backward compatibility. Equivalent to
+  /// `total_quantity.toInt()`.
+  int? get product_quantity => total_quantity?.toBigInt().toInt();
+
+  /// Kept for backward compatibility.
+  int? get product_reserved_quantity => reserved_quantity?.toBigInt().toInt();
+
+  /// `unit_price − base_price`, in [Decimal]. Null when [base_price]
+  /// is zero or absent.
+  Decimal? get unitMargin {
+    final base = base_price ?? Decimal.zero;
+    if (base <= Decimal.zero) return null;
+    return (unit_price ?? Decimal.zero) - base;
   }
 
-  double? get unitMarginPercent {
-    final base = product_base_price ?? 0;
-    if (base <= 0) return null;
-    return ((product_price ?? 0) - base) / base;
+  /// `(unit_price − base_price) / base_price`, in [Decimal]. Null when
+  /// [base_price] is zero or absent.
+  ///
+  /// `.toDecimal(scaleOnInfinitePrecision: 2)` on the division: `Decimal / Decimal` returns a
+  /// `Rational`, which can't be assigned to a `Decimal`.
+  Decimal? get unitMarginPercent {
+    final base = base_price ?? Decimal.zero;
+    if (base <= Decimal.zero) return null;
+    final diff = (unit_price ?? Decimal.zero) - base;
+    return (diff / base).toDecimal(scaleOnInfinitePrecision: 2);
   }
 
-  // ==================== Equality ====================
+  // ── Equality ─────────────────────────────────────────────────
 
   @override
   bool operator ==(Object other) {
@@ -456,18 +551,41 @@ class Product {
 
   @override
   String toString() =>
-      'Product(id: $id_product, name: $product_name, price: $product_price)';
+      'Product(id: $id_product, name: $product_name, price: $unit_price)';
 }
 
 // ==================== Parse helpers ====================
 
-double? _asDoubleOrNull(dynamic v) {
+/// Coerces any JSON value to [Decimal].
+///
+/// * [Decimal] → passthrough
+/// * `int`     → `Decimal.fromInt`
+/// * `double`  → `Decimal.tryParse(v.toString())` (shortest round-trip,
+///                NOT the binary expansion)
+/// * `String`  → `Decimal.tryParse`
+/// * anything else, or a non-finite `double` → `null`
+Decimal? _readDecimal(dynamic v) {
   if (v == null) return null;
-  if (v is double) return v;
-  if (v is num) return v.toDouble();
-  if (v is String) return double.tryParse(v);
+  if (v is Decimal) return v;
+  if (v is int) return Decimal.fromInt(v);
+  if (v is double) {
+    if (v.isNaN || v.isInfinite) return null;
+    return Decimal.tryParse(v.toString());
+  }
+  if (v is String) return Decimal.tryParse(v);
   return null;
 }
+
+/// Coerces any JSON value to a [Decimal], defaulting to zero.
+Decimal _readDecimalOrZero(dynamic v) => _readDecimal(v) ?? Decimal.zero;
+
+/// Converts a [Decimal] to the shortest `double` that round-trips.
+/// For the JSON wire boundary only — never use this for arithmetic.
+double _decimalToDouble(Decimal v) => double.parse(v.toString());
+
+/// Serialises a [Decimal] for JSON. Emits a `num` so `jsonEncode`
+/// writes it as a JSON number, not a string.
+num _decimalToWire(Decimal v) => _decimalToDouble(v);
 
 int? _asIntOrNull(dynamic v) {
   if (v == null) return null;
@@ -649,32 +767,6 @@ class ProductCategory {
     );
   }
 
-  /// Parse a single category row. Supports both shapes:
-  ///
-  /// New shape (as returned by the product-category endpoint):
-  /// ```json
-  /// {
-  ///   "id_product_category": 10,
-  ///   "product_category_name": "Canned & Packaged Goods",
-  ///   "product_category_naming_ref": 10,
-  ///   "product_category_icon": null,
-  ///   "naming_contribution": {
-  ///     "naming_contribution_fr": "Conserves et produits emballés",
-  ///     "naming_contribution_ar": "المعلبات والأغذية المعبأة",
-  ///     "naming_contribution_en": "Canned & Packaged Goods",
-  ///     "naming_contribution_status": "APP_TRANSLATED",
-  ///     "naming_contribution_icon_url": null
-  ///   }
-  /// }
-  /// ```
-  ///
-  /// Legacy shape:
-  /// ```json
-  /// {
-  ///   "id_product_category": 10,
-  ///   "product_category_desc": "Canned & Packaged Goods"
-  /// }
-  /// ```
   factory ProductCategory.fromJson(Map<String, dynamic> json) {
     try {
       final id = _asInt(
@@ -729,25 +821,18 @@ class ProductCategory {
 
   // ==================== Naming accessors ====================
 
-  /// Return the category name in [lang]. Prefers the trilingual
-  /// naming contribution; falls back to [productCategoryDesc].
-  ///
-  /// [lang] accepts the usual BCP-47 short codes: `'en'`, `'fr'`, `'ar'`.
   String nameFor(String lang) {
     final resolved = naming?.nameFor(lang) ?? '';
     if (resolved.isNotEmpty) return resolved;
     return productCategoryDesc;
   }
 
-  /// Icon URL preferring the naming block, falling back to the flat
-  /// top-level icon.
   String? get resolvedIconUrl {
     final fromNaming = naming?.iconUrl;
     if (fromNaming != null && fromNaming.isNotEmpty) return fromNaming;
     return iconUrl;
   }
 
-  /// English-preferring display name. Kept for backward compatibility.
   String get displayName {
     if (naming?.en.isNotEmpty == true) return naming!.en;
     return productCategoryDesc;

@@ -1,11 +1,19 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 
 class OrderSummarySection extends StatelessWidget {
-  final double subtotal;
-  final double tax;
-  final double? discount;
-  final double? shipping;
+  /// Subtotal, in [Decimal].
+  final Decimal subtotal;
+
+  /// Tax amount, in [Decimal].
+  final Decimal tax;
+
+  /// Discount amount, in [Decimal]. Null when no discount applies.
+  final Decimal? discount;
+
+  /// Shipping amount, in [Decimal]. Null when no shipping applies.
+  final Decimal? shipping;
 
   const OrderSummarySection({
     super.key,
@@ -19,7 +27,13 @@ class OrderSummarySection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
-    final total = subtotal + tax + (shipping ?? 0) - (discount ?? 0);
+
+    // `Decimal + Decimal + Decimal - Decimal` — all closed over
+    // `Decimal`. `?? Decimal.zero` matches the old `?? 0` fallback.
+    final Decimal total = subtotal +
+        tax +
+        (shipping ?? Decimal.zero) -
+        (discount ?? Decimal.zero);
 
     return Card(
       elevation: 2,
@@ -67,19 +81,20 @@ class OrderSummarySection extends StatelessWidget {
             ),
 
             // Discount (if any)
-            if (discount != null && discount! > 0)
+            if (discount != null && discount! > Decimal.zero)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: _buildSummaryRow(
                   context,
                   label: 'Discount',
+                  // Unary minus on `Decimal` is defined.
                   value: -discount!,
                   isDiscount: true,
                 ),
               ),
 
             // Shipping (if any)
-            if (shipping != null && shipping! > 0)
+            if (shipping != null && shipping! > Decimal.zero)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: _buildSummaryRow(
@@ -106,6 +121,8 @@ class OrderSummarySection extends StatelessWidget {
                   ),
                 ),
                 Text(
+                  // `Decimal.toStringAsFixed(2)` — same output the
+                  // `double` path produced.
                   loc.price(total.toStringAsFixed(2)),
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
@@ -123,7 +140,7 @@ class OrderSummarySection extends StatelessWidget {
   Widget _buildSummaryRow(
     BuildContext context, {
     required String label,
-    required double value,
+    required Decimal value,
     bool isDiscount = false,
   }) {
     final theme = Theme.of(context);
@@ -139,7 +156,10 @@ class OrderSummarySection extends StatelessWidget {
           ),
         ),
         Text(
-          isDiscount && value < 0
+          // `value < Decimal.zero` and `value.abs` (getter, not method).
+          // `Decimal.abs` returns a `Decimal`, and `toStringAsFixed(2)`
+          // produces the same string the `double` version did.
+          isDiscount && value < Decimal.zero
               ? '-${loc.price(value.abs().toStringAsFixed(2))}'
               : loc.price(value.toStringAsFixed(2)),
           style: theme.textTheme.bodyMedium?.copyWith(

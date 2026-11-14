@@ -3121,7 +3121,60 @@
 
   "plansIndividualSubtitleFree": "You're on the Free plan. Upgrade any time — your data carries over.",
   "plansOrganizationSubtitleFree": "You're on the Free plan. Set up a team when you're ready.",
-  "plansAllSubtitleFree": "You're on the Free plan. Everything below is available when you need it."
+  "plansAllSubtitleFree": "You're on the Free plan. Everything below is available when you need it.",
+
+  "deliveryDetailsTotalWeightLabel": "Total weight",
+  "deliveryDetailsTotalWeightHelper": "Weight of the whole shipment in kilograms",
+  "deliveryDetailsBrokerLabel": "Shipping broker",
+  "deliveryDetailsBrokerNone": "Unassigned",
+  "deliveryDetailsBrokerUnverified": "Unverified",
+  "commonRetry": "Retry",
+  "deliveryDetailsBrokerLoading": "Loading brokers…",
+  "deliveryDetailsBrokerLoadFailed": "Couldn't load brokers",
+  "deliveryDetailsBrokerNoneAvailable": "No brokers available",
+  "deliveryDetailsBrokerHelper": "{count, plural, =0{No brokers} =1{1 broker available} other{{count} brokers available}}",
+  "@deliveryDetailsBrokerHelper": {
+    "description": "Helper text under the broker dropdown",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "deliveryDetailsDimensionsLabel": "Dimensions",
+  "deliveryDetailsUnitLabel": "Unit",
+  "deliveryDetailsWeightUnitLabel": "Weight unit",
+  "deliveryDetailsValidationDimensionsFormat": "Use the format LxWxH, e.g. 5x5x5",
+
+  "vatRateExempt": "Exempt from value-added tax",
+  "vatRateReduced": "Reduced rate applies to this item",
+  "vatRateStandard": "Standard rate applies to this item",
+
+    "metaUpdatedLabel": "Updated",
+  "@metaUpdatedLabel": {
+    "description": "Label for the last-updated timestamp on cart and delivery meta cards"
+  },
+
+  "deliveryGoodsLabel": "Goods",
+  "@deliveryGoodsLabel": {
+    "description": "Label for the delivery goods description field"
+  },
+
+  "deliveryPackagesLabel": "Packages",
+  "@deliveryPackagesLabel": {
+    "description": "Label for the delivery package count field"
+  },
+
+  "invoiceTotalLabel": "Invoiced Total",
+  "costNotAvailable": "Cost breakdown not available for this operation",
+
+  "itemBrandLabel": "Brand",
+  "itemUnitLabel": "Unit",
+  "itemBarcodeLabel": "Barcode",
+  "itemAvailableLabel": "Available",
+  "itemCategoryLabel": "Category",
+  "itemProviderLabel": "Provider",
+  "itemDescriptionLabel": "Description"
+
 
 
   

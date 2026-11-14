@@ -1,10 +1,17 @@
 // components/discount_indicator.dart
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 
 class DiscountIndicator extends StatelessWidget {
-  final double basePrice;
-  final double finalPrice;
-  final double discountPercentage;
+  /// Base (catalog) price, in [Decimal].
+  final Decimal basePrice;
+
+  /// Final (sell) price, in [Decimal].
+  final Decimal finalPrice;
+
+  /// Discount percentage, in [Decimal].
+  final Decimal discountPercentage;
+
   final bool showWarning;
 
   const DiscountIndicator({
@@ -20,7 +27,7 @@ class DiscountIndicator extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
-    if (basePrice == 0 && finalPrice == 0) {
+    if (basePrice == Decimal.zero && finalPrice == Decimal.zero) {
       return const SizedBox.shrink();
     }
 
@@ -38,7 +45,12 @@ class DiscountIndicator extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Final price (DZD $finalPrice) is higher than base price (DZD $basePrice)',
+                // `toStringAsFixed(2)` matches the rest of the app's
+                // money display. Interpolating a `Decimal` directly
+                // would lose trailing zeros.
+                'Final price (DZD ${finalPrice.toStringAsFixed(2)}) '
+                'is higher than base price '
+                '(DZD ${basePrice.toStringAsFixed(2)})',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colors.error,
                   fontWeight: FontWeight.w500,
@@ -50,7 +62,7 @@ class DiscountIndicator extends StatelessWidget {
       );
     }
 
-    if (discountPercentage > 0) {
+    if (discountPercentage > Decimal.zero) {
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -78,7 +90,9 @@ class DiscountIndicator extends StatelessWidget {
       );
     }
 
-    if (basePrice > 0 && finalPrice > 0 && discountPercentage == 0) {
+    if (basePrice > Decimal.zero &&
+        finalPrice > Decimal.zero &&
+        discountPercentage == Decimal.zero) {
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(

@@ -1,3 +1,5 @@
+// delivery_ui_manager.dart
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:verdelia_core/app/Person.dart';
@@ -33,26 +35,122 @@ class DeliveryUIManager {
     ];
   }
 
-  // Parse dimensions from string
-  static DimensionData? parseDimensions(String dimensions) {
-    final regex = RegExp(
-        r'(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)\s*([a-zA-Z]+)');
-    final match = regex.firstMatch(dimensions);
+  // ============================================================
+  // DIMENSION STRING — wire format
+  // ============================================================
+  //
+  // The packed form is:
+  //
+  //     <L>x<W>x<H><length_unit>:<weight><weight_unit>
+  //
+  // Examples:
+  //     '100x50x30cm:5kg'
+  //     '2x1x1.5m:2500g'
+  //     '100x50x30cm'      (no weight)
+  //     ':5kg'             (weight only)
+  //     ''                 (nothing)
+  //
+  // The colon is always present when either half is populated, so
+  // the parser can tell dimensions-only from weight-only from
+  // fully-empty. Units are attached without a space to keep the
+  // string compact and regex-friendly.
+  //
+  // `length_unit` ∈ {'cm', 'm'}
+  // `weight_unit` ∈ {'kg', 'g'}
 
-    if (match != null && match.groupCount >= 4) {
-      return DimensionData(
-        length: double.tryParse(match.group(1)!) ?? 0.0,
-        width: double.tryParse(match.group(2)!) ?? 0.0,
-        height: double.tryParse(match.group(3)!) ?? 0.0,
-        unit: match.group(4)!,
+  /// Matches `<L>x<W>x<H><unit>` where unit is optional.
+  static final RegExp _dimsRe = RegExp(
+    r'^(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)(cm|m)?$',
+  );
+
+  /// Matches `<weight><unit>` where unit is optional.
+  static final RegExp _weightRe = RegExp(
+    r'^(\d+(?:\.\d+)?)(kg|g)?$',
+  );
+
+  /// Parse the compact dimension string.
+  ///
+  /// Returns `null` when the string is malformed. An empty or null
+  /// input parses to a zeroed `DimensionData` with no weight.
+  static DimensionData? parseDimensions(String? raw) {
+    if (raw == null || raw.trim().isEmpty) {
+      return const DimensionData(
+        length: 0,
+        width: 0,
+        height: 0,
+        unit: 'cm',
       );
     }
-    return null;
+
+    final parts = raw.trim().split(':');
+    if (parts.length > 2) return null;
+
+    final dimsPart = parts.isNotEmpty ? parts[0].trim() : '';
+    final weightPart = parts.length == 2 ? parts[1].trim() : '';
+
+    double length = 0, width = 0, height = 0;
+    String lengthUnit = 'cm';
+
+    if (dimsPart.isNotEmpty) {
+      final m = _dimsRe.firstMatch(dimsPart);
+      if (m == null) return null;
+      length = double.parse(m.group(1)!);
+      width = double.parse(m.group(2)!);
+      height = double.parse(m.group(3)!);
+      lengthUnit = m.group(4) ?? 'cm';
+    }
+
+    double? weight;
+    String? weightUnit;
+
+    if (weightPart.isNotEmpty) {
+      final m = _weightRe.firstMatch(weightPart);
+      if (m == null) return null;
+      weight = double.parse(m.group(1)!);
+      weightUnit = m.group(2) ?? 'kg';
+    }
+
+    return DimensionData(
+      length: length,
+      width: width,
+      height: height,
+      unit: lengthUnit,
+      weight: weight,
+      weightUnit: weightUnit,
+    );
   }
 
-  // Format dimensions to string
+  /// Build the compact dimension string.
+  ///
+  /// Emits the colon whenever either half is populated so the
+  /// parser can distinguish dimensions-only from weight-only.
+  /// Returns an empty string when neither half has data.
   static String formatDimensions(DimensionData dimensions) {
-    return '${dimensions.length}x${dimensions.width}x${dimensions.height} ${dimensions.unit}';
+    final hasDims =
+        dimensions.length > 0 || dimensions.width > 0 || dimensions.height > 0;
+    final hasWeight = dimensions.weight != null && dimensions.weight! > 0;
+
+    if (!hasDims && !hasWeight) return '';
+
+    final dimsPart = hasDims
+        ? '${_trimNumber(dimensions.length)}'
+            'x${_trimNumber(dimensions.width)}'
+            'x${_trimNumber(dimensions.height)}'
+            '${dimensions.unit}'
+        : '';
+
+    final weightPart = hasWeight
+        ? '${_trimNumber(dimensions.weight!)}${dimensions.weightUnit ?? 'kg'}'
+        : '';
+
+    return '$dimsPart:$weightPart';
+  }
+
+  /// Drop trailing `.0` from whole numbers so the wire string stays
+  /// compact. `5.0` → `5`, `1.50` → `1.5`.
+  static String _trimNumber(double v) {
+    if (v == v.truncateToDouble()) return v.toInt().toString();
+    return v.toString();
   }
 
   // Create delivery data from customer info
@@ -69,6 +167,26 @@ class DeliveryUIManager {
   }
 
   // ========== VALIDATION ==========
+
+  static Future<Decimal> estimateDeliveryPrice({
+    required DeliveryData deliveryData,
+    Duration delay = const Duration(milliseconds: 500),
+  }) async {
+    await Future.delayed(delay);
+
+    final Decimal basePrice = Decimal.fromInt(5);
+    final Decimal weight = deliveryData.deliveryTotalWeight ?? Decimal.zero;
+    final Decimal weightMultiplier = weight * Decimal.parse('0.5');
+    final Decimal shippingMultiplier =
+        switch (deliveryData.deliveryShippingMethod) {
+      'express' => Decimal.parse('1.5'),
+      'overnight' => Decimal.fromInt(2),
+      'freight' => Decimal.fromInt(3),
+      _ => Decimal.one,
+    };
+
+    return (basePrice + weightMultiplier) * shippingMultiplier;
+  }
 
   static String? validatePackageCount(String? value) {
     if (value == null || value.isEmpty) {
@@ -110,26 +228,6 @@ class DeliveryUIManager {
     }
 
     return null;
-  }
-
-  // ========== PRICE ESTIMATION ==========
-
-  static Future<double> estimateDeliveryPrice({
-    required DeliveryData deliveryData,
-    Duration delay = const Duration(milliseconds: 500),
-  }) async {
-    await Future.delayed(delay);
-
-    final basePrice = 5.0;
-    final weightMultiplier = (deliveryData.deliveryTotalWeight ?? 0) * 0.5;
-    final shippingMultiplier = switch (deliveryData.deliveryShippingMethod) {
-      'express' => 1.5,
-      'overnight' => 2.0,
-      'freight' => 3.0,
-      _ => 1.0,
-    };
-
-    return (basePrice + weightMultiplier) * shippingMultiplier;
   }
 
   // ========== PREMIUM UI COMPONENTS ==========
@@ -486,9 +584,13 @@ class DeliveryUIManager {
     required TextEditingController lengthController,
     required TextEditingController widthController,
     required TextEditingController heightController,
+    required TextEditingController weightController,
     required String selectedUnit,
+    required String selectedWeightUnit,
     required List<String> unitOptions,
+    required List<String> weightUnitOptions,
     required ValueChanged<String?> onUnitChanged,
+    required ValueChanged<String?> onWeightUnitChanged,
     required VoidCallback onDimensionChanged,
   }) {
     final theme = Theme.of(context);
@@ -676,6 +778,109 @@ class DeliveryUIManager {
           ],
         ),
 
+        // Weight input with unit selector — packed into the same
+        // wire string as the dimensions, so it belongs in the same
+        // visual block.
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4, bottom: 8),
+                    child: Text(
+                      'Total Weight',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  buildPremiumTextField(
+                    context: context,
+                    label: '',
+                    hint: 'e.g., 5.5',
+                    keyboardType: TextInputType.number,
+                    initialValue: weightController.text,
+                    onChanged: (value) {
+                      weightController.text = value;
+                      onDimensionChanged();
+                    },
+                    prefixIcon: Icon(
+                      Icons.scale_rounded,
+                      size: 20,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 8),
+                  child: Text(
+                    'Weight Unit',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Container(
+                  width: 120,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.shadow.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: DropdownButtonFormField<String>(
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: theme.colorScheme.surface,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 0,
+                      ),
+                    ),
+                    value: selectedWeightUnit,
+                    items: weightUnitOptions.map((unit) {
+                      return DropdownMenuItem<String>(
+                        value: unit,
+                        child: Text(
+                          unit,
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: onWeightUnitChanged,
+                    isExpanded: true,
+                    icon: Icon(
+                      Icons.arrow_drop_down_rounded,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    dropdownColor: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+
         // Visual dimension preview
         if (lengthController.text.isNotEmpty &&
             widthController.text.isNotEmpty &&
@@ -688,6 +893,8 @@ class DeliveryUIManager {
               width: double.tryParse(widthController.text) ?? 0,
               height: double.tryParse(heightController.text) ?? 0,
               unit: selectedUnit,
+              weight: double.tryParse(weightController.text),
+              weightUnit: selectedWeightUnit,
             ),
           ),
       ],
@@ -700,6 +907,8 @@ class DeliveryUIManager {
     required double width,
     required double height,
     required String unit,
+    double? weight,
+    String? weightUnit,
   }) {
     final theme = Theme.of(context);
 
@@ -764,6 +973,14 @@ class DeliveryUIManager {
                       label: 'Height',
                       value: '$height $unit',
                     ),
+                    if (weight != null && weight > 0) ...[
+                      const SizedBox(height: 4),
+                      _buildDimensionRow(
+                        context,
+                        label: 'Weight',
+                        value: '$weight ${weightUnit ?? 'kg'}',
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     Divider(
                       height: 1,
@@ -1157,10 +1374,14 @@ class DeliveryUIManager {
     required TextEditingController lengthController,
     required TextEditingController widthController,
     required TextEditingController heightController,
+    required TextEditingController weightController,
     required String selectedUnit,
+    required String selectedWeightUnit,
     required List<String> unitOptions,
+    required List<String> weightUnitOptions,
     required ValueChanged<DeliveryData> onDataChanged,
     required ValueChanged<String?> onUnitChanged,
+    required ValueChanged<String?> onWeightUnitChanged,
     required VoidCallback onDimensionChanged,
     required Animation<double> formAnimation,
   }) {
@@ -1201,111 +1422,60 @@ class DeliveryUIManager {
                         ),
                         const SizedBox(height: 32),
 
-                        // Package count and weight
-                        Row(
+                        // Package count. Weight has moved into the
+                        // dimensions block below so it shares the same
+                        // wire string.
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Package Count',
-                                    style: theme.textTheme.labelLarge?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  buildPremiumTextField(
-                                    context: context,
-                                    label: '',
-                                    hint: 'e.g., 1, 2, 3',
-                                    keyboardType: TextInputType.number,
-                                    initialValue:
-                                        (deliveryData.deliveryPackageCount ??
-                                                    0) >
-                                                0
-                                            ? deliveryData.deliveryPackageCount
-                                                .toString()
-                                            : '',
-                                    validator: validatePackageCount,
-                                    onChanged: (value) {
-                                      final newData = deliveryData.copyWith(
-                                        deliveryPackageCount:
-                                            int.tryParse(value) ?? 0,
-                                      );
-                                      onDataChanged(newData);
-                                    },
-                                    prefixIcon: Icon(
-                                      Icons.layers_rounded,
-                                      size: 20,
-                                    ),
-                                  ),
-                                ],
+                            Text(
+                              'Package Count',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                            const SizedBox(width: 24),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Total Weight (kg)',
-                                    style: theme.textTheme.labelLarge?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  buildPremiumTextField(
-                                    context: context,
-                                    label: '',
-                                    hint: 'e.g., 5.5',
-                                    keyboardType: TextInputType.number,
-                                    initialValue:
-                                        (deliveryData.deliveryTotalWeight ??
-                                                    0) >
-                                                0
-                                            ? deliveryData.deliveryTotalWeight
-                                                .toString()
-                                            : '',
-                                    validator: validateWeight,
-                                    onChanged: (value) {
-                                      final newData = deliveryData.copyWith(
-                                        deliveryTotalWeight:
-                                            double.tryParse(value) ?? 0.0,
-                                      );
-                                      onDataChanged(newData);
-                                    },
-                                    prefixIcon: Icon(
-                                      Icons.scale_rounded,
-                                      size: 20,
-                                    ),
-                                    suffixIcon: Text(
-                                      'kg',
-                                      style:
-                                          theme.textTheme.bodyLarge?.copyWith(
-                                        color:
-                                            theme.colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                            const SizedBox(height: 8),
+                            buildPremiumTextField(
+                              context: context,
+                              label: '',
+                              hint: 'e.g., 1, 2, 3',
+                              keyboardType: TextInputType.number,
+                              initialValue:
+                                  (deliveryData.deliveryPackageCount ?? 0) > 0
+                                      ? deliveryData.deliveryPackageCount
+                                          .toString()
+                                      : '',
+                              validator: validatePackageCount,
+                              onChanged: (value) {
+                                final newData = deliveryData.copyWith(
+                                  deliveryPackageCount:
+                                      int.tryParse(value) ?? 0,
+                                );
+                                onDataChanged(newData);
+                              },
+                              prefixIcon: Icon(
+                                Icons.layers_rounded,
+                                size: 20,
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 32),
 
-                        // Dimensions
+                        // Dimensions + weight (single wire string)
                         buildPremiumDimensionsInput(
                           context: context,
                           lengthController: lengthController,
                           widthController: widthController,
                           heightController: heightController,
+                          weightController: weightController,
                           selectedUnit: selectedUnit,
+                          selectedWeightUnit: selectedWeightUnit,
                           unitOptions: unitOptions,
+                          weightUnitOptions: weightUnitOptions,
                           onUnitChanged: onUnitChanged,
+                          onWeightUnitChanged: onWeightUnitChanged,
                           onDimensionChanged: onDimensionChanged,
                         ),
                         const SizedBox(height: 32),
@@ -1521,14 +1691,36 @@ class DimensionData {
   final double length;
   final double width;
   final double height;
+
+  /// `'cm'` or `'m'`. Always present; defaults to `'cm'` when a
+  /// caller constructs the object without one.
   final String unit;
+
+  /// Weight in the unit named by [weightUnit]. `null` when the
+  /// caller doesn't carry a weight.
+  final double? weight;
+
+  /// `'kg'` or `'g'`. `null` when [weight] is null.
+  final String? weightUnit;
 
   const DimensionData({
     required this.length,
     required this.width,
     required this.height,
     required this.unit,
+    this.weight,
+    this.weightUnit,
   });
 
   double get volume => length * width * height;
+
+  bool get hasDimensions => length > 0 || width > 0 || height > 0;
+  bool get hasWeight => weight != null && weight! > 0;
+
+  /// Re-serialise to the compact wire form.
+  String toWire() => DeliveryUIManager.formatDimensions(this);
+
+  /// Parse the compact wire form.
+  static DimensionData? fromWire(String? raw) =>
+      DeliveryUIManager.parseDimensions(raw);
 }

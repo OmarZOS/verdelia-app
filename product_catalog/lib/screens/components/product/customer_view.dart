@@ -2,6 +2,7 @@
 
 import 'package:app_constants/app_constants.dart';
 import 'package:app_constants/app_routes.dart';
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
@@ -225,6 +226,8 @@ class _CustomerProductViewState extends State<CustomerProductView> {
 
   Widget _buildSlidingPanel(BuildContext context) {
     final theme = Theme.of(context);
+    final unitPrice = widget.product.product_price ?? Decimal.zero;
+    final lineTotal = unitPrice * Decimal.fromInt(_quantity);
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -253,10 +256,8 @@ class _CustomerProductViewState extends State<CustomerProductView> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      AppLocalizations.of(context)!.price(
-                        ((widget.product.product_price ?? 0) * _quantity)
-                            .toStringAsFixed(2),
-                      ),
+                      AppLocalizations.of(context)!
+                          .price(lineTotal.toStringAsFixed(2)),
                       style: theme.textTheme.titleSmall?.copyWith(
                         color: theme.colorScheme.primary,
                         fontWeight: FontWeight.bold,
@@ -393,7 +394,7 @@ class _CustomerProductViewState extends State<CustomerProductView> {
         const SizedBox(height: 2),
         Text(
           AppLocalizations.of(context)!
-              .price((product.product_price ?? 0).toString()),
+              .price((product.product_price ?? Decimal.zero).toString()),
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w800,
             color: theme.colorScheme.primary,

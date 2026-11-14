@@ -8,19 +8,19 @@ import 'package:verdelia_core/app/Person.dart';
 class Customer {
   final String customerType; // 'user', 'person', or 'unknown'
   final int customerId;
-  final int? personId; // Only for person customers
+  final int? personId;
 
-  // Union type fields - only one will be non-null based on customerType
   final AppUser? _user;
   final Person? _person;
 
-  // Derived properties
   String get id => '$customerType:$customerId';
 
   String get displayName {
     if (customerType == 'user') {
-      if (_user?.personLastName?.isNotEmpty == true) {
-        return '${_user?.personFirstName} ${_user?.personLastName}';
+      final first = _user?.personFirstName;
+      final last = _user?.personLastName;
+      if ((last?.isNotEmpty ?? false) || (first?.isNotEmpty ?? false)) {
+        return '${first ?? ''} ${last ?? ''}'.trim();
       }
       return _user?.appUserName ?? 'User #$customerId';
     }
@@ -34,7 +34,7 @@ class Customer {
 
   String? get email {
     return switch (customerType) {
-      'user' => _user?.appUserName,
+      'user' => _user?.appUserEmail,
       'person' => _person?.person_details.person_email,
       _ => null,
     };
@@ -42,6 +42,7 @@ class Customer {
 
   String? get phone {
     return switch (customerType) {
+      'user' => _user?.personPhone,
       'person' => _person?.person_details.person_phone,
       _ => null,
     };
@@ -49,9 +50,14 @@ class Customer {
 
   String? get address {
     return switch (customerType) {
-      'user' => _user?.addressStreet != null && _user!.addressStreet!.isNotEmpty
-          ? '${_user!.addressStreet}, ${_user!.addressCity}, ${_user!.addressCountry}'
-          : null,
+      'user' =>
+        (_user?.addressStreet != null && _user!.addressStreet!.isNotEmpty)
+            ? [
+                _user!.addressStreet,
+                _user!.addressCity,
+                _user!.addressCountry,
+              ].where((p) => p != null && p.isNotEmpty).join(', ')
+            : null,
       'person' => _person?.person_details.addressLine,
       _ => null,
     };
@@ -60,6 +66,7 @@ class Customer {
   String? get avatarUrl {
     return switch (customerType) {
       'user' => _user?.appUserImageUrl,
+      'person' => null,
       _ => null,
     };
   }
@@ -74,7 +81,7 @@ class Customer {
 
   DateTime? get createdAt {
     return switch (customerType) {
-      'user' => null, // AppUser doesn't have createdAt field
+      'user' => _user?.appUserCreation,
       'person' => _person?.created_at,
       _ => null,
     };
@@ -84,7 +91,6 @@ class Customer {
   bool get isPerson => customerType == 'person';
   bool get hasAccount => customerType == 'user';
 
-  // Constructor for creating a Customer from either AppUser or Person
   Customer._({
     required this.customerType,
     required this.customerId,
@@ -93,7 +99,6 @@ class Customer {
     Person? person,
   })  : _user = user,
         _person = person {
-    // Validate that the correct type is provided
     if (customerType == 'user' && user == null) {
       throw ArgumentError('User must be provided for user customer type');
     }
@@ -102,16 +107,15 @@ class Customer {
     }
   }
 
-  // Factory constructor from AppUser
   factory Customer.fromUser(AppUser user) {
     return Customer._(
       customerType: 'user',
       customerId: user.idAppUser ?? 0,
+      personId: user.idPerson,
       user: user,
     );
   }
 
-  // Factory constructor from Person
   factory Customer.fromPerson(Person person) {
     return Customer._(
       customerType: 'person',
@@ -121,7 +125,6 @@ class Customer {
     );
   }
 
-  // Factory constructor for unknown customer (just ID and type)
   factory Customer.unknown({
     required String type,
     required int id,
@@ -134,7 +137,6 @@ class Customer {
     );
   }
 
-  // Factory constructor from FinancialDocument
   factory Customer.fromFinancialDocument({
     required int customerId,
     required String customerType,
@@ -155,29 +157,49 @@ class Customer {
     }
   }
 
-  // JSON serialization
+  /// Parse a customer from the wire payload.
+  ///
+  /// The user half is nested under `app_user` (the same key the read
+  /// endpoint uses for inline user snapshots). The person half is
+  /// nested under `app_user_person` or `person`. Tolerate both.
   factory Customer.fromJson(Map<String, dynamic> json) {
-    final type = json['customer_type'] as String? ?? 'unknown';
+    final type = (json['customer_type'] as String?) ?? 'unknown';
     final id = (json['customer_id'] as num?)?.toInt() ?? 0;
     final personId = (json['person_id'] as num?)?.toInt();
 
-    if (type == 'user' && json['user'] != null) {
-      return Customer.fromUser(
-        AppUser.fromJson(json['user'] as Map<String, dynamic>),
-      );
-    } else if (type == 'person' && json['person'] != null) {
-      return Customer.fromPerson(
-        Person.fromJson(json['person'] as Map<String, dynamic>),
-      );
-    } else {
-      return Customer.unknown(
-        type: type,
-        id: id,
-        personId: personId,
-      );
+    final rawUser = json['app_user'] ?? json['user'];
+    if (type == 'user' && rawUser is Map) {
+      try {
+        return Customer.fromUser(
+          AppUser.fromJson(Map<String, dynamic>.from(rawUser)),
+        );
+      } catch (_) {
+        // Fall through to unknown.
+      }
     }
+
+    final rawPerson = json['app_user_person'] ?? json['person'];
+    if (type == 'person' && rawPerson is Map) {
+      try {
+        return Customer.fromPerson(
+          Person.fromJson(Map<String, dynamic>.from(rawPerson)),
+        );
+      } catch (_) {
+        // Fall through to unknown.
+      }
+    }
+
+    return Customer.unknown(
+      type: type,
+      id: id,
+      personId: personId,
+    );
   }
 
+  /// Serialises the customer for **local persistence**.
+  ///
+  /// Round-trips with [Customer.fromJson]. Uses the read-side key
+  /// names (`app_user` / `app_user_person`).
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{
       'customer_type': customerType,
@@ -186,15 +208,14 @@ class Customer {
     };
 
     if (customerType == 'user' && _user != null) {
-      json['user'] = _user!.toJson();
+      json['app_user'] = _user!.toJson();
     } else if (customerType == 'person' && _person != null) {
-      json['person'] = _person!.toJson();
+      json['app_user_person'] = _person!.toJson();
     }
 
     return json;
   }
 
-  // Convert to FinancialDocument compatible data
   Map<String, dynamic> toFinancialDocumentData() {
     return {
       'customer_id': customerId,
@@ -203,7 +224,6 @@ class Customer {
     };
   }
 
-  // Get the underlying object
   T? getObject<T>() {
     if (T == AppUser && customerType == 'user') {
       return _user as T?;
@@ -213,19 +233,15 @@ class Customer {
     return null;
   }
 
-  // Check if customer matches search query
   bool matchesQuery(String query) {
     if (query.isEmpty) return true;
-
     final searchQuery = query.toLowerCase();
-
     return displayName.toLowerCase().contains(searchQuery) ||
         email?.toLowerCase().contains(searchQuery) == true ||
         phone?.contains(query) == true ||
         typeDisplayName.toLowerCase().contains(searchQuery);
   }
 
-  // Copy with method
   Customer copyWith({
     String? customerType,
     int? customerId,
@@ -242,12 +258,10 @@ class Customer {
     );
   }
 
-  // Merge with another customer (useful for updating)
   Customer mergeWith(Customer other) {
     if (other.customerType != customerType || other.customerId != customerId) {
-      return this; // Can't merge different customers
+      return this;
     }
-
     return copyWith(
       personId: other.personId ?? personId,
       user: other._user ?? _user,
@@ -255,19 +269,16 @@ class Customer {
     );
   }
 
-  // Check equality
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-
     return other is Customer &&
         other.customerType == customerType &&
-        other.customerId == customerId &&
-        other.personId == personId;
+        other.customerId == customerId;
   }
 
   @override
-  int get hashCode => Object.hash(customerType, customerId, personId);
+  int get hashCode => Object.hash(customerType, customerId);
 
   @override
   String toString() {

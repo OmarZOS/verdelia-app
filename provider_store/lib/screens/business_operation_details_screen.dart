@@ -1,5 +1,6 @@
 // lib/screens/business_operation_details_screen.dart
 
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -106,6 +107,9 @@ class _OperationHero extends StatelessWidget {
   }
 
   static String _shareSummary(BusinessOperation op, AppLocalizations loc) {
+    // `grandTotal`, `paidAmount`, `dueAmount` are `Decimal` after the
+    // BusinessOperation migration; `toStringAsFixed(2)` gives the same
+    // output `double.toStringAsFixed(2)` did.
     return [
       op.title,
       '${loc.totalLabel}: ${op.grandTotal.toStringAsFixed(2)}',
@@ -127,9 +131,36 @@ class _HeroBackground extends StatelessWidget {
 
     final hero = _OperationHero._heroColor(cs, operation);
 
-    final settlementRatio = operation.grandTotal > 0
-        ? (operation.paidAmount / operation.grandTotal).clamp(0.0, 1.0)
-        : 0.0;
+    // Denominator: invoice total when present, otherwise grand total.
+    // Both are `Decimal` after the migration.
+    final Decimal denominator = operation.invoiceTotal > Decimal.zero
+        ? operation.invoiceTotal
+        : operation.grandTotal;
+
+    // Settlement ratio = paid / denominator, clamped to `[0, 1]`.
+    // `Decimal / Decimal` returns `Rational`, so `.toDecimal(scaleOnInfinitePrecision: 2)` is
+    // required; the manual three-branch clamp replaces `num.clamp`.
+    // The `LinearProgressIndicator` takes a `double`, so the final
+    // value is converted once.
+    final double settlementRatio;
+    if (denominator <= Decimal.zero) {
+      settlementRatio = 0.0;
+    } else {
+      final raw = (operation.paidAmount / denominator)
+          .toDecimal(scaleOnInfinitePrecision: 2);
+      if (raw < Decimal.zero) {
+        settlementRatio = 0.0;
+      } else if (raw > Decimal.one) {
+        settlementRatio = 1.0;
+      } else {
+        settlementRatio = raw.toDouble();
+      }
+    }
+
+    // Headline amount: invoice total when present, otherwise grand total.
+    final Decimal headlineAmount = operation.invoiceTotal > Decimal.zero
+        ? operation.invoiceTotal
+        : operation.grandTotal;
 
     return Container(
       decoration: BoxDecoration(
@@ -183,8 +214,7 @@ class _HeroBackground extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                FinancialUIManager.formatCurrency(
-                    operation.grandTotal, context),
+                FinancialUIManager.formatCurrency(headlineAmount, context),
                 style: theme.textTheme.displaySmall?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
@@ -221,9 +251,6 @@ class _InvoiceStatusChip extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     final raw = (status ?? 'unknown').toLowerCase();
 
-    // Human-readable label per status. The `_unknown` fallback keeps
-    // the raw status visible if the backend sends something we don't
-    // map yet.
     final String label;
     switch (raw) {
       case 'paid':
@@ -291,8 +318,8 @@ class _InvoiceStatusChip extends StatelessWidget {
 }
 
 class _PaymentProgress extends StatelessWidget {
-  final double paid;
-  final double due;
+  final Decimal paid;
+  final Decimal due;
   final double ratio;
 
   const _PaymentProgress({
@@ -328,7 +355,8 @@ class _PaymentProgress extends StatelessWidget {
             _HeroMetric(
               label: loc.dueLabel,
               value: due,
-              color: due > 0 ? const Color(0xFFFFD27C) : Colors.white70,
+              color:
+                  due > Decimal.zero ? const Color(0xFFFFD27C) : Colors.white70,
             ),
           ],
         ),
@@ -339,7 +367,7 @@ class _PaymentProgress extends StatelessWidget {
 
 class _HeroMetric extends StatelessWidget {
   final String label;
-  final double value;
+  final Decimal value;
   final Color color;
 
   const _HeroMetric({
@@ -541,6 +569,17 @@ class _FinancialBreakdownCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
 
+    // When the invoiced total disagrees with the operation's
+    // grand_total (which can happen when they're computed from
+    // different bases), show both so the user isn't staring at two
+    // numbers that don't reconcile.
+    //
+    // `.abs()` on a `Decimal` returns `Decimal`; the `>` comparison
+    // against `Decimal.parse('0.01')` is exact.
+    final invoicedDiffers = operation.invoiceTotal > Decimal.zero &&
+        (operation.invoiceTotal - operation.grandTotal).abs() >
+            Decimal.parse('0.01');
+
     final rows = <_MoneyRow>[
       _MoneyRow(loc.productSubtotalLabel, operation.productSubtotal),
       _MoneyRow(loc.serviceSubtotalLabel, operation.serviceSubtotal),
@@ -549,20 +588,27 @@ class _FinancialBreakdownCard extends StatelessWidget {
         operation.grossSubtotal,
         emphasis: _Emphasis.subtotal,
       ),
-      if (operation.discountAmount > 0)
+      if (operation.discountAmount > Decimal.zero)
         _MoneyRow(
           loc.discountLabel,
           -operation.discountAmount,
           emphasis: _Emphasis.negative,
         ),
-      if (operation.taxAmount > 0) _MoneyRow(loc.taxLabel, operation.taxAmount),
-      if (operation.deliveryRevenue > 0)
+      if (operation.taxAmount > Decimal.zero)
+        _MoneyRow(loc.taxLabel, operation.taxAmount),
+      if (operation.deliveryRevenue > Decimal.zero)
         _MoneyRow(loc.deliveryLabel, operation.deliveryRevenue),
       _MoneyRow(
         loc.grandTotalLabel,
         operation.grandTotal,
         emphasis: _Emphasis.total,
       ),
+      if (invoicedDiffers)
+        _MoneyRow(
+          loc.invoiceTotalLabel,
+          operation.invoiceTotal,
+          emphasis: _Emphasis.total,
+        ),
     ];
 
     return _Card(
@@ -579,7 +625,7 @@ enum _Emphasis { none, subtotal, total, negative }
 
 class _MoneyRow {
   final String label;
-  final double value;
+  final Decimal value;
   final _Emphasis emphasis;
   const _MoneyRow(this.label, this.value, {this.emphasis = _Emphasis.none});
 }
@@ -650,10 +696,15 @@ class _ProfitabilityCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final loc = AppLocalizations.of(context)!;
 
-    final margin = operation.marginAmount;
-    final marginColor = margin >= 0 ? const Color(0xFF1E8E5A) : cs.error;
-    final cost = operation.totalCost;
-    final roi = operation.roi;
+    final Decimal margin = operation.marginAmount;
+    final Color marginColor =
+        margin >= Decimal.zero ? const Color(0xFF1E8E5A) : cs.error;
+    final Decimal cost = operation.totalCost;
+    final Decimal? roi = operation.roi;
+    // Cost being 0 doesn't mean the operation is free; it usually
+    // means the backend didn't populate any cost fields. Show a hint
+    // rather than "Total Cost: 0.00".
+    final bool hasCost = cost > Decimal.zero;
 
     return _Card(
       title: loc.profitabilityTitle,
@@ -661,28 +712,28 @@ class _ProfitabilityCard extends StatelessWidget {
       trailing: _Pill(
         label: roi == null
             ? '—'
-            : '${(roi * 100).toStringAsFixed(1)}% ${loc.roiLabel}',
+            : '${(roi * Decimal.fromInt(100)).toStringAsFixed(1)}% ${loc.roiLabel}',
         color: roi == null
             ? cs.onSurfaceVariant
-            : (roi >= 0 ? const Color(0xFF1E8E5A) : cs.error),
+            : (roi >= Decimal.zero ? const Color(0xFF1E8E5A) : cs.error),
       ),
       child: Column(
         children: [
-          _MoneyRowWidget(
-            row: _MoneyRow(
-              loc.totalCostLabel,
-              cost,
-              emphasis: _Emphasis.subtotal,
+          if (hasCost) ...[
+            _MoneyRowWidget(
+              row: _MoneyRow(
+                loc.totalCostLabel,
+                cost,
+                emphasis: _Emphasis.subtotal,
+              ),
             ),
-          ),
-          _MoneyRowWidget(
-            row: _MoneyRow(
-              loc.marginLabel,
-              margin,
-              emphasis: _Emphasis.total,
+            _MoneyRowWidget(
+              row: _MoneyRow(
+                loc.marginLabel,
+                margin,
+                emphasis: _Emphasis.total,
+              ),
             ),
-          ),
-          if (cost > 0) ...[
             const SizedBox(height: 8),
             _CostBar(
               productCost: operation.productCost,
@@ -690,6 +741,22 @@ class _ProfitabilityCard extends StatelessWidget {
               nonConsumable: operation.nonConsumableServiceCost,
               labor: operation.laborCost,
               delivery: operation.deliveryCost,
+            ),
+          ] else ...[
+            _MoneyRowWidget(
+              row: _MoneyRow(
+                loc.marginLabel,
+                margin,
+                emphasis: _Emphasis.total,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              loc.costNotAvailable,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontStyle: FontStyle.italic,
+                  ),
             ),
           ],
         ],
@@ -699,11 +766,11 @@ class _ProfitabilityCard extends StatelessWidget {
 }
 
 class _CostBar extends StatelessWidget {
-  final double productCost;
-  final double consumable;
-  final double nonConsumable;
-  final double labor;
-  final double delivery;
+  final Decimal productCost;
+  final Decimal consumable;
+  final Decimal nonConsumable;
+  final Decimal labor;
+  final Decimal delivery;
 
   const _CostBar({
     required this.productCost,
@@ -719,21 +786,28 @@ class _CostBar extends StatelessWidget {
     final cs = theme.colorScheme;
     final loc = AppLocalizations.of(context)!;
 
+    // Segments, in `Decimal`. `Expanded` needs an `int` flex value, so
+    // the per-segment flex computation is the one place the file
+    // converts `Decimal → double → int`.
     final segments = <_CostSegment>[
-      if (productCost > 0)
+      if (productCost > Decimal.zero)
         _CostSegment(loc.costSegmentProducts, productCost, cs.primary),
-      if (consumable > 0)
+      if (consumable > Decimal.zero)
         _CostSegment(loc.costSegmentConsumables, consumable, cs.secondary),
-      if (nonConsumable > 0)
+      if (nonConsumable > Decimal.zero)
         _CostSegment(loc.costSegmentAmortized, nonConsumable, cs.tertiary),
-      if (labor > 0)
+      if (labor > Decimal.zero)
         _CostSegment(loc.costSegmentLabor, labor, const Color(0xFF8B6CD9)),
-      if (delivery > 0)
+      if (delivery > Decimal.zero)
         _CostSegment(
             loc.costSegmentDelivery, delivery, const Color(0xFFD08B1C)),
     ];
 
-    final total = segments.fold<double>(0, (s, e) => s + e.value);
+    final Decimal total = segments.fold(Decimal.zero, (s, e) => s + e.value);
+
+    if (total <= Decimal.zero || segments.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -744,7 +818,14 @@ class _CostBar extends StatelessWidget {
             height: 10,
             child: Row(
               children: segments.map((s) {
-                final flex = ((s.value / total) * 1000).round().clamp(1, 1000);
+                // `(s.value / total) * 1000` in `Decimal`, then
+                // `.toDouble().round().clamp(1, 1000)` to get the
+                // `int` flex value.
+                final double rawFlex =
+                    ((s.value / total).toDecimal(scaleOnInfinitePrecision: 2) *
+                            Decimal.fromInt(1000))
+                        .toDouble();
+                final int flex = rawFlex.round().clamp(1, 1000);
                 return Expanded(
                   flex: flex,
                   child: ColoredBox(color: s.color),
@@ -787,7 +868,7 @@ class _CostBar extends StatelessWidget {
 
 class _CostSegment {
   final String label;
-  final double value;
+  final Decimal value;
   final Color color;
   const _CostSegment(this.label, this.value, this.color);
 }
@@ -818,7 +899,7 @@ class _ItemsCard extends StatelessWidget {
 }
 
 class _ItemRow extends StatelessWidget {
-  final Map<String, dynamic> item;
+  final BusinessOperationItem item;
   const _ItemRow({required this.item});
 
   @override
@@ -827,71 +908,131 @@ class _ItemRow extends StatelessWidget {
     final cs = theme.colorScheme;
     final loc = AppLocalizations.of(context)!;
 
-    final product = item['ordered_product'] as Map<String, dynamic>?;
-    final name = product?['product_name'] as String? ??
-        loc.productFallbackName('${item['ordered_product_id']}');
-    final qty = (item['ordered_quantity'] as num?)?.toInt() ?? 0;
-    final price = (item['unit_price'] as num?)?.toDouble() ?? 0;
-    final vat = (item['applied_vat'] as num?)?.toDouble() ?? 0;
-    final status = item['ordered_item_delivery_status'] as String?;
+    final product = item.product;
+    final name = (product?.productName.trim().isNotEmpty ?? false)
+        ? product!.productName.trim()
+        : loc.productFallbackName('${item.orderedProductId ?? 0}');
 
-    final lineTotal = qty * price;
+    final qty = item.orderedQuantity;
+    final Decimal price = item.unitPrice;
+    final Decimal vat = item.appliedVat;
+    final status = item.deliveryStatus;
+    final Decimal discount = item.discountAmount;
+    final Decimal lineTotal = item.lineSubtotal;
+
+    // Typed fields from the OrderedProduct snapshot — no raw maps.
+    final brand = product?.productBrand.trim();
+    final barcode = product?.productBarcode.trim();
+    final quantifier = product?.productQuantifier?.trim();
+    final description = product?.productDescription.trim();
+    final availableQty = product?.productQuantity;
+    final categoryId = product?.productCategoryId;
+    final providerId = product?.productProviderId;
+
+    final details = <_InfoLine>[
+      if (brand != null && brand.isNotEmpty)
+        _InfoLine(Icons.sell_outlined, loc.itemBrandLabel, brand),
+      if (quantifier != null && quantifier.isNotEmpty)
+        _InfoLine(Icons.straighten_outlined, loc.itemUnitLabel, quantifier),
+      if (barcode != null && barcode.isNotEmpty)
+        _InfoLine(Icons.qr_code_2_outlined, loc.itemBarcodeLabel, barcode),
+      if (availableQty != null)
+        _InfoLine(
+          Icons.inventory_outlined,
+          loc.itemAvailableLabel,
+          '$availableQty',
+        ),
+      if (categoryId != null)
+        _InfoLine(
+          Icons.category_outlined,
+          loc.itemCategoryLabel,
+          '#$categoryId',
+        ),
+      if (providerId != null)
+        _InfoLine(
+          Icons.storefront_outlined,
+          loc.itemProviderLabel,
+          '#$providerId',
+        ),
+      if (description != null && description.isNotEmpty)
+        _InfoLine(Icons.notes_outlined, loc.itemDescriptionLabel, description),
+    ];
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _Avatar(letter: _initial(name)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 2,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _Avatar(letter: _initial(name)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _MiniChip(
-                      label: '× $qty',
-                      color: cs.onSurfaceVariant,
-                    ),
-                    _MiniChip(
-                      label: '@ ${price.toStringAsFixed(2)}',
-                      color: cs.onSurfaceVariant,
-                    ),
-                    if (vat > 0)
-                      _MiniChip(
-                        label: '${loc.vatLabel} ${vat.toStringAsFixed(0)}%',
-                        color: cs.primary,
+                    Text(
+                      name,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
-                    if (status != null)
-                      _MiniChip(
-                        label: _statusLabel(status, loc),
-                        color: _statusColor(status, cs),
-                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 2,
+                      children: [
+                        _MiniChip(
+                          label: '× $qty',
+                          color: cs.onSurfaceVariant,
+                        ),
+                        _MiniChip(
+                          label: '@ ${price.toStringAsFixed(2)}',
+                          color: cs.onSurfaceVariant,
+                        ),
+                        if (vat > Decimal.zero)
+                          _MiniChip(
+                            label: '${loc.vatLabel} ${vat.toStringAsFixed(0)}%',
+                            color: cs.primary,
+                          ),
+                        if (discount > Decimal.zero)
+                          _MiniChip(
+                            label: '- ${discount.toStringAsFixed(2)}',
+                            color: cs.error,
+                          ),
+                        if (status != null)
+                          _MiniChip(
+                            label: _statusLabel(status, loc),
+                            color: _statusColor(status, cs),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                FinancialUIManager.formatCurrency(lineTotal, context),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Text(
-            FinancialUIManager.formatCurrency(lineTotal, context),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              fontFeatures: const [FontFeature.tabularFigures()],
+          if (details.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(left: 48),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: details.map((d) => d.build(context)).toList(),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -938,6 +1079,48 @@ class _ItemRow extends StatelessWidget {
       default:
         return cs.onSurfaceVariant;
     }
+  }
+}
+
+class _InfoLine {
+  final IconData icon;
+  final String label;
+  final String value;
+  const _InfoLine(this.icon, this.label, this.value);
+
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 12, color: cs.onSurfaceVariant),
+          const SizedBox(width: 4),
+          SizedBox(
+            width: 92,
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurface,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1020,7 +1203,7 @@ class _ServicesCard extends StatelessWidget {
 }
 
 class _ServiceRow extends StatelessWidget {
-  final Map<String, dynamic> service;
+  final BusinessOperationServiceLine service;
   const _ServiceRow({required this.service});
 
   @override
@@ -1029,18 +1212,33 @@ class _ServiceRow extends StatelessWidget {
     final cs = theme.colorScheme;
     final loc = AppLocalizations.of(context)!;
 
-    final provided =
-        service['ordered_service_service'] as Map<String, dynamic>?;
-    final name = provided?['provided_service_name'] as String? ??
-        loc.serviceFallbackName('${service['ordered_service_service_id']}');
-    final qty = (service['ordered_service_quantity'] as num?)?.toInt() ?? 0;
-    final total =
-        (service['ordered_service_total_price'] as num?)?.toDouble() ?? 0;
-    final scheduled = service['ordered_service_scheduled_at'] as String?;
-    final status = service['ordered_service_delivery_status'] as String?;
+    // The service payload nests the provided-service snapshot under
+    // `service`, but some endpoints inline it directly. Support both
+    // shapes so a payload change doesn't silently drop the details.
+    final outer = service.providedServiceRaw;
+    final provided = outer?['service'] is Map<String, dynamic>
+        ? outer!['service'] as Map<String, dynamic>
+        : outer;
 
+    final providedName =
+        (provided?['provided_service_name'] as String?)?.trim();
+    final name = (providedName != null && providedName.isNotEmpty)
+        ? providedName
+        : loc.serviceFallbackName('${service.orderedServiceServiceId ?? 0}');
+
+    final qty = service.orderedServiceQuantity;
+
+    // `totalPrice` is `Decimal` after the BusinessOperationServiceLine
+    // migration. `formatCurrency` receives it directly.
+    final Decimal total = service.totalPrice;
+
+    final scheduled = service.scheduledAt;
+    final status = service.deliveryStatus;
+
+    // Same two-shape tolerance as above.
     final resourceReqs =
         (provided?['service_resource_requirement'] as List<dynamic>?) ??
+            (outer?['service_resource_requirement'] as List<dynamic>?) ??
             const [];
 
     return Padding(
@@ -1107,10 +1305,8 @@ class _ServiceRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: resourceReqs.map((r) {
                   final rr = r as Map<String, dynamic>;
-                  final consumable =
-                      rr['service_resource_requirement_is_consumable'] == 1 ||
-                          rr['service_resource_requirement_is_consumable'] ==
-                              true;
+                  final consumable = _isTruthy(
+                      rr['service_resource_requirement_is_consumable']);
                   final n =
                       rr['service_resource_requirement_name'] as String? ??
                           loc.resourceFallbackName;
@@ -1173,9 +1369,7 @@ class _ServiceRow extends StatelessWidget {
     return s.trim()[0].toUpperCase();
   }
 
-  static String _shortDate(String iso) {
-    final d = DateTime.tryParse(iso);
-    if (d == null) return iso;
+  static String _shortDate(DateTime d) {
     final local = d.toLocal();
     return '${local.year}-${local.month.toString().padLeft(2, '0')}-'
         '${local.day.toString().padLeft(2, '0')} '
@@ -1224,6 +1418,17 @@ class _ServiceRow extends StatelessWidget {
         return cs.onSurfaceVariant;
     }
   }
+
+  static bool _isTruthy(dynamic v) {
+    if (v == null) return false;
+    if (v is bool) return v;
+    if (v is num) return v != 0;
+    if (v is String) {
+      final s = v.toLowerCase();
+      return s == '1' || s == 'true';
+    }
+    return false;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1242,20 +1447,61 @@ class _MetaCard extends StatelessWidget {
       return _Card(
         title: loc.cartDetailsTitle,
         icon: Icons.shopping_cart_outlined,
-        child: _kvBlock(operation.cart!, loc),
+        child: _cartBlock(context, operation.cart!, loc),
       );
     }
     if (operation.isDelivery && operation.delivery != null) {
       return _Card(
         title: loc.deliveryDetailsTitle,
         icon: Icons.local_shipping_outlined,
-        child: _kvBlock(operation.delivery!, loc),
+        child: _deliveryBlock(context, operation.delivery!, loc),
       );
     }
     return const SizedBox.shrink();
   }
 
-  Widget _kvBlock(Map<String, dynamic> m, AppLocalizations loc) {
+  Widget _cartBlock(
+    BuildContext context,
+    Map<String, dynamic> m,
+    AppLocalizations loc,
+  ) {
+    // The payload uses `subtotal`, `created_at`, and `updated_at`.
+    // The old shape used `cart_total_amount`, `cart_created_at`, and
+    // `cart_updated_at`. Try the wire name first, then the legacy one
+    // so both responses render.
+    final cartTotal =
+        m['subtotal'] ?? m['cart_total_amount'] ?? m['cart_subtotal'];
+    final createdAt = m['created_at'] ?? m['cart_created_at'];
+    final updatedAt = m['updated_at'] ?? m['cart_updated_at'];
+
+    final entries = <_Kv>[
+      if (m['cart_id'] != null) _Kv(loc.cartIdLabel, '${m['cart_id']}'),
+      if (m['cart_status'] != null)
+        _Kv(loc.metaStatusLabel, '${m['cart_status']}'),
+      if (cartTotal != null)
+        _Kv(loc.totalLabel, _formatMoney(context, cartTotal)),
+      if (createdAt != null)
+        _Kv(loc.metaCreatedLabel, _formatDateString(createdAt)),
+      if (updatedAt != null)
+        _Kv(loc.metaUpdatedLabel, _formatDateString(updatedAt)),
+    ];
+
+    if (entries.isEmpty) return const SizedBox.shrink();
+    return Column(
+      children: entries.map((e) => _KvRow(kv: e)).toList(),
+    );
+  }
+
+  Widget _deliveryBlock(
+    BuildContext context,
+    Map<String, dynamic> m,
+    AppLocalizations loc,
+  ) {
+    // Payload uses `created_at` / `updated_at`; legacy shape uses the
+    // prefixed names.
+    final createdAt = m['created_at'] ?? m['delivery_created_at'];
+    final updatedAt = m['updated_at'] ?? m['delivery_updated_at'];
+
     final entries = <_Kv>[
       if (m['id_delivery'] != null)
         _Kv(loc.deliveryIdLabel, '${m['id_delivery']}'),
@@ -1264,21 +1510,58 @@ class _MetaCard extends StatelessWidget {
       if (m['delivery_shipping_method'] != null)
         _Kv(loc.deliveryMethodLabel, '${m['delivery_shipping_method']}'),
       if (m['delivery_fee'] != null)
-        _Kv(loc.deliveryFeeLabel, '${m['delivery_fee']}'),
-      if (m['cart_id'] != null) _Kv(loc.cartIdLabel, '${m['cart_id']}'),
-      if (m['cart_status'] != null)
-        _Kv(loc.metaStatusLabel, '${m['cart_status']}'),
-      if (m['cart_total_amount'] != null)
-        _Kv(loc.totalLabel, '${m['cart_total_amount']}'),
-      if (m['cart_created_at'] != null)
-        _Kv(loc.metaCreatedLabel, '${m['cart_created_at']}'),
-      if (m['delivery_created_at'] != null)
-        _Kv(loc.metaCreatedLabel, '${m['delivery_created_at']}'),
+        _Kv(loc.deliveryFeeLabel, _formatMoney(context, m['delivery_fee'])),
+      if (m['delivery_goods_description'] != null)
+        _Kv(loc.deliveryGoodsLabel, '${m['delivery_goods_description']}'),
+      if (m['delivery_package_count'] != null)
+        _Kv(loc.deliveryPackagesLabel, '${m['delivery_package_count']}'),
+      if (createdAt != null)
+        _Kv(loc.metaCreatedLabel, _formatDateString(createdAt)),
+      if (updatedAt != null)
+        _Kv(loc.metaUpdatedLabel, _formatDateString(updatedAt)),
     ];
 
+    if (entries.isEmpty) return const SizedBox.shrink();
     return Column(
       children: entries.map((e) => _KvRow(kv: e)).toList(),
     );
+  }
+
+  /// Cart / delivery meta reads come from the raw operation payload map,
+  /// not from typed fields, so the value can be `num` or `String`. This
+  /// path is `double` at the boundary — the raw map doesn't carry
+  /// `Decimal`, and there's nothing to make exact here. `formatCurrency`
+  /// is expected to accept `num` after the money migration.
+  static String _formatMoney(BuildContext context, dynamic v) {
+    final d = _toDecimal(v);
+    return FinancialUIManager.formatCurrency(d, context);
+  }
+
+  static Decimal _toDecimal(dynamic v) {
+    if (v == null) return Decimal.zero;
+    if (v is Decimal) return v;
+    if (v is int) return Decimal.fromInt(v);
+    if (v is BigInt) return Decimal.parse(v.toString());
+    if (v is double) {
+      // Parse via string to avoid binary float artifacts like 0.1 + 0.2.
+      return Decimal.tryParse(v.toString()) ?? Decimal.zero;
+    }
+    return Decimal.tryParse(v.toString()) ?? Decimal.zero;
+  }
+
+  static String _formatDateString(dynamic v) {
+    if (v is DateTime) {
+      final local = v.toLocal();
+      return '${local.year}-${local.month.toString().padLeft(2, '0')}-'
+          '${local.day.toString().padLeft(2, '0')} '
+          '${local.hour.toString().padLeft(2, '0')}:'
+          '${local.minute.toString().padLeft(2, '0')}';
+    }
+    if (v is String) {
+      final d = DateTime.tryParse(v);
+      if (d != null) return _formatDateString(d);
+    }
+    return v?.toString() ?? '';
   }
 }
 

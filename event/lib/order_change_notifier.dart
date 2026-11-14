@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_core/business/finance/Order.dart';
 import 'package:verdelia_core/business/services/OrderService.dart';
@@ -27,24 +28,23 @@ class OrderChangeNotifier with ChangeNotifier {
   String? get lastError => _lastError;
   int get orderCount => _orders.length;
 
-  // Get completed orders
+  /// Server-side status for a completed order is `delivered`, not
+  /// `completed`. `completed` only exists as a *payment* status.
   List<Order> get completedOrders {
     return _orders.values
-        .where((order) => order.status?.toLowerCase() == 'completed')
+        .where((order) => order.status.toLowerCase() == 'delivered')
         .toList();
   }
 
-  // Get pending orders
   List<Order> get pendingOrders {
     return _orders.values
-        .where((order) => order.status?.toLowerCase() == 'pending')
+        .where((order) => order.status.toLowerCase() == 'pending')
         .toList();
   }
 
-  // Get cancelled orders
   List<Order> get cancelledOrders {
     return _orders.values
-        .where((order) => order.status?.toLowerCase() == 'cancelled')
+        .where((order) => order.status.toLowerCase() == 'cancelled')
         .toList();
   }
 
@@ -97,8 +97,13 @@ class OrderChangeNotifier with ChangeNotifier {
 
     try {
       final orderDetails = await _orderService.getOrderDetails(orderId);
-      for (final detailedOrder in orderDetails) {
-        _orders[detailedOrder.idOrderedItem]?.items = [detailedOrder];
+      // `getOrderDetails(orderId)` returns the line items for that
+      // *one* order, so store them under the order id, not under any
+      // line-item id. The original code keyed by `idOrderedItem`,
+      // which always missed.
+      final order = _orders[orderId];
+      if (order != null) {
+        order.items = orderDetails;
       }
     } catch (e, stackTrace) {
       _setError('Failed to fetch order details: ${e.toString()}');
@@ -119,7 +124,9 @@ class OrderChangeNotifier with ChangeNotifier {
 
   List<Order> getOrdersByStatus(String status) {
     return _orders.values
-        .where((order) => order.status?.toLowerCase() == status.toLowerCase())
+        .where(
+          (order) => order.status.toLowerCase() == status.toLowerCase(),
+        )
         .toList();
   }
 
@@ -133,7 +140,7 @@ class OrderChangeNotifier with ChangeNotifier {
     return _orders.values.where((order) {
       return order.idPlacedOrder
                   .toString()
-                  ?.toLowerCase()
+                  .toLowerCase()
                   .contains(searchQuery) ==
               true ||
           order.customerName?.toLowerCase().contains(searchQuery) == true ||
@@ -149,7 +156,7 @@ class OrderChangeNotifier with ChangeNotifier {
     try {
       final data = await _orderService.addOrder(orderData);
       if (data != null) {
-        _orders[data.idPlacedOrder ?? 0] = data;
+        _orders[data.idPlacedOrder] = data;
         notifyListeners();
         return OrderResult.success('Order placed successfully');
       }
@@ -162,6 +169,10 @@ class OrderChangeNotifier with ChangeNotifier {
     }
   }
 
+  /// Updates the **order state** (pending / processing / shipped /
+  /// delivered / cancelled / refunded). Note: the original code wrote
+  /// `newStatus` into `paymentStatus`, which is a different axis —
+  /// payment is `pending | paid | failed | refunded | completed`.
   Future<OrderResult> updateOrderStatus(int orderId, String newStatus) async {
     _setLoading(true);
     _clearError();
@@ -172,7 +183,10 @@ class OrderChangeNotifier with ChangeNotifier {
         return OrderResult.failure('Order not found');
       }
 
-      final updatedOrder = order.copyWith(paymentStatus: newStatus);
+      final updatedOrder = order.copyWith(
+        placedOrderStateRaw: newStatus,
+        placedOrderStateRef: _stateRefFor(newStatus),
+      );
       final result = await _orderService.updateOrder(updatedOrder);
 
       if (result != null) {
@@ -193,8 +207,11 @@ class OrderChangeNotifier with ChangeNotifier {
     return await updateOrderStatus(orderId, 'cancelled');
   }
 
+  /// `delivered` is the terminal state the server accepts for a
+  /// completed order. `completed` is a *payment* status, not an order
+  /// status — sending it as `placed_order_state` gets a 422.
   Future<OrderResult> completeOrder(int orderId) async {
-    return await updateOrderStatus(orderId, 'completed');
+    return await updateOrderStatus(orderId, 'delivered');
   }
 
   Future<OrderResult> deleteOrder(int orderId) async {
@@ -203,7 +220,11 @@ class OrderChangeNotifier with ChangeNotifier {
 
     try {
       final success = await _orderService.deleteOrder(orderId.toString());
-      if (success == 0) {
+      // NOTE: the original inverted this check — removing the order on
+      // `success == 0`. Assuming `success` is the count of deleted
+      // rows (as the name and the `== 0` comparison suggest), the
+      // success branch should be `success > 0`.
+      if ((success ?? 0) > 0) {
         _orders.remove(orderId);
         notifyListeners();
         return OrderResult.success('Order deleted successfully');
@@ -218,108 +239,91 @@ class OrderChangeNotifier with ChangeNotifier {
   }
 
   // ============ ORDER STATISTICS ============
-  double get totalOrderValue {
-    return _orders.values
-        .fold(0.0, (sum, order) => sum + (order.totalPrice ?? 0));
+
+  /// Sum of every order's [Order.totalPrice], in [Decimal]. Exact.
+  ///
+  /// Falls back to [Decimal.zero] for orders whose `totalPrice` is
+  /// null, so a single half-loaded order doesn't blow up the whole
+  /// stats header.
+  Decimal get totalOrderValue {
+    return _orders.values.fold(
+      Decimal.zero,
+      (sum, order) => sum + (order.totalPrice ?? Decimal.zero),
+    );
   }
 
-  double get averageOrderValue {
-    if (_orders.isEmpty) return 0.0;
-    return totalOrderValue / _orders.length;
+  /// [totalOrderValue] divided by the order count, in [Decimal].
+  ///
+  /// `.toDecimal(scaleOnInfinitePrecision: 2)` on the division: `Decimal / Decimal` returns a
+  /// `Rational`, which can't be assigned to a `Decimal`.
+  Decimal get averageOrderValue {
+    if (_orders.isEmpty) return Decimal.zero;
+    return (totalOrderValue / Decimal.fromInt(_orders.length))
+        .toDecimal(scaleOnInfinitePrecision: 2);
   }
 
   Map<String, int> get ordersByStatusCount {
     final result = <String, int>{};
 
     for (final order in _orders.values) {
-      final status = order.status ?? 'unknown';
+      final status = order.status;
       result[status] = (result[status] ?? 0) + 1;
     }
 
     return result;
   }
 
-  Map<String, double> get revenueByMonth {
-    final result = <String, double>{};
+  /// Revenue grouped by the month of [Order.placedOrderCreation].
+  ///
+  /// Keyed by month number (`'1'` .. `'12'`). Callers that want a
+  /// year-aware key should group by `(year, month)` themselves.
+  Map<String, Decimal> get revenueByMonth {
+    final result = <String, Decimal>{};
 
     for (final order in _orders.values) {
       final date = order.placedOrderCreation;
-      if (date != null) {
-        final month = date.month.toString();
-        result[month] = (result[month] ?? 0) + (order.totalPrice ?? 0);
-      }
+      final month = date.month.toString();
+      result[month] =
+          (result[month] ?? Decimal.zero) + (order.totalPrice ?? Decimal.zero);
     }
 
     return result;
   }
 
-  // ============ ORDER VALIDATION ============
-  // bool validateOrderData(Map<String, dynamic> orderData) {
-  //   // Required fields validation
-  //   final requiredFields = [
-  //     'customer_id',
-  //     'total_amount',
-  //     'items',
-  //   ];
-
-  //   for (final field in requiredFields) {
-  //     if (!orderData.containsKey(field) || orderData[field] == null) {
-  //       _setError('Missing required field: $field');
-  //       return false;
-  //     }
-  //   }
-
-  //   // Items validation
-  //   final items = orderData['items'];
-  //   if (items is! List || items.isEmpty) {
-  //     _setError('Order must contain at least one item');
-  //     return false;
-  //   }
-
-  //   // Amount validation
-  //   final totalPrice = orderData['total_amount'];
-  //   if (totalPrice is! num || totalPrice <= 0) {
-  //     _setError('Total amount must be a positive number');
-  //     return false;
-  //   }
-
-  //   _clearError();
-  //   return true;
-  // }
-
   // ============ ORDER FILTERING ============
+
   List<Order> filterOrders({
     String? status,
     DateTime? startDate,
     DateTime? endDate,
-    double? minAmount,
-    double? maxAmount,
+    Decimal? minAmount,
+    Decimal? maxAmount,
   }) {
     return _orders.values.where((order) {
       if (status != null &&
-          order.status?.toLowerCase() != status.toLowerCase()) {
+          order.status.toLowerCase() != status.toLowerCase()) {
         return false;
       }
 
       if (startDate != null) {
-        final orderDate = order.placedOrderCreation;
-        if (orderDate == null || orderDate.isBefore(startDate)) {
+        if (order.placedOrderCreation.isBefore(startDate)) {
           return false;
         }
       }
 
       if (endDate != null) {
-        final orderDate = order.placedOrderCreation;
-        if (orderDate == null || orderDate.isAfter(endDate)) {
+        if (order.placedOrderCreation.isAfter(endDate)) {
           return false;
         }
       }
 
-      if (minAmount != null && (order.totalPrice ?? 0) < minAmount) {
+      final price = order.totalPrice ?? Decimal.zero;
+
+      if (minAmount != null && price < minAmount) {
         return false;
       }
 
-      if (maxAmount != null && (order.totalPrice ?? 0) > maxAmount) {
+      if (maxAmount != null && price > maxAmount) {
         return false;
       }
 
@@ -339,7 +343,7 @@ class OrderChangeNotifier with ChangeNotifier {
     try {
       for (final orderData in ordersData) {
         final order = Order.fromJson(orderData);
-        _orders[order.idPlacedOrder ?? 0] = order;
+        _orders[order.idPlacedOrder] = order;
       }
       notifyListeners();
     } catch (e, stackTrace) {
@@ -363,5 +367,31 @@ class OrderChangeNotifier with ChangeNotifier {
 
   void refreshOrder(int orderId) async {
     await fetchOrderDetails(orderId: orderId);
+  }
+
+  // ============ PRIVATE HELPERS ============
+
+  /// Maps a lowercase status string back to the numeric ref the
+  /// `placed_order` row stores. Mirrors the private helper on
+  /// `Order._stateToRef`, kept here so the notifier can set both
+  /// fields in one `copyWith`.
+  int _stateRefFor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 1;
+      case 'processing':
+        return 2;
+      case 'shipped':
+        return 3;
+      case 'delivered':
+        return 4;
+      case 'cancelled':
+      case 'canceled':
+        return 5;
+      case 'refunded':
+        return 6;
+      default:
+        return 1;
+    }
   }
 }

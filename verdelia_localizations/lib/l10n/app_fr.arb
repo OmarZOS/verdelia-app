@@ -2799,6 +2799,53 @@
 
   "plansIndividualSubtitleFree": "Vous êtes sur le plan Gratuit. Passez à un plan supérieur quand vous voulez — vos données sont conservées.",
   "plansOrganizationSubtitleFree": "Vous êtes sur le plan Gratuit. Créez une équipe quand vous serez prêt.",
-  "plansAllSubtitleFree": "Vous êtes sur le plan Gratuit. Tout ce qui suit est disponible quand vous en aurez besoin."
+  "plansAllSubtitleFree": "Vous êtes sur le plan Gratuit. Tout ce qui suit est disponible quand vous en aurez besoin.",
+
+  "deliveryDetailsTotalWeightLabel": "Poids total",
+  "deliveryDetailsTotalWeightHelper": "Poids total de l'envoi en kilogrammes",
+  "deliveryDetailsBrokerLabel": "Transporteur",
+  "deliveryDetailsBrokerNone": "Non assigné",
+  "deliveryDetailsBrokerUnverified": "Non vérifié",
+  "commonRetry": "Réessayer",
+  "deliveryDetailsBrokerLoading": "Chargement des transporteurs…",
+  "deliveryDetailsBrokerLoadFailed": "Échec du chargement des transporteurs",
+  "deliveryDetailsBrokerNoneAvailable": "Aucun transporteur disponible",
+  "deliveryDetailsBrokerHelper": "{count, plural, =0{Aucun transporteur} =1{1 transporteur disponible} other{{count} transporteurs disponibles}}",
+
+  "deliveryDetailsDimensionsLabel": "Dimensions",
+  "deliveryDetailsUnitLabel": "Unité",
+  "deliveryDetailsWeightUnitLabel": "Unité de poids",
+  "deliveryDetailsValidationDimensionsFormat": "Utilisez le format LxlxH, ex. 5x5x5",
+
+  "vatRateExempt": "Exonéré de la TVA",
+  "vatRateReduced": "Taux réduit appliqué à cet article",
+  "vatRateStandard": "Taux normal appliqué à cet article",
+
+    "metaUpdatedLabel": "Mis à jour",
+  "@metaUpdatedLabel": {
+    "description": "Libellé de l'horodatage de dernière mise à jour sur les cartes méta panier et livraison"
+  },
+
+  "deliveryGoodsLabel": "Marchandises",
+  "@deliveryGoodsLabel": {
+    "description": "Libellé du champ de description des marchandises livrées"
+  },
+
+  "deliveryPackagesLabel": "Colis",
+  "@deliveryPackagesLabel": {
+    "description": "Libellé du champ du nombre de colis livrés"
+  },
+
+  "invoiceTotalLabel": "Total facturé",
+  "costNotAvailable": "Détail des coûts non disponible pour cette opération",
+
+  "itemBrandLabel": "Marque",
+  "itemUnitLabel": "Unité",
+  "itemBarcodeLabel": "Code-barres",
+  "itemAvailableLabel": "Disponible",
+  "itemCategoryLabel": "Catégorie",
+  "itemProviderLabel": "Fournisseur",
+  "itemDescriptionLabel": "Description"
+
     
 }

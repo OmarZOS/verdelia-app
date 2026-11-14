@@ -6,6 +6,7 @@ import 'dart:developer';
 import 'package:app_constants/app_constants.dart';
 import 'package:verdelia_core/business/finance/Cart.dart';
 import 'package:verdelia_core/business/finance/Order.dart';
+import 'package:verdelia_core/business/finance/OrderedItem.dart';
 import 'package:verdelia_core/business/services/CartService.dart';
 import 'package:verdelia_core/app/VerdeliaException.dart';
 import 'package:verdelia_core/mediation/StorageService.dart';

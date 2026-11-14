@@ -2795,6 +2795,53 @@
 
   "plansIndividualSubtitleFree": "أنت على الخطة المجانية. يمكنك الترقية في أي وقت — بياناتك محفوظة.",
   "plansOrganizationSubtitleFree": "أنت على الخطة المجانية. أنشئ فريقاً عندما تكون جاهزاً.",
-  "plansAllSubtitleFree": "أنت على الخطة المجانية. كل ما يلي متاح عندما تحتاجه."
+  "plansAllSubtitleFree": "أنت على الخطة المجانية. كل ما يلي متاح عندما تحتاجه.",
+
+  "deliveryDetailsTotalWeightLabel": "الوزن الإجمالي",
+  "deliveryDetailsTotalWeightHelper": "وزن الشحنة الكاملة بالكيلوغرام",
+  "deliveryDetailsBrokerLabel": "شركة الشحن",
+  "deliveryDetailsBrokerNone": "غير معيّن",
+  "deliveryDetailsBrokerUnverified": "غير موثّق",
+  "commonRetry": "إعادة المحاولة",
+  "deliveryDetailsBrokerLoading": "جارٍ تحميل شركات الشحن…",
+  "deliveryDetailsBrokerLoadFailed": "تعذّر تحميل شركات الشحن",
+  "deliveryDetailsBrokerNoneAvailable": "لا توجد شركات شحن متاحة",
+  "deliveryDetailsBrokerHelper": "{count, plural, =0{لا توجد شركات شحن} =1{شركة شحن واحدة متاحة} =2{شركتا شحن متاحتان} few{{count} شركات شحن متاحة} many{{count} شركة شحن متاحة} other{{count} شركة شحن متاحة}}",
+
+  "deliveryDetailsDimensionsLabel": "الأبعاد",
+  "deliveryDetailsUnitLabel": "الوحدة",
+  "deliveryDetailsWeightUnitLabel": "وحدة الوزن",
+  "deliveryDetailsValidationDimensionsFormat": "استخدم الصيغة الطول×العرض×الارتفاع، مثال: 5×5×5",
+
+  "vatRateExempt": "معفى من ضريبة القيمة المضافة",
+  "vatRateReduced": "تطبق الضريبة المخفّضة على هذا العنصر",
+  "vatRateStandard": "تطبق الضريبة القياسية على هذا العنصر",
+
+    "metaUpdatedLabel": "آخر تحديث",
+  "@metaUpdatedLabel": {
+    "description": "تسمية الطابع الزمني لآخر تحديث في بطاقات بيانات السلة والتوصيل"
+  },
+
+  "deliveryGoodsLabel": "البضائع",
+  "@deliveryGoodsLabel": {
+    "description": "تسمية حقل وصف البضائع المُسلَّمة"
+  },
+
+  "deliveryPackagesLabel": "الطرود",
+  "@deliveryPackagesLabel": {
+    "description": "تسمية حقل عدد الطرود المُسلَّمة"
+  },
+
+  "invoiceTotalLabel": "إجمالي الفاتورة",
+  "costNotAvailable": "تفصيل التكلفة غير متوفر لهذه العملية",
+
+  "itemBrandLabel": "العلامة التجارية",
+  "itemUnitLabel": "الوحدة",
+  "itemBarcodeLabel": "الباركود",
+  "itemAvailableLabel": "المتوفر",
+  "itemCategoryLabel": "الفئة",
+  "itemProviderLabel": "المزوّد",
+  "itemDescriptionLabel": "الوصف"
+
   
 }

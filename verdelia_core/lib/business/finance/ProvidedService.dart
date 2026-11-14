@@ -2,35 +2,80 @@
 
 import 'dart:convert';
 
+import 'package:decimal/decimal.dart';
+
 import '../NamingContribution.dart';
+
+// ==================================================================
+// Decimal helpers
+// ==================================================================
+
+/// Coerces any JSON value to [Decimal].
+///
+/// * [Decimal] → passthrough
+/// * `int`     → `Decimal.fromInt`
+/// * `double`  → `Decimal.tryParse(v.toString())` (shortest round-trip,
+///                NOT the binary expansion)
+/// * `String`  → `Decimal.tryParse`
+/// * anything else → `null`
+///
+/// Rejects non-finite `double`s so a malformed payload can't poison
+/// downstream arithmetic.
+Decimal? _readDecimal(dynamic v) {
+  if (v == null) return null;
+  if (v is Decimal) return v;
+  if (v is int) return Decimal.fromInt(v);
+  if (v is double) {
+    if (v.isNaN || v.isInfinite) return null;
+    return Decimal.tryParse(v.toString());
+  }
+  if (v is String) return Decimal.tryParse(v);
+  return null;
+}
+
+/// Coerces any JSON value to a [Decimal], defaulting to zero.
+Decimal _readDecimalOrZero(dynamic v) => _readDecimal(v) ?? Decimal.zero;
+
+/// Converts a [Decimal] to the shortest `double` that round-trips.
+/// For the JSON wire boundary only — never use this for arithmetic.
+double _decimalToDouble(Decimal v) => double.parse(v.toString());
+
+/// Serialises a [Decimal] for JSON. Emits a `num` so `jsonEncode`
+/// writes it as a JSON number, not a string.
+num _decimalToWire(Decimal v) => _decimalToDouble(v);
 
 // ==================================================================
 // ProvidedServiceCategory
 // ==================================================================
 
+/// Category for a provided service.
+///
+/// Read shape (from `provided_service_category` in the standalone
+/// categories endpoint, or an inline `category` / `provided_service_category`
+/// snapshot on a service):
+///
+/// ```json
+/// {
+///   "id_provided_service_category": 3,
+///   "provided_service_category_name": "food.dining.catering",
+///   "provided_service_category_description": "...",
+///   "provided_service_category_icon_url": null,
+///   "provided_service_category_naming_ref": 12,
+///   "provided_service_category_avg_duration": 60,
+///   "naming_contribution": { ... }
+/// }
+/// ```
+///
+/// The `fromJson` accepts the flat forms (`id`, `name`, `category_id`)
+/// as fallbacks because inline echoes on the operations payload use the
+/// short names.
 class ProvidedServiceCategory {
-  /// FK to `provided_service_category.id`.
   final int id;
-
-  /// Canonical dotted key, e.g. `health.diagnostics.diagnostic_imaging`.
-  /// Kept as `name` for backward compatibility with the existing model.
   final String name;
-
-  /// Free-form category description.
   final String description;
-
-  /// Icon URL from `provided_service_category_icon_url`, nullable.
   final String? iconUrl;
-
-  /// FK to the trilingual naming contribution row.
   final int? namingRef;
-
-  /// Average duration in minutes, when the payload carries it.
   final int? avgDuration;
-
-  /// Trilingual naming block (fr / ar / en + status + icon).
-  /// Null when the payload only carried the flat shape or the
-  /// contribution hasn't been hydrated yet.
   final NamingContribution? naming;
 
   const ProvidedServiceCategory({
@@ -58,12 +103,32 @@ class ProvidedServiceCategory {
     }
 
     return ProvidedServiceCategory(
-      id: _asInt(json['provided_service_category_id']),
-      name: _asString(json['provided_service_category_name']),
-      description: _asString(json['provided_service_category_description']),
-      iconUrl: _asStringOrNull(json['provided_service_category_icon_url']),
-      namingRef: _asIntOrNull(json['provided_service_category_naming_ref']),
-      avgDuration: _asIntOrNull(json['provided_service_category_avg_duration']),
+      // Accept both wire shapes — the standalone category endpoint uses
+      // `provided_service_category_id`; inline echoes use `id` or
+      // `category_id`.
+      id: _asInt(
+        json['provided_service_category_id'] ??
+            json['id_provided_service_category'] ??
+            json['id'] ??
+            json['category_id'],
+      ),
+      name: _asString(
+        json['provided_service_category_name'] ??
+            json['name'] ??
+            json['category_name'],
+      ),
+      description: _asString(
+        json['provided_service_category_description'] ?? json['description'],
+      ),
+      iconUrl: _asStringOrNull(
+        json['provided_service_category_icon_url'] ?? json['icon_url'],
+      ),
+      namingRef: _asIntOrNull(
+        json['provided_service_category_naming_ref'] ?? json['naming_ref'],
+      ),
+      avgDuration: _asIntOrNull(
+        json['provided_service_category_avg_duration'] ?? json['avg_duration'],
+      ),
       naming: naming,
     );
   }
@@ -77,6 +142,11 @@ class ProvidedServiceCategory {
         .toList(growable: false);
   }
 
+  /// Serialises the category for **local persistence** and for
+  /// use as a nested snapshot. Round-trips with [fromJson].
+  ///
+  /// Not an API body — there is no dedicated write endpoint for
+  /// categories in the current contract.
   Map<String, dynamic> toJson() => {
         'provided_service_category_id': id,
         'provided_service_category_name': name,
@@ -89,27 +159,18 @@ class ProvidedServiceCategory {
         if (naming != null) 'naming_contribution': naming!.toJson(),
       };
 
-  // ==================== Naming accessors ====================
-
-  /// Return the category name in [lang]. Prefers the trilingual
-  /// naming contribution; falls back to humanizing the canonical
-  /// dotted key, then to the raw [name].
   String nameFor(String lang) {
     final resolved = naming?.nameFor(lang) ?? '';
     if (resolved.isNotEmpty) return resolved;
     return humanizeCanonicalKey(name);
   }
 
-  /// Icon URL preferring the naming block, falling back to the flat
-  /// top-level icon.
   String? get resolvedIconUrl {
     final fromNaming = naming?.iconUrl;
     if (fromNaming != null && fromNaming.isNotEmpty) return fromNaming;
     return iconUrl;
   }
 
-  /// Attach a naming contribution after parse. Used to hydrate a
-  /// category that arrived with only a `naming_ref`.
   ProvidedServiceCategory withNaming(NamingContribution? value) {
     return ProvidedServiceCategory(
       id: id,
@@ -137,9 +198,6 @@ class ProvidedServiceCategory {
       'naming: ${naming != null})';
 }
 
-/// Turn `health.diagnostics.diagnostic_imaging` into
-/// `Diagnostic Imaging`. Last-resort fallback when no naming
-/// contribution is available.
 String humanizeCanonicalKey(String key) {
   if (key.isEmpty) return '';
   final leaf = key.split('.').last;
@@ -150,55 +208,32 @@ String humanizeCanonicalKey(String key) {
       .join(' ');
 }
 
-// ==================== Parse helpers ====================
-
-int _asInt(dynamic v) => _asIntOrNull(v) ?? 0;
-
-int? _asIntOrNull(dynamic v) {
-  if (v == null) return null;
-  if (v is int) return v;
-  if (v is num) return v.toInt();
-  if (v is String) return int.tryParse(v);
-  return null;
-}
-
-String _asString(dynamic v) {
-  if (v == null) return '';
-  if (v is String) return v.trim();
-  return v.toString().trim();
-}
-
-String? _asStringOrNull(dynamic v) {
-  final s = _asString(v);
-  return s.isEmpty ? null : s;
-}
-
 // ==================================================================
 // StaffRole
 // ==================================================================
 
+/// One staff role that a service can require.
+///
+/// Wire shape (from the standalone `staff_role` endpoint):
+///
+/// ```json
+/// {
+///   "id_staff_role": 1,
+///   "staff_role_service_category_ref": 3,
+///   "staff_role_name": "Senior cleaner",
+///   "staff_role_icon_url": null,
+///   "staff_role_description": "...",
+///   "staff_role_naming_ref": 5,
+///   "naming_contribution": { ... }
+/// }
+/// ```
 class StaffRole {
-  /// FK to `id_staff_role`.
   final int id;
-
-  /// FK to the service category this role belongs to.
   final int categoryId;
-
-  /// Flat English label from `staff_role_name`.
-  /// Kept for backward compatibility — prefer [nameFor] or [naming].
   final String name;
-
-  /// Icon URL from `staff_role_icon_url`.
   final String? iconUrl;
-
-  /// Free-form description, when present.
   final String? description;
-
-  /// FK to the trilingual naming contribution row.
   final int? namingRef;
-
-  /// Trilingual naming block (fr / ar / en + status + icon).
-  /// Null when the payload only carried the flat shape.
   final NamingContribution? naming;
 
   const StaffRole({
@@ -237,6 +272,9 @@ class StaffRole {
     );
   }
 
+  /// Serialises the role for **local persistence**. Round-trips with
+  /// [fromJson]. Not an API body — there is no dedicated write
+  /// endpoint for staff roles in the current contract.
   Map<String, dynamic> toJson() => {
         'id_staff_role': id,
         'staff_role_service_category_ref': categoryId,
@@ -247,28 +285,18 @@ class StaffRole {
         if (naming != null) 'naming_contribution': naming!.toJson(),
       };
 
-  // ==================== Naming accessors ====================
-
-  /// Resolve the display name for [lang].
-  ///
-  /// Falls back through: naming contribution → flat [name] → empty.
-  /// Mirrors [ProvidedServiceCategory.nameFor] so call sites behave the
-  /// same regardless of which entity they're reading.
   String nameFor(String lang) {
     final resolved = naming?.nameFor(lang) ?? '';
     if (resolved.isNotEmpty) return resolved;
     return name;
   }
 
-  /// Icon URL preferring the naming block, falling back to the flat
-  /// top-level icon.
   String? get resolvedIconUrl {
     final fromNaming = naming?.iconUrl;
     if (fromNaming != null && fromNaming.isNotEmpty) return fromNaming;
     return iconUrl;
   }
 
-  /// Attach a naming contribution after parse.
   StaffRole withNaming(NamingContribution? value) {
     return StaffRole(
       id: id,
@@ -298,15 +326,59 @@ class StaffRole {
 // ProvidedService
 // ==================================================================
 
+/// A single service offered by a provider.
+///
+/// ## Read shape
+///
+/// Two shapes arrive from the API:
+///
+/// 1. **Operations response** (from `ordered_service.service` and any
+///    inline echo): flat field names —
+///    `idprovided_service`, `unit_price`, `base_price`,
+///    `category_id`, `provider_id`, `service_resource_requirement[]`,
+///    `created_at`, `updated_at`, `deleted_at`.
+///
+/// 2. **Standalone `/business/services` response**: prefixed names —
+///    `provided_service_id`, `provided_service_base_price`,
+///    `provided_service_final_price`,
+///    `provided_service_category_id`, `provided_service_product_provider_id`,
+///    `requirements[]`, `staff_requirements[]`.
+///
+/// `fromJson` accepts both. Callers don't have to know which endpoint
+/// produced the payload.
+///
+/// ## Write shape
+///
+/// `ProvidedService_API` — see [toServiceApiJson]. Every field name is
+/// prefixed `provided_service_*`; there is no `vat_rate`, no timestamps,
+/// no `idprovided_service` on the write model (those are server-owned).
+///
+/// ## Money
+///
+/// [basePrice], [finalPrice], [vatRate], [totalResourceCost],
+/// [totalStaffCost], [totalCost], [discountPercentage] and
+/// [profitMargin] are [Decimal]. The `double` conversion happens only
+/// inside [toServiceApiJson] / [toJson], at the JSON boundary.
 class ProvidedService {
   final int id;
   final String name;
   final String description;
   final int categoryId;
   final int productProviderId;
-  final double basePrice;
-  final double finalPrice;
-  final int actualDuration; // in minutes
+
+  /// Base (catalog) price, in [Decimal].
+  final Decimal basePrice;
+
+  /// Final (sell) price, in [Decimal].
+  final Decimal finalPrice;
+
+  final int actualDuration;
+
+  /// VAT rate as a percentage (0–100), in [Decimal]. Present on the DB
+  /// row and the read payload; **not** on `ProvidedService_API`, so
+  /// it's read-only on the write path.
+  final Decimal vatRate;
+
   final ProvidedServicePricingConfig pricingConfig;
   final bool isActive;
   final DateTime createdAt;
@@ -314,13 +386,6 @@ class ProvidedService {
   final DateTime? deletedAt;
   final List<ServiceResourceRequirement> resourceRequirements;
   final List<ServiceStaffRequirement> staffRequirements;
-
-  /// Nested category snapshot, when the payload inlines it.
-  ///
-  /// The canonical source of truth for the *resolved* display name is
-  /// still [ServiceNotifier.categoryName], which holds the hydrated
-  /// list. This field exists so a service rendered outside the
-  /// notifier scope (previews, tests, export) can still show a label.
   final ProvidedServiceCategory? category;
 
   ProvidedService({
@@ -332,6 +397,7 @@ class ProvidedService {
     required this.basePrice,
     required this.finalPrice,
     required this.actualDuration,
+    Decimal? vatRate,
     required this.pricingConfig,
     required this.isActive,
     required this.createdAt,
@@ -340,13 +406,17 @@ class ProvidedService {
     this.resourceRequirements = const [],
     this.staffRequirements = const [],
     this.category,
-  });
+  }) : vatRate = vatRate ?? Decimal.zero;
 
   // ==================== Computed getters ====================
 
-  double get discountPercentage {
-    if (basePrice == 0) return 0;
-    return ((basePrice - finalPrice) / basePrice * 100);
+  /// Percentage discount from base to final, in [Decimal]. Returns
+  /// `Decimal.zero` when [basePrice] is zero.
+  Decimal get discountPercentage {
+    if (basePrice == Decimal.zero) return Decimal.zero;
+    return ((basePrice - finalPrice) / basePrice)
+            .toDecimal(scaleOnInfinitePrecision: 2) *
+        _hundred;
   }
 
   String get durationFormatted {
@@ -356,43 +426,39 @@ class ProvidedService {
     return '${hours}h ${minutes}min';
   }
 
-  double get totalResourceCost {
+  /// Sum of all resource-requirement line costs, in [Decimal].
+  Decimal get totalResourceCost {
     return resourceRequirements.fold(
-      0.0,
-      (total, requirement) =>
-          total + (requirement.costPerUnit * requirement.quantity),
+      Decimal.zero,
+      (total, requirement) => total + requirement.totalCost,
     );
   }
 
-  double get totalStaffCost {
-    return staffRequirements.fold(
-      0.0,
-      (total, requirement) =>
-          total + (requirement.hourlyRate * requirement.allocatedHours),
-    );
-  }
-
-  double get totalCost => totalResourceCost + totalStaffCost;
-
-  double get profitMargin {
-    if (finalPrice == 0) return 0;
-    return ((finalPrice - totalCost) / finalPrice * 100);
-  }
-
-  // ==================== Category accessors ====================
-
-  /// Resolved name for the nested category in [lang].
+  /// Sum of all staff-requirement line costs, in [Decimal].
   ///
-  /// Falls back through the category's own naming chain. Returns empty
-  /// when the payload didn't carry the category inline — callers that
-  /// need a label in that case should resolve it via the notifier's
-  /// `categoryName(service.categoryId)` instead.
+  /// Uses the average head count (`(min + max) / 2`), matching what
+  /// [ServiceStaffRequirement.averageCost] exposes. If you need the
+  /// worst-case cost, sum [ServiceStaffRequirement.maxCost] instead.
+  Decimal get totalStaffCost {
+    return staffRequirements.fold(
+      Decimal.zero,
+      (total, requirement) => total + requirement.averageCost,
+    );
+  }
+
+  Decimal get totalCost => totalResourceCost + totalStaffCost;
+
+  /// Margin as a percentage, in [Decimal]. Returns `Decimal.zero` when
+  /// [finalPrice] is zero.
+  Decimal get profitMargin {
+    if (finalPrice == Decimal.zero) return Decimal.zero;
+    return ((finalPrice - totalCost) / finalPrice)
+            .toDecimal(scaleOnInfinitePrecision: 2) *
+        _hundred;
+  }
+
   String categoryNameFor(String lang) => category?.nameFor(lang) ?? '';
-
-  /// Canonical dotted key of the nested category, or empty.
   String get categoryKey => category?.name ?? '';
-
-  /// Resolved icon URL for the nested category, or null.
   String? get categoryIconUrl => category?.resolvedIconUrl;
 
   // ==================== Factories ====================
@@ -404,8 +470,8 @@ class ProvidedService {
       description: '',
       categoryId: 1,
       productProviderId: 1,
-      basePrice: 0.0,
-      finalPrice: 0.0,
+      basePrice: Decimal.zero,
+      finalPrice: Decimal.zero,
       actualDuration: 0,
       pricingConfig: ProvidedServicePricingConfig(),
       isActive: false,
@@ -414,124 +480,132 @@ class ProvidedService {
     );
   }
 
+  /// Parse a service from **either** the operations-response shape
+  /// (flat `unit_price`, `base_price`, `idprovided_service`,
+  /// `category_id`, `provider_id`, `service_resource_requirement`)
+  /// or the standalone `GET /business/services` shape (prefixed
+  /// `provided_service_*` names). Missing fields fall back to the
+  /// other shape.
   factory ProvidedService.fromJson(Map<String, dynamic> json) {
-    final int id = (json['provided_service_id'] as num).toInt();
-    final String name = json['provided_service_name'] as String;
-    final String description = json['provided_service_description'] as String;
-    final int categoryId =
-        (json['provided_service_category_id'] as num).toInt();
-    final int productProviderId =
-        (json['provided_service_product_provider_id'] as num).toInt();
-    final double basePrice =
-        (json['provided_service_base_price'] as num).toDouble();
-    final double finalPrice =
-        (json['provided_service_final_price'] as num).toDouble();
+    final int id = _asInt(
+      json['idprovided_service'] ?? json['provided_service_id'],
+    );
+    final String name = _asString(
+      json['provided_service_name'] ?? json['name'],
+    );
+    final String description = _asString(
+      json['provided_service_description'] ?? json['description'],
+    );
+    final int categoryId = _asInt(
+      json['category_id'] ?? json['provided_service_category_id'],
+    );
+    final int productProviderId = _asInt(
+      json['provider_id'] ?? json['provided_service_product_provider_id'],
+    );
 
-    // Handle actualDuration (could be int or double)
-    final int actualDuration;
-    final actualDurationValue = json['provided_service_actual_duration'];
-    if (actualDurationValue is num) {
-      actualDuration = actualDurationValue.toInt();
-    } else {
-      actualDuration = 0;
-    }
+    // The operations shape carries `base_price` / `unit_price`; the
+    // standalone endpoint carries `provided_service_base_price` /
+    // `provided_service_final_price`.
+    final Decimal basePrice = _readDecimalOrZero(
+      json['base_price'] ?? json['provided_service_base_price'],
+    );
+    final Decimal finalPrice = _readDecimalOrZero(
+      json['unit_price'] ?? json['provided_service_final_price'],
+    );
+    final Decimal vatRate = _readDecimalOrZero(json['vat_rate']);
 
-    // Handle isActive (could be 1/0 or true/false)
+    final int actualDuration = _asInt(
+      json['provided_service_actual_duration'] ?? json['actual_duration'],
+    );
+
+    // `provided_service_is_active` can be bool or 1/0.
+    final isActiveRaw = json['provided_service_is_active'] ?? json['is_active'];
     final bool isActive;
-    final isActiveValue = json['provided_service_is_active'];
-    if (isActiveValue is bool) {
-      isActive = isActiveValue;
-    } else if (isActiveValue is num) {
-      isActive = isActiveValue == 1;
+    if (isActiveRaw is bool) {
+      isActive = isActiveRaw;
+    } else if (isActiveRaw is num) {
+      isActive = isActiveRaw == 1;
     } else {
       isActive = false;
     }
 
-    // Handle pricing config (JSON string or Map)
-    final pricingConfigValue = json['provided_service_pricing_config'];
+    // Pricing config: empty string (operations shape) → default;
+    // JSON string → decode; map → parse.
+    final pricingConfigValue =
+        json['provided_service_pricing_config'] ?? json['pricing_config'];
     ProvidedServicePricingConfig pricingConfig;
-
-    if (pricingConfigValue is String) {
+    if (pricingConfigValue is String && pricingConfigValue.trim().isEmpty) {
+      pricingConfig = ProvidedServicePricingConfig();
+    } else if (pricingConfigValue is String) {
       try {
-        final parsed = jsonDecode(pricingConfigValue) as Map<String, dynamic>;
-        pricingConfig = ProvidedServicePricingConfig.fromJson(parsed);
-      } catch (e) {
+        final parsed = jsonDecode(pricingConfigValue);
+        pricingConfig = parsed is Map<String, dynamic>
+            ? ProvidedServicePricingConfig.fromJson(parsed)
+            : ProvidedServicePricingConfig();
+      } catch (_) {
         pricingConfig = ProvidedServicePricingConfig();
       }
-    } else if (pricingConfigValue is Map<String, dynamic>) {
-      pricingConfig = ProvidedServicePricingConfig.fromJson(pricingConfigValue);
+    } else if (pricingConfigValue is Map) {
+      pricingConfig = ProvidedServicePricingConfig.fromJson(
+        Map<String, dynamic>.from(pricingConfigValue),
+      );
     } else {
       pricingConfig = ProvidedServicePricingConfig();
     }
 
-    // Handle dates
-    DateTime createdAt;
-    try {
-      createdAt = DateTime.parse(json['provided_service_created_at'] as String);
-    } catch (e) {
-      createdAt = DateTime.now();
-    }
+    // Timestamps: operations shape uses `created_at`, standalone uses
+    // `provided_service_created_at`.
+    final DateTime createdAt = _parseDate(
+      json['created_at'] ?? json['provided_service_created_at'],
+    );
+    final DateTime updatedAt = _parseDate(
+      json['updated_at'] ?? json['provided_service_updated_at'],
+    );
+    final DateTime? deletedAt = _parseDateOrNull(
+      json['deleted_at'] ?? json['provided_service_deleted_at'],
+    );
 
-    DateTime updatedAt;
-    try {
-      updatedAt = DateTime.parse(json['provided_service_updated_at'] as String);
-    } catch (e) {
-      updatedAt = DateTime.now();
-    }
-
-    DateTime? deletedAt;
-    if (json['provided_service_deleted_at'] != null &&
-        json['provided_service_deleted_at'] is String) {
-      try {
-        deletedAt =
-            DateTime.parse(json['provided_service_deleted_at'] as String);
-      } catch (e) {
-        deletedAt = null;
+    // Resource requirements: both keys are present in the ecosystem
+    // (`service_resource_requirement` in the operations payload,
+    // `requirements` in some endpoints, and `service_resource_requirement`
+    // in the standalone endpoint).
+    final resourceRequirements = <ServiceResourceRequirement>[];
+    for (final key in const [
+      'service_resource_requirement',
+      'requirements',
+    ]) {
+      final raw = json[key];
+      if (raw is List) {
+        resourceRequirements.addAll(
+          raw.whereType<Map>().map(
+                (e) => ServiceResourceRequirement.fromJson(
+                  Map<String, dynamic>.from(e),
+                ),
+              ),
+        );
       }
-    } else {
-      deletedAt = null;
     }
 
-    // Parse resource requirements if they exist (nested)
-    final List<ServiceResourceRequirement> resourceRequirements = [];
-    if (json['requirements'] != null) {
-      final resourcesJson = json['requirements'] as List;
-      resourceRequirements.addAll(
-        resourcesJson.map(
-          (resourceJson) => ServiceResourceRequirement.fromJson(resourceJson),
-        ),
-      );
-    }
-    if (json['service_resource_requirement'] != null) {
-      final resourcesJson = json['service_resource_requirement'] as List;
-      resourceRequirements.addAll(
-        resourcesJson.map(
-          (resourceJson) => ServiceResourceRequirement.fromJson(resourceJson),
-        ),
-      );
-    }
-
-    // Parse staff requirements if they exist (nested)
-    final List<ServiceStaffRequirement> staffRequirements = [];
-    if (json['staff_requirements'] != null) {
-      final staffJson = json['staff_requirements'] as List;
-      staffRequirements.addAll(
-        staffJson.map(
-          (staffJson) => ServiceStaffRequirement.fromJson(staffJson),
-        ),
-      );
-    }
-    if (json['service_staff_requirement'] != null) {
-      final staffJson = json['service_staff_requirement'] as List;
-      staffRequirements.addAll(
-        staffJson.map(
-          (staffJson) => ServiceStaffRequirement.fromJson(staffJson),
-        ),
-      );
+    // Staff requirements — same story.
+    final staffRequirements = <ServiceStaffRequirement>[];
+    for (final key in const [
+      'service_staff_requirement',
+      'staff_requirements',
+    ]) {
+      final raw = json[key];
+      if (raw is List) {
+        staffRequirements.addAll(
+          raw.whereType<Map>().map(
+                (e) => ServiceStaffRequirement.fromJson(
+                  Map<String, dynamic>.from(e),
+                ),
+              ),
+        );
+      }
     }
 
-    // Parse nested category when inlined in the payload.
-    final categoryRaw = json['provided_service_category'];
+    // Nested category if the payload inlined it.
+    final categoryRaw = json['provided_service_category'] ?? json['category'];
     final ProvidedServiceCategory? category = categoryRaw is Map
         ? ProvidedServiceCategory.fromJson(
             Map<String, dynamic>.from(categoryRaw),
@@ -547,6 +621,7 @@ class ProvidedService {
       basePrice: basePrice,
       finalPrice: finalPrice,
       actualDuration: actualDuration,
+      vatRate: vatRate,
       pricingConfig: pricingConfig,
       isActive: isActive,
       createdAt: createdAt,
@@ -560,30 +635,99 @@ class ProvidedService {
 
   // ==================== Serialisation ====================
 
-  Map<String, dynamic> toJson() {
+  /// The ten fields of `ProvidedService_API`.
+  ///
+  /// Every key here exists on the Pydantic `ProvidedService_API` model.
+  /// The flat `idprovided_service` / `vat_rate` / `created_at` /
+  /// `updated_at` / `deleted_at` fields the class carries are ORM
+  /// columns — server-owned on create, read-only otherwise. Sending
+  /// them is silently dropped.
+  ///
+  /// `provided_service_pricing_config` is a `str` on the API
+  /// (`Optional[str] = ""`). [ProvidedServicePricingConfig.toJsonString]
+  /// serialises the config to a JSON string the server parses back into
+  /// the JSON column.
+  ///
+  /// Monetary values are emitted via [_decimalToWire] so the JSON
+  /// number is the shortest round-trip form of the [Decimal].
+  Map<String, dynamic> toServiceApiJson() {
     return {
       'provided_service_product_provider_id': productProviderId,
-      'service': {
-        'provided_service_id': id,
-        'provided_service_name': name,
-        'provided_service_description': description,
-        'provided_service_category_id': categoryId,
-        'provided_service_product_provider_id': productProviderId,
-        'provided_service_base_price': basePrice,
-        'provided_service_final_price': finalPrice,
-        'provided_service_actual_duration': actualDuration,
-        'provided_service_pricing_config': pricingConfig.toJsonString(),
-        'provided_service_is_active': isActive ? 1 : 0,
-        'provided_service_created_at': createdAt.toIso8601String(),
-        'provided_service_updated_at': updatedAt.toIso8601String(),
-        'provided_service_deleted_at': deletedAt?.toIso8601String(),
-      },
-      'requirements': resourceRequirements.map((r) => r.toJson()).toList(),
-      'staff_requirements': staffRequirements.map((s) => s.toJson()).toList(),
+      'provided_service_name': name,
+      'provided_service_description': description,
+      'category_id': categoryId,
+      'provided_service_base_price': _decimalToWire(basePrice),
+      'provided_service_final_price': _decimalToWire(finalPrice),
+      'provided_service_actual_duration': actualDuration,
+      'provided_service_is_active': isActive,
+      'provided_service_pricing_config': pricingConfig.toJsonString(),
     };
   }
 
-  // ==================== copyWith ====================
+  /// Body for `POST /business/services` and `PUT /business/services/{id}`.
+  ///
+  /// Shape (`Body_create_service_api_v1_business_services_post`):
+  ///
+  /// ```json
+  /// {
+  ///   "service":            { ...ProvidedService_API... },
+  ///   "requirements":       [ ...ServiceResourceRequirement_API... ],
+  ///   "staff_requirements": [ ...ServiceStaffRequirement_API... ]
+  /// }
+  /// ```
+  ///
+  /// The resource-requirement fields are prefixed `resource_requirement_*`
+  /// — **not** `service_resource_requirement_*`. The current server model
+  /// rejects the latter prefix with 422 (or silently drops it if the
+  /// Pydantic model has `extra='ignore'`). See
+  /// [ServiceResourceRequirement.toRequirementApiJson].
+  ///
+  /// The staff-requirement fields are prefixed `service_staff_requirement_*`
+  /// — the same prefix the ORM and payload use. The server validates
+  /// `service_staff_requirement_role > 0`; a role of 0 is rejected with
+  /// 422. See [ServiceStaffRequirement.toStaffApiJson].
+  Map<String, dynamic> toCreateJson() {
+    return {
+      'service': toServiceApiJson(),
+      'requirements':
+          resourceRequirements.map((r) => r.toRequirementApiJson()).toList(),
+      'staff_requirements':
+          staffRequirements.map((s) => s.toStaffApiJson()).toList(),
+    };
+  }
+
+  /// The full snapshot for **local persistence**.
+  ///
+  /// Round-trips with [ProvidedService.fromJson]. Do **not** send this
+  /// to the API — the write contract is [toServiceApiJson] /
+  /// [toCreateJson].
+  ///
+  /// Field names here intentionally use the read-payload names (flat
+  /// `idprovided_service`, `unit_price`, `base_price`, ...) so that
+  /// `fromJson(toJson())` reproduces the same object.
+  Map<String, dynamic> toJson() {
+    return {
+      'idprovided_service': id,
+      'provided_service_name': name,
+      'provided_service_description': description,
+      'category_id': categoryId,
+      'provider_id': productProviderId,
+      'base_price': _decimalToWire(basePrice),
+      'unit_price': _decimalToWire(finalPrice),
+      'vat_rate': _decimalToWire(vatRate),
+      'provided_service_actual_duration': actualDuration,
+      'provided_service_pricing_config': pricingConfig.toJsonString(),
+      'provided_service_is_active': isActive ? 1 : 0,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+      if (deletedAt != null) 'deleted_at': deletedAt!.toIso8601String(),
+      'service_resource_requirement':
+          resourceRequirements.map((r) => r.toJson()).toList(),
+      'service_staff_requirement':
+          staffRequirements.map((s) => s.toJson()).toList(),
+      if (category != null) 'provided_service_category': category!.toJson(),
+    };
+  }
 
   ProvidedService copyWith({
     int? id,
@@ -591,9 +735,10 @@ class ProvidedService {
     String? description,
     int? categoryId,
     int? productProviderId,
-    double? basePrice,
-    double? finalPrice,
+    Decimal? basePrice,
+    Decimal? finalPrice,
     int? actualDuration,
+    Decimal? vatRate,
     ProvidedServicePricingConfig? pricingConfig,
     bool? isActive,
     DateTime? createdAt,
@@ -612,6 +757,7 @@ class ProvidedService {
       basePrice: basePrice ?? this.basePrice,
       finalPrice: finalPrice ?? this.finalPrice,
       actualDuration: actualDuration ?? this.actualDuration,
+      vatRate: vatRate ?? this.vatRate,
       pricingConfig: pricingConfig ?? this.pricingConfig,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
@@ -623,9 +769,6 @@ class ProvidedService {
     );
   }
 
-  /// Attach a category after parse. Used to hydrate a service whose
-  /// payload only carried the id and whose category details live in
-  /// the notifier.
   ProvidedService withCategory(ProvidedServiceCategory? value) =>
       copyWith(category: value ?? category);
 
@@ -641,15 +784,67 @@ class ProvidedService {
 // ServiceResourceRequirement
 // ==================================================================
 
+/// One resource requirement on a service.
+///
+/// ## Read shape (from `service_resource_requirement[]` on the operations
+/// payload):
+///
+/// ```json
+/// {
+///   "service_id": 1,
+///   "service_resource_requirement_name": "Cleaning supplies",
+///   "service_resource_requirement_quantity": 10,
+///   "service_resource_requirement_notes": "...",
+///   "unit_price": 132.4,
+///   "product_id": 1,
+///   "id_service_resource_requirement": 1,
+///   "service_resource_requirement_type": "tool",
+///   "service_resource_requirement_is_consumable": 1,
+///   "created_at": "...",
+///   "updated_at": "..."
+/// }
+/// ```
+///
+/// ## Write shape (`ServiceResourceRequirement_API`):
+///
+/// ```json
+/// {
+///   "resource_requirement_id":            0,
+///   "resource_requirement_service_id":    1,
+///   "resource_requirement_name":          "...",
+///   "resource_requirement_type":          "tool",
+///   "resource_requirement_quantity":      10,
+///   "resource_requirement_cost_per_unit": 132.4,
+///   "resource_requirement_is_consumable": true,
+///   "resource_requirement_notes":         "...",
+///   "resource_requirement_product_ref":   1
+/// }
+/// ```
+///
+/// The write prefix is `resource_requirement_*` — **not**
+/// `service_resource_requirement_*`. Sending the read names on write
+/// silently drops every field on the server.
+///
+/// ## Money
+///
+/// [quantity] and [costPerUnit] are [Decimal]; [totalCost] is
+/// `quantity × costPerUnit` in [Decimal].
 class ServiceResourceRequirement {
   final int id;
   final String name;
   final String type;
-  final double quantity;
+
+  /// Quantity of the resource consumed. [Decimal] because it multiplies
+  /// [costPerUnit] and the result must be exact.
+  final Decimal quantity;
+
   final bool isConsumable;
   final int? productRef;
   final int serviceId;
-  final double costPerUnit;
+
+  /// Cost per unit, in [Decimal].
+  final Decimal costPerUnit;
+
   final String? notes;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -668,41 +863,78 @@ class ServiceResourceRequirement {
     required this.updatedAt,
   });
 
-  double get totalCost => costPerUnit * quantity;
+  Decimal get totalCost => costPerUnit * quantity;
 
   factory ServiceResourceRequirement.fromJson(Map<String, dynamic> json) {
     return ServiceResourceRequirement(
-      id: json['service_resource_requirement_id'] as int,
-      name: json['service_resource_requirement_name'] as String,
-      type: json['service_resource_requirement_type'] as String,
-      quantity:
-          (json['service_resource_requirement_quantity'] as num).toDouble(),
-      isConsumable: json['service_resource_requirement_is_consumable'] == 1,
-      productRef: json['service_resource_requirement_product_ref'] as int?,
-      serviceId: json['service_resource_requirement_service_id'] as int,
-      costPerUnit: (json['service_resource_requirement_cost_per_unit'] as num)
-          .toDouble(),
-      notes: json['service_resource_requirement_notes'] as String?,
-      createdAt:
-          DateTime.parse(json['service_resource_requirement_created_at']),
-      updatedAt:
-          DateTime.parse(json['service_resource_requirement_updated_at']),
+      id: _asInt(
+        json['id_service_resource_requirement'] ??
+            json['service_resource_requirement_id'],
+      ),
+      name: _asString(json['service_resource_requirement_name']),
+      type: _asString(json['service_resource_requirement_type']),
+      quantity: _readDecimalOrZero(
+        json['service_resource_requirement_quantity'],
+      ),
+      isConsumable:
+          _asBoolInt(json['service_resource_requirement_is_consumable']),
+      productRef: _asIntOrNull(
+        json['product_id'] ?? json['service_resource_requirement_product_ref'],
+      ),
+      serviceId: _asInt(
+        json['service_id'] ?? json['service_resource_requirement_service_id'],
+      ),
+      costPerUnit: _readDecimalOrZero(
+        json['unit_price'] ??
+            json['service_resource_requirement_cost_per_unit'],
+      ),
+      notes: _asStringOrNull(json['service_resource_requirement_notes']),
+      createdAt: _parseDate(
+        json['created_at'] ?? json['service_resource_requirement_created_at'],
+      ),
+      updatedAt: _parseDate(
+        json['updated_at'] ?? json['service_resource_requirement_updated_at'],
+      ),
     );
   }
 
+  /// The nine fields of `ServiceResourceRequirement_API`.
+  ///
+  /// Every key here is prefixed `resource_requirement_*` (not
+  /// `service_resource_requirement_*` — that's the ORM column name
+  /// and the read-payload key). The prefix change is what makes the
+  /// server actually persist the requirement; without it, every field
+  /// is silently dropped.
+  Map<String, dynamic> toRequirementApiJson() {
+    return {
+      'resource_requirement_id': id,
+      'resource_requirement_service_id': serviceId,
+      'resource_requirement_name': name,
+      'resource_requirement_type': type,
+      'resource_requirement_quantity': _decimalToWire(quantity),
+      'resource_requirement_cost_per_unit': _decimalToWire(costPerUnit),
+      'resource_requirement_is_consumable': isConsumable,
+      'resource_requirement_notes': notes ?? '',
+      'resource_requirement_product_ref': productRef ?? 0,
+    };
+  }
+
+  /// The full snapshot for **local persistence**. Round-trips with
+  /// [fromJson]. Uses the read-payload field names (the
+  /// `service_resource_requirement_*` prefix).
   Map<String, dynamic> toJson() {
     return {
-      'service_resource_requirement_id': id,
+      'id_service_resource_requirement': id,
       'service_resource_requirement_name': name,
       'service_resource_requirement_type': type,
-      'service_resource_requirement_quantity': quantity,
+      'service_resource_requirement_quantity': _decimalToWire(quantity),
       'service_resource_requirement_is_consumable': isConsumable ? 1 : 0,
-      'service_resource_requirement_product_ref': productRef,
-      'service_resource_requirement_service_id': serviceId,
-      'service_resource_requirement_cost_per_unit': costPerUnit,
+      'product_id': productRef,
+      'service_id': serviceId,
+      'unit_price': _decimalToWire(costPerUnit),
       'service_resource_requirement_notes': notes,
-      'service_resource_requirement_created_at': createdAt.toIso8601String(),
-      'service_resource_requirement_updated_at': updatedAt.toIso8601String(),
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 }
@@ -711,23 +943,60 @@ class ServiceResourceRequirement {
 // ServiceStaffRequirement
 // ==================================================================
 
+/// One staff requirement on a service.
+///
+/// ## Read shape
+///
+/// Both the prefixed write shape (`service_staff_requirement_*`)
+/// and a possible short-form read shape (`min_count`, `role`, ...)
+/// are accepted. `staff_role` may be inlined.
+///
+/// ## Write shape (`ServiceStaffRequirement_API`):
+///
+/// ```json
+/// {
+///   "service_staff_requirement_id":              0,
+///   "service_staff_requirement_service_id":      1,
+///   "service_staff_requirement_role":            3,
+///   "service_staff_requirement_notes":           "",
+///   "service_staff_requirement_min_count":       1,
+///   "service_staff_requirement_max_count":       3,
+///   "service_staff_requirement_hourly_rate":     45.0,
+///   "service_staff_requirement_allocated_hours": 4.0
+/// }
+/// ```
+///
+/// The API rejects `service_staff_requirement_role <= 0` with 422.
+/// Callers must ensure the role is set before sending the create
+/// payload.
+///
+/// ## Counts vs money
+///
+/// [minCount] and [maxCount] are head counts — `int`, not `Decimal`.
+/// Everything that participates in money arithmetic ([hourlyRate],
+/// [allocatedHours], [minCost], [maxCost], [averageCost]) is [Decimal].
 class ServiceStaffRequirement {
   final int id;
   final int serviceId;
+
+  /// Minimum head count — an integer, not money.
   final int minCount;
+
+  /// Maximum head count — an integer, not money.
   final int maxCount;
+
   final int role;
-  final double allocatedHours;
-  final double hourlyRate;
+
+  /// Hours allocated to this requirement. [Decimal] because it multiplies
+  /// [hourlyRate].
+  final Decimal allocatedHours;
+
+  /// Hourly rate, in [Decimal].
+  final Decimal hourlyRate;
+
   final String? notes;
   final DateTime createdAt;
   final DateTime updatedAt;
-
-  /// Nested staff role snapshot, when the payload inlines it.
-  ///
-  /// Carries the trilingual naming contribution. Use [roleNameFor] to
-  /// get a resolved label; fall back to the notifier's role list when
-  /// the payload only sent the `role` id.
   final StaffRole? staffRole;
 
   ServiceStaffRequirement({
@@ -744,33 +1013,25 @@ class ServiceStaffRequirement {
     this.staffRole,
   });
 
-  // ==================== Cost getters ====================
+  Decimal get minCost =>
+      hourlyRate * allocatedHours * Decimal.fromInt(minCount);
 
-  double get minCost => hourlyRate * allocatedHours * minCount;
-  double get maxCost => hourlyRate * allocatedHours * maxCount;
+  Decimal get maxCost =>
+      hourlyRate * allocatedHours * Decimal.fromInt(maxCount);
 
-  double get averageCost {
-    final avgCount = (minCount + maxCount) / 2;
-    return hourlyRate * allocatedHours * avgCount;
+  /// Average head count, in [Decimal] — `(min + max) / 2`. Uses the
+  /// average because head count is an integer range, and using either
+  /// bound alone biases the cost estimate.
+  Decimal get averageCost {
+    final avg = ((Decimal.fromInt(minCount) + Decimal.fromInt(maxCount)) /
+            Decimal.fromInt(2))
+        .toDecimal(scaleOnInfinitePrecision: 2);
+    return hourlyRate * allocatedHours * avg;
   }
 
-  // ==================== Role accessors ====================
-
-  /// Resolved role name for [lang], or empty when the payload didn't
-  /// inline the role.
-  ///
-  /// Prefers the nested role's naming contribution, falling back to
-  /// the flat `staff_role_name`. Callers that need a label when this
-  /// returns empty should resolve it via the notifier's role cache by
-  /// [role] id.
   String roleNameFor(String lang) => staffRole?.nameFor(lang) ?? '';
-
-  /// Resolved icon URL for the role, or null.
   String? get roleIconUrl => staffRole?.resolvedIconUrl;
 
-  /// Attach a role after parse. Used to hydrate a requirement whose
-  /// payload only carried the `role` id and whose role details live in
-  /// the notifier.
   ServiceStaffRequirement withRole(StaffRole? value) {
     return ServiceStaffRequirement(
       id: id,
@@ -787,8 +1048,6 @@ class ServiceStaffRequirement {
     );
   }
 
-  // ==================== Factories ====================
-
   factory ServiceStaffRequirement.fromJson(Map<String, dynamic> json) {
     final roleRaw = json['staff_role'];
     final StaffRole? staffRole = roleRaw is Map
@@ -796,28 +1055,66 @@ class ServiceStaffRequirement {
         : null;
 
     return ServiceStaffRequirement(
-      id: _asInt(json['service_staff_requirement_id']),
-      serviceId: _asInt(json['service_staff_requirement_service_id']),
-      minCount: _asInt(json['service_staff_requirement_min_count']),
-      maxCount: _asInt(json['service_staff_requirement_max_count']),
-      role: _asInt(json['service_staff_requirement_role']),
-      allocatedHours: _asDouble(
-        json['service_staff_requirement_allocated_hours'],
+      id: _asInt(
+        json['service_staff_requirement_id'] ??
+            json['id_service_staff_requirement'],
       ),
-      hourlyRate: _asDouble(
-        json['service_staff_requirement_hourly_rate'],
+      serviceId: _asInt(
+        json['service_staff_requirement_service_id'] ?? json['service_id'],
       ),
-      notes: _asStringOrNull(json['service_staff_requirement_notes']),
+      minCount: _asInt(
+        json['service_staff_requirement_min_count'] ?? json['min_count'],
+      ),
+      maxCount: _asInt(
+        json['service_staff_requirement_max_count'] ?? json['max_count'],
+      ),
+      role: _asInt(
+        json['service_staff_requirement_role'] ?? json['role'],
+      ),
+      allocatedHours: _readDecimalOrZero(
+        json['service_staff_requirement_allocated_hours'] ??
+            json['allocated_hours'],
+      ),
+      hourlyRate: _readDecimalOrZero(
+        json['service_staff_requirement_hourly_rate'] ?? json['hourly_rate'],
+      ),
+      notes: _asStringOrNull(
+        json['service_staff_requirement_notes'] ?? json['notes'],
+      ),
       createdAt: _parseDate(
-        json['service_staff_requirement_created_at'],
+        json['created_at'] ?? json['service_staff_requirement_created_at'],
       ),
       updatedAt: _parseDate(
-        json['service_staff_requirement_updated_at'],
+        json['updated_at'] ?? json['service_staff_requirement_updated_at'],
       ),
       staffRole: staffRole,
     );
   }
 
+  /// The eight fields of `ServiceStaffRequirement_API`.
+  ///
+  /// The timestamps and the nested `staff_role` are **not** on the
+  /// API model and are dropped here. The `role` value must be > 0
+  /// for the server to accept the row — the API validator rejects 0
+  /// with a 422.
+  Map<String, dynamic> toStaffApiJson() {
+    return {
+      'service_staff_requirement_id': id,
+      'service_staff_requirement_service_id': serviceId,
+      'service_staff_requirement_role': role,
+      'service_staff_requirement_notes': notes ?? '',
+      'service_staff_requirement_min_count': minCount,
+      'service_staff_requirement_max_count': maxCount,
+      'service_staff_requirement_hourly_rate': _decimalToWire(hourlyRate),
+      'service_staff_requirement_allocated_hours':
+          _decimalToWire(allocatedHours),
+    };
+  }
+
+  /// The full snapshot for **local persistence**. Round-trips with
+  /// [fromJson]. Includes the timestamps and the nested `staff_role`
+  /// so a subsequent read after persistence reproduces the same
+  /// object.
   Map<String, dynamic> toJson() {
     return {
       'service_staff_requirement_id': id,
@@ -825,8 +1122,9 @@ class ServiceStaffRequirement {
       'service_staff_requirement_min_count': minCount,
       'service_staff_requirement_max_count': maxCount,
       'service_staff_requirement_role': role,
-      'service_staff_requirement_allocated_hours': allocatedHours,
-      'service_staff_requirement_hourly_rate': hourlyRate,
+      'service_staff_requirement_allocated_hours':
+          _decimalToWire(allocatedHours),
+      'service_staff_requirement_hourly_rate': _decimalToWire(hourlyRate),
       'service_staff_requirement_notes': notes,
       'service_staff_requirement_created_at': createdAt.toIso8601String(),
       'service_staff_requirement_updated_at': updatedAt.toIso8601String(),
@@ -839,6 +1137,10 @@ class ServiceStaffRequirement {
 // ProvidedServicePricingConfig
 // ==================================================================
 
+/// Free-form pricing config carried on `provided_service_pricing_config`.
+///
+/// Stored as a JSON column on the DB; exposed as a `str` on the API.
+/// [toJsonString] produces the string the server expects.
 class ProvidedServicePricingConfig {
   final String? recommendedAge;
   final String? recommendedFrequency;
@@ -888,7 +1190,6 @@ class ProvidedServicePricingConfig {
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
-
     if (recommendedAge != null) json['recommended_age'] = recommendedAge;
     if (recommendedFrequency != null)
       json['recommended_frequency'] = recommendedFrequency;
@@ -902,43 +1203,63 @@ class ProvidedServicePricingConfig {
     if (digitalImaging != null) json['digital_imaging'] = digitalImaging;
     if (materialOptions != null) json['material_options'] = materialOptions;
     if (includes != null) json['includes'] = includes;
-
-    if (additionalConfig != null) {
-      json.addAll(additionalConfig!);
-    }
-
+    if (additionalConfig != null) json.addAll(additionalConfig!);
     return json;
   }
 
-  String toJsonString() {
-    return jsonEncode(toJson());
-  }
+  String toJsonString() => jsonEncode(toJson());
 
   @override
-  String toString() {
-    return 'PricingConfig(${toJson().toString()})';
-  }
+  String toString() => 'PricingConfig(${toJson().toString()})';
 }
 
-double _asDouble(dynamic v) => _asDoubleOrNull(v) ?? 0;
+// ==================================================================
+// Shared parse helpers
+// ==================================================================
 
-double? _asDoubleOrNull(dynamic v) {
+/// `100` as a `Decimal`. Used to convert between fraction and percent.
+final Decimal _hundred = Decimal.fromInt(100);
+
+int _asInt(dynamic v) => _asIntOrNull(v) ?? 0;
+
+int? _asIntOrNull(dynamic v) {
   if (v == null) return null;
-  if (v is double) return v;
-  if (v is num) return v.toDouble();
-  if (v is String) return double.tryParse(v);
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  if (v is String) return int.tryParse(v);
   return null;
 }
 
-DateTime _parseDate(dynamic v) {
-  if (v == null) return DateTime.now();
+String _asString(dynamic v) {
+  if (v == null) return '';
+  if (v is String) return v.trim();
+  return v.toString().trim();
+}
+
+String? _asStringOrNull(dynamic v) {
+  final s = _asString(v);
+  return s.isEmpty ? null : s;
+}
+
+bool _asBoolInt(dynamic v) {
+  if (v is bool) return v;
+  if (v is num) return v == 1;
+  if (v is String) return v == '1' || v.toLowerCase() == 'true';
+  return false;
+}
+
+DateTime _parseDate(dynamic v) => _parseDateOrNull(v) ?? DateTime.now();
+
+DateTime? _parseDateOrNull(dynamic v) {
+  if (v == null) return null;
   if (v is DateTime) return v;
   if (v is String) {
+    if (v.isEmpty) return null;
     try {
       return DateTime.parse(v);
     } catch (_) {
-      return DateTime.now();
+      return null;
     }
   }
-  return DateTime.now();
+  return null;
 }

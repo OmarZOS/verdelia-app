@@ -1,3 +1,6 @@
+// lib/components/selling_point/config_sheet/product_configuration_sheet.dart
+
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
@@ -9,9 +12,10 @@ class ProductConfigurationSheet extends StatefulWidget {
   final CartChangeNotifier cartNotifier;
   final int? currentQuantity;
 
-  /// Called when the user confirms the configuration. The parent
-  /// owns persistence — the sheet just reports what the user chose.
-  final void Function({required int quantity, double? customPrice})? onConfirm;
+  /// Called when the user confirms the line. `customPrice` is `null`
+  /// when the catalog price is in effect, and a [Decimal] when the
+  /// user overrode it.
+  final void Function({required int quantity, Decimal? customPrice})? onConfirm;
 
   const ProductConfigurationSheet({
     super.key,
@@ -32,14 +36,15 @@ class _ProductConfigurationSheetState extends State<ProductConfigurationSheet> {
   late final TextEditingController _quantityController;
   late final FocusNode _quantityFocus;
 
-  double? _customPrice;
+  /// Custom price override, in [Decimal]. `null` means "use catalog".
+  Decimal? _customPrice;
 
   @override
   void initState() {
     super.initState();
 
     final existing = widget.cartNotifier.getProductCartItem(widget.product);
-    final stock = widget.product.product_quantity ?? 0;
+    final stock = widget.product.product_available_quantity;
 
     final seed = widget.currentQuantity ?? existing?.quantity ?? 1;
     _quantity = seed.clamp(1, stock > 0 ? stock : 1);
@@ -51,10 +56,6 @@ class _ProductConfigurationSheetState extends State<ProductConfigurationSheet> {
     );
     _quantityController = TextEditingController(text: _quantity.toString());
 
-    // Commit the typed quantity when the user taps away or presses
-    // done. Committing on every keystroke would fight with the
-    // user's own typing (e.g. typing "12" would fire a commit on "1"
-    // then again on "12").
     _quantityFocus = FocusNode()..addListener(_onQuantityFocusChanged);
   }
 
@@ -80,9 +81,14 @@ class _ProductConfigurationSheetState extends State<ProductConfigurationSheet> {
     final colorScheme = theme.colorScheme;
     final product = widget.product;
     final loc = AppLocalizations.of(context)!;
-    final stock = product.product_quantity ?? 0;
-    final unitPrice = _customPrice ?? product.product_price ?? 0;
-    final total = _quantity * unitPrice;
+    final stock = product.product_available_quantity;
+
+    // `product_price` is `Decimal?` after the Product migration.
+    final Decimal unitPrice =
+        _customPrice ?? product.product_price ?? Decimal.zero;
+    // Both operands are `Decimal`, so the product is `Decimal`.
+    final Decimal total = Decimal.fromInt(_quantity) * unitPrice;
+
     final cartItem = widget.cartNotifier.getProductCartItem(widget.product);
     final isInCart = cartItem != null;
 
@@ -141,11 +147,12 @@ class _ProductConfigurationSheetState extends State<ProductConfigurationSheet> {
                           theme: theme,
                           colorScheme: colorScheme,
                           onCustomPriceChanged: (value) {
-                            final parsed = double.tryParse(value);
+                            final parsed = Decimal.tryParse(value);
                             setState(() {
-                              _customPrice = (parsed != null && parsed > 0)
-                                  ? parsed
-                                  : null;
+                              _customPrice =
+                                  (parsed != null && parsed > Decimal.zero)
+                                      ? parsed
+                                      : null;
                             });
                           },
                           onResetPrice: () {
@@ -190,12 +197,8 @@ class _ProductConfigurationSheetState extends State<ProductConfigurationSheet> {
     );
   }
 
-  // ══════════════════════════════════════════════════════════════════
-  // Quantity handling
-  // ══════════════════════════════════════════════════════════════════
-
   void _increment() {
-    final stock = widget.product.product_quantity ?? 0;
+    final stock = widget.product.product_available_quantity;
     if (_quantity >= stock) return;
     setState(() => _quantity++);
     _syncQuantityField();
@@ -207,15 +210,8 @@ class _ProductConfigurationSheetState extends State<ProductConfigurationSheet> {
     _syncQuantityField();
   }
 
-  /// Parse the quantity field and sync `_quantity`. Called on blur
-  /// and on submit.
-  ///
-  /// Rules:
-  ///   - Empty / non-numeric input reverts to the current `_quantity`.
-  ///   - Values < 1 clamp to 1.
-  ///   - Values > stock clamp to stock (or to 1 if stock is 0).
   void _commitTypedQuantity() {
-    final stock = widget.product.product_quantity ?? 0;
+    final stock = widget.product.product_available_quantity;
     final maxAllowed = stock > 0 ? stock : 1;
 
     final parsed = int.tryParse(_quantityController.text.trim());
@@ -224,8 +220,6 @@ class _ProductConfigurationSheetState extends State<ProductConfigurationSheet> {
     if (resolved != _quantity) {
       setState(() => _quantity = resolved);
     }
-    // Always rewrite the field, even when the value didn't change, so
-    // the user sees the clamped/normalized form after blur.
     final text = resolved.toString();
     if (_quantityController.text != text) {
       _quantityController.text = text;
@@ -235,9 +229,6 @@ class _ProductConfigurationSheetState extends State<ProductConfigurationSheet> {
     }
   }
 
-  /// Sync the field's text from `_quantity` after a +/- button
-  /// changes the model. Does not touch the field when it has focus,
-  /// so tapping + while the field is focused doesn't yank the cursor.
   void _syncQuantityField() {
     if (_quantityFocus.hasFocus) return;
     final text = _quantity.toString();
@@ -246,21 +237,15 @@ class _ProductConfigurationSheetState extends State<ProductConfigurationSheet> {
     }
   }
 
-  // ══════════════════════════════════════════════════════════════════
-  // Confirm
-  // ══════════════════════════════════════════════════════════════════
-
   void _confirm(BuildContext context) {
-    // Make sure any in-flight typed value is committed before saving.
     _commitTypedQuantity();
 
     if (_quantity <= 0) return;
-    final stock = widget.product.product_quantity ?? 0;
+    final stock = widget.product.product_available_quantity;
     if (stock <= 0) return;
 
-    // If a callback was provided, delegate to the parent. The parent
-    // knows about the cart shape, how to persist notes, and whether
-    // it wants to add or update the item.
+    _quantityFocus.removeListener(_onQuantityFocusChanged);
+
     if (widget.onConfirm != null) {
       widget.onConfirm!(
         quantity: _quantity,
@@ -270,30 +255,15 @@ class _ProductConfigurationSheetState extends State<ProductConfigurationSheet> {
       return;
     }
 
-    // Fallback: no callback supplied. Do the same work as before so
-    // existing call sites keep working.
-    final existing = widget.cartNotifier.getProductCartItem(widget.product);
-    if (existing != null) {
-      widget.cartNotifier.updateQuantity(
-        product: widget.product,
-        newQuantity: _quantity,
-      );
-    } else {
-      widget.cartNotifier.addItem(widget.product, _quantity);
-    }
-
-    widget.cartNotifier.cart.updateItemPrice(
-      productId: widget.product.id_product,
+    widget.cartNotifier.addOrUpdateProduct(
+      widget.product,
+      _quantity,
       customPrice: _customPrice,
     );
 
     Navigator.pop(context);
   }
 }
-
-// ══════════════════════════════════════════════════════════════════
-// Shared pieces
-// ══════════════════════════════════════════════════════════════════
 
 class _DragHandle extends StatelessWidget {
   final ColorScheme colorScheme;
@@ -333,6 +303,7 @@ class _Header extends StatelessWidget {
     final cs = theme.colorScheme;
     final hasBarcode =
         product.product_barcode != null && product.product_barcode!.isNotEmpty;
+    final displayName = product.product_name;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -355,7 +326,7 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                product.product_name ?? loc.unnamedProduct,
+                displayName.isNotEmpty ? displayName : loc.unnamedProduct,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -470,10 +441,6 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-// ══════════════════════════════════════════════════════════════════
-// Quantity section — editable field + stepper buttons
-// ══════════════════════════════════════════════════════════════════
-
 class _QuantitySection extends StatelessWidget {
   final int stock;
   final AppLocalizations loc;
@@ -521,10 +488,6 @@ class _QuantitySection extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Editable quantity. Sized to fit 1–5 digits
-                    // without reflowing as the user types, and
-                    // constrained so a very wide string can't push
-                    // the +/- buttons off the row.
                     ConstrainedBox(
                       constraints: const BoxConstraints(
                         minWidth: 64,
@@ -541,7 +504,6 @@ class _QuantitySection extends StatelessWidget {
                           LengthLimitingTextInputFormatter(5),
                         ],
                         onSubmitted: (_) => onSubmitted(),
-                        onEditingComplete: onSubmitted,
                         style: theme.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: colorScheme.primary,
@@ -603,13 +565,12 @@ class _QuantitySection extends StatelessWidget {
   }
 }
 
-// ══════════════════════════════════════════════════════════════════
-// Price section
-// ══════════════════════════════════════════════════════════════════
-
 class _PriceSection extends StatelessWidget {
   final Product product;
-  final double? customPrice;
+
+  /// Custom price override, in [Decimal]. `null` means "use catalog".
+  final Decimal? customPrice;
+
   final TextEditingController controller;
   final AppLocalizations loc;
   final ThemeData theme;
@@ -630,7 +591,10 @@ class _PriceSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final catalogPrice = product.product_price ?? 0;
+    // `product_price` is `Decimal?` after the migration. Fall back to
+    // `Decimal.zero` for display; the wire layer already sends `0`
+    // when the catalog price is absent.
+    final Decimal catalogPrice = product.product_price ?? Decimal.zero;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -704,57 +668,10 @@ class _PriceSection extends StatelessWidget {
   }
 }
 
-// ══════════════════════════════════════════════════════════════════
-// Notes section
-// ══════════════════════════════════════════════════════════════════
-
-class _NotesSection extends StatelessWidget {
-  final TextEditingController controller;
-  final AppLocalizations loc;
-  final ThemeData theme;
-  final ColorScheme colorScheme;
-
-  const _NotesSection({
-    required this.controller,
-    required this.loc,
-    required this.theme,
-    required this.colorScheme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionTitle(icon: Icons.notes_rounded, title: loc.notesLabel),
-        const SizedBox(height: 12),
-        TextField(
-          controller: controller,
-          maxLines: 3,
-          minLines: 2,
-          decoration: InputDecoration(
-            hintText: loc.addNotesHint,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            filled: true,
-            fillColor: colorScheme.surface,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════
-// Total + actions
-// ══════════════════════════════════════════════════════════════════
-
 class _TotalBlock extends StatelessWidget {
-  final double total;
+  final Decimal total;
   final int quantity;
-  final double unitPrice;
+  final Decimal unitPrice;
   final bool hasCustomPrice;
   final AppLocalizations loc;
   final ThemeData theme;
@@ -942,13 +859,9 @@ class _Actions extends StatelessWidget {
   }
 }
 
-// ══════════════════════════════════════════════════════════════════
-// Discount preview + quantity button
-// ══════════════════════════════════════════════════════════════════
-
 class _DiscountPreview extends StatelessWidget {
-  final double catalogPrice;
-  final double customPrice;
+  final Decimal catalogPrice;
+  final Decimal customPrice;
   final AppLocalizations loc;
   final ColorScheme colorScheme;
 
@@ -962,9 +875,19 @@ class _DiscountPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final unitDiscount = (catalogPrice - customPrice).clamp(0.0, catalogPrice);
 
-    if (unitDiscount <= 0) {
+    // Manual clamp — `num.clamp` isn't available on `Decimal`.
+    final Decimal rawDiscount = catalogPrice - customPrice;
+    final Decimal unitDiscount;
+    if (rawDiscount < Decimal.zero) {
+      unitDiscount = Decimal.zero;
+    } else if (rawDiscount > catalogPrice) {
+      unitDiscount = catalogPrice;
+    } else {
+      unitDiscount = rawDiscount;
+    }
+
+    if (unitDiscount <= Decimal.zero) {
       return Row(
         children: [
           Icon(
@@ -987,8 +910,12 @@ class _DiscountPreview extends StatelessWidget {
       );
     }
 
-    final percent =
-        catalogPrice > 0 ? (unitDiscount / catalogPrice) * 100 : null;
+    // `.toDecimal(scaleOnInfinitePrecision: 2)` on the division: `Decimal / Decimal` returns a
+    // `Rational`, which can't be assigned to a `Decimal`.
+    final Decimal? percent = catalogPrice > Decimal.zero
+        ? (unitDiscount / catalogPrice).toDecimal(scaleOnInfinitePrecision: 2) *
+            Decimal.fromInt(100)
+        : null;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1061,6 +988,7 @@ class _QuantityButton extends StatelessWidget {
               color: enabled ? color : Colors.grey.shade400,
             ),
             onPressed: onPressed,
+            splashColor: Colors.transparent,
             splashRadius: 24,
           ),
         ),

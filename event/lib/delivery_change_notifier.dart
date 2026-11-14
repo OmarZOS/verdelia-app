@@ -13,8 +13,10 @@
 
 import 'dart:async';
 
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_core/business/Delivery.dart';
+import 'package:verdelia_core/business/DeliveryBroker.dart';
 import 'package:verdelia_core/business/services/DeliveryService.dart';
 import 'package:locator/locator.dart';
 import 'package:collection/collection.dart';
@@ -59,6 +61,105 @@ class DeliveryState {
   void setError(String? v) => lastError = v;
   void clearError() => lastError = null;
   void setSearchQuery(String q) => searchQuery = q;
+}
+
+// ============================================================================
+// BROKER STATE
+// ============================================================================
+
+/// State for the broker list. Kept separate from [DeliveryState]
+/// because brokers have a different lifecycle — they're a catalogue
+/// the app reads from, not a list the app mutates. Loading flags and
+/// pagination are independent of the delivery list's.
+class BrokerState {
+  final List<DeliveryBroker> brokers = [];
+  bool isLoading = false;
+  bool hasMore = true;
+  int currentPage = 0;
+  int itemsPerPage = 100;
+  String? lastError;
+  bool verifiedOnly = false;
+
+  void reset() {
+    brokers.clear();
+    isLoading = false;
+    hasMore = true;
+    currentPage = 0;
+    lastError = null;
+    verifiedOnly = false;
+  }
+
+  void setLoading(bool v) => isLoading = v;
+  void setError(String? v) => lastError = v;
+  void clearError() => lastError = null;
+}
+
+// ============================================================================
+// FETCH — brokers
+// ============================================================================
+
+class BrokerFetch {
+  final DeliveryService _service;
+  final BrokerState _state;
+
+  BrokerFetch({
+    required DeliveryService service,
+    required BrokerState state,
+  })  : _service = service,
+        _state = state;
+
+  Future<void> fetchBrokers({
+    bool verifiedOnly = false,
+    bool reset = false,
+  }) async {
+    if (_state.isLoading) return;
+
+    if (reset ||
+        _state.verifiedOnly != verifiedOnly ||
+        _state.currentPage == 0) {
+      _state.verifiedOnly = verifiedOnly;
+      if (reset) {
+        _state.currentPage = 0;
+        _state.brokers.clear();
+        _state.hasMore = true;
+      }
+    }
+
+    _state.setLoading(true);
+    _state.clearError();
+
+    try {
+      final offset = _state.currentPage * _state.itemsPerPage;
+      final fetched = await _service.getAllDeliveryBrokers(
+        offset: offset,
+        limit: _state.itemsPerPage,
+        verifiedOnly: verifiedOnly,
+      );
+
+      if (fetched.isEmpty) {
+        _state.hasMore = false;
+      } else {
+        if (_state.currentPage == 0) _state.brokers.clear();
+        final seen = _state.brokers.map((b) => b.id).toSet();
+        for (final b in fetched) {
+          if (!seen.contains(b.id)) _state.brokers.add(b);
+        }
+        _state.currentPage++;
+        _state.hasMore = fetched.length == _state.itemsPerPage;
+      }
+    } catch (e) {
+      _state.setError('Error fetching brokers: $e');
+    } finally {
+      _state.setLoading(false);
+    }
+  }
+
+  DeliveryBroker? findById(int id) {
+    for (final b in _state.brokers) {
+      if (b.id == id) return b;
+    }
+    return null;
+  }
 }
 
 // ============================================================================
@@ -210,10 +311,14 @@ class DeliveryChangeNotifier extends ChangeNotifier {
   final DeliveryService _service;
 
   bool _fetchInProgress = false;
+  bool _brokerFetchInProgress = false;
 
   late final DeliveryState _state;
   late final DeliveryCache _cache;
   late final DeliveryFetch _fetch;
+
+  late final BrokerState _brokerState;
+  late final BrokerFetch _brokerFetch;
 
   DeliveryChangeNotifier({
     DeliveryService? service,
@@ -222,6 +327,9 @@ class DeliveryChangeNotifier extends ChangeNotifier {
     _state = DeliveryState();
     _cache = DeliveryCache();
     _fetch = DeliveryFetch(service: _service, cache: _cache, state: _state);
+
+    _brokerState = BrokerState();
+    _brokerFetch = BrokerFetch(service: _service, state: _brokerState);
 
     if (autoFetch) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -267,11 +375,61 @@ class DeliveryChangeNotifier extends ChangeNotifier {
       .where((d) => d.delivery_status.wireValue.toUpperCase() == 'CANCELLED')
       .length;
 
-  double get totalWeight => _state.deliveries
-      .fold(0.0, (sum, d) => sum + (d.delivery_total_weight ?? 0));
+  /// Sum of `delivery_total_weight` across every loaded delivery, in
+  /// [Decimal].
+  ///
+  /// `Delivery.delivery_total_weight` is `Decimal?` after the
+  /// Delivery migration; `?? Decimal.zero` matches the old `?? 0`
+  /// fallback.
+  Decimal get totalWeight => _state.deliveries.fold(
+        Decimal.zero,
+        (sum, d) => sum + (d.delivery_total_weight ?? Decimal.zero),
+      );
 
   int get totalPackages => _state.deliveries
       .fold(0, (sum, d) => sum + (d.delivery_package_count ?? 0));
+
+  // ── Brokers ────────────────────────────────────────────────────
+
+  List<DeliveryBroker> get brokers => _brokerState.brokers;
+  bool get isBrokersLoading => _brokerState.isLoading;
+  bool get hasMoreBrokers => _brokerState.hasMore;
+  String? get brokerError => _brokerState.lastError;
+
+  List<DeliveryBroker> get verifiedBrokers =>
+      _brokerState.brokers.where((b) => b.verified).toList();
+
+  DeliveryBroker? brokerById(int id) => _brokerFetch.findById(id);
+
+  Future<void> fetchBrokers({
+    bool verifiedOnly = false,
+    bool reset = false,
+  }) async {
+    if (_brokerFetchInProgress) return;
+    _brokerFetchInProgress = true;
+    try {
+      await _brokerFetch.fetchBrokers(
+        verifiedOnly: verifiedOnly,
+        reset: reset,
+      );
+      _notify();
+    } finally {
+      _brokerFetchInProgress = false;
+    }
+  }
+
+  Future<void> setBrokerFilter({required bool verifiedOnly}) =>
+      fetchBrokers(verifiedOnly: verifiedOnly, reset: true);
+
+  Future<void> fetchNextBrokerPage() async {
+    if (_brokerState.isLoading || !_brokerState.hasMore) return;
+    await fetchBrokers(
+      verifiedOnly: _brokerState.verifiedOnly,
+    );
+  }
+
+  Future<void> refreshBrokers() =>
+      fetchBrokers(verifiedOnly: _brokerState.verifiedOnly, reset: true);
 
   // ── Filters ────────────────────────────────────────────────────
 
@@ -407,10 +565,6 @@ class DeliveryChangeNotifier extends ChangeNotifier {
   // ============================================================
   // OPS
   // ============================================================
-  //
-  // Every op: call the service, merge the returned row, notify.
-  // Transitions additionally kick off one background list refresh,
-  // because they cascade on the server. Metadata edits don't.
 
   Future<bool> _op(
     Future<Delivery?> Function() call, {
@@ -453,10 +607,7 @@ class DeliveryChangeNotifier extends ChangeNotifier {
         brokerId: _state.brokerId,
         reset: true,
       );
-    } catch (_) {
-      // Local state was already applied; a failed reconcile is not
-      // user-visible.
-    }
+    } catch (_) {}
   }
 
   // ── Transitions (reconcile after) ──────────────────────────────
@@ -639,6 +790,7 @@ class DeliveryChangeNotifier extends ChangeNotifier {
   void clearDeliveries() {
     _state.reset();
     _cache.clearAll();
+    _brokerState.reset();
     _notify();
   }
 
@@ -691,11 +843,13 @@ class DeliveryChangeNotifier extends ChangeNotifier {
   void reset() {
     _state.reset();
     _cache.clearAll();
+    _brokerState.reset();
     _notify();
   }
 
   Map<String, int> getCacheStats() => {
         'deliveryCache': _cache.deliveryCacheSize,
         'listCache': _cache.listCacheSize,
+        'brokerCount': _brokerState.brokers.length,
       };
 }

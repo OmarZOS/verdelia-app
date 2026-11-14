@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:verdelia_core/app/TraceableService.dart';
+import 'package:verdelia_core/business/finance/OrderedItem.dart';
 
 import '../finance/Order.dart';
 

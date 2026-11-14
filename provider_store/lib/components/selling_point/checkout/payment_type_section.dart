@@ -1,14 +1,15 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:ui/components/finance/Payment_Type_UI_Manager.dart';
 
 class PaymentTypeSection extends StatefulWidget {
   final String selectedType;
-  final double totalAmount;
-  final double? depositAmount;
+  final Decimal totalAmount;
+  final Decimal? depositAmount;
   final DateTime? installmentDate;
   final ValueChanged<String> onTypeChanged;
-  final ValueChanged<double?> onDepositChanged;
+  final ValueChanged<Decimal?> onDepositChanged;
   final ValueChanged<DateTime?> onInstallmentDateChanged;
 
   const PaymentTypeSection({
@@ -61,7 +62,7 @@ class _PaymentTypeSectionState extends State<PaymentTypeSection> {
   void _onDepositChanged(String value) {
     final cleanedValue = value.replaceAll(RegExp(r'[^0-9.]'), '');
     if (cleanedValue.isNotEmpty) {
-      final amount = double.tryParse(cleanedValue);
+      final amount = Decimal.tryParse(cleanedValue);
       widget.onDepositChanged(amount);
     } else {
       widget.onDepositChanged(null);

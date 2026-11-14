@@ -1,5 +1,6 @@
 // lib/ui/components/business_operations/business_operation_badges.dart
 
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 
@@ -218,9 +219,15 @@ class SourceBadge extends StatelessWidget {
 // Amount display
 // ---------------------------------------------------------------------------
 
+/// A label + formatted amount. Both `value` and the formatting path are
+/// [Decimal] after the `BusinessOperation` migration; `formatCurrency`
+/// is expected to accept `Decimal` (or `num`).
 class AmountDisplay extends StatelessWidget {
   final String label;
-  final double value;
+
+  /// Amount in [Decimal].
+  final Decimal value;
+
   final Color? color;
   final bool highlight;
 
@@ -362,6 +369,12 @@ class FinancialInfoBlock extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
+    // `dueAmount`, `paidAmount`, `grandTotal` are `Decimal` after the
+    // BusinessOperation migration.
+    final Decimal due = operation.dueAmount;
+    final Decimal paid = operation.paidAmount;
+    final Decimal grand = operation.grandTotal;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
@@ -375,21 +388,24 @@ class FinancialInfoBlock extends StatelessWidget {
               Expanded(
                 child: AmountDisplay(
                   label: l10n.balance,
-                  value: operation.dueAmount,
-                  highlight: operation.dueAmount > 0,
+                  value: due,
+                  // `> Decimal.zero` — exact comparison, no float
+                  // artefact can paint the balance red for a sub-cent
+                  // due.
+                  highlight: due > Decimal.zero,
                 ),
               ),
               Expanded(
                 child: AmountDisplay(
                   label: l10n.paid,
-                  value: operation.paidAmount,
+                  value: paid,
                   color: Colors.green,
                 ),
               ),
               Expanded(
                 child: AmountDisplay(
                   label: l10n.totalAmount,
-                  value: operation.grandTotal,
+                  value: grand,
                 ),
               ),
             ],

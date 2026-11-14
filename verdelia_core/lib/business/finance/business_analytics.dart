@@ -1,5 +1,7 @@
 // lib/business/finance/business_analytics.dart
 
+import 'package:decimal/decimal.dart';
+
 import 'package:verdelia_core/business/finance/BusinessOperation.dart';
 
 /// Analytics over [BusinessOperation] rows.
@@ -9,54 +11,77 @@ import 'package:verdelia_core/business/finance/BusinessOperation.dart';
 /// `stats.ratios`, prefer reading those directly — this class exists for the
 /// cases where you only have the operations list (e.g. client-side drills,
 /// per-page breakdowns, distribution lookups the envelope doesn't precompute).
+///
+/// ## Money
+///
+/// Every aggregate ([totalRevenue], [totalCollected], [totalOutstanding],
+/// [totalCost], [totalMargin]), every per-group map, and the two ratio
+/// getters ([collectionRate], [overallRoi]) are [Decimal]. The `double`
+/// conversion happens only inside [BusinessAnalyticsCache] if a caller
+/// chooses to widen it back for legacy display; this file keeps it
+/// `Decimal` end-to-end.
 class BusinessAnalytics {
   bool _isCalculating = false;
-  double _totalRevenue = 0.0;
-  double _totalCollected = 0.0;
-  double _totalOutstanding = 0.0;
-  double _totalCost = 0.0;
-  double _totalMargin = 0.0;
+
+  Decimal _totalRevenue = Decimal.zero;
+  Decimal _totalCollected = Decimal.zero;
+  Decimal _totalOutstanding = Decimal.zero;
+  Decimal _totalCost = Decimal.zero;
+  Decimal _totalMargin = Decimal.zero;
   int _totalTransactions = 0;
 
-  final Map<String, double> _revenueBySource = {};
-  final Map<String, double> _revenueByInvoiceStatus = {};
-  final Map<String, double> _dueByInvoiceStatus = {};
-  final Map<String, double> _revenueBySupplier = {};
-  final Map<String, double> _revenueByClient = {};
-  final Map<String, double> _revenueByDay = {};
+  final Map<String, Decimal> _revenueBySource = {};
+  final Map<String, Decimal> _revenueByInvoiceStatus = {};
+  final Map<String, Decimal> _dueByInvoiceStatus = {};
+  final Map<String, Decimal> _revenueBySupplier = {};
+  final Map<String, Decimal> _revenueByClient = {};
+  final Map<String, Decimal> _revenueByDay = {};
 
   BusinessAnalyticsCache? _cache;
 
   bool get isCalculating => _isCalculating;
-  double get totalRevenue => _totalRevenue;
-  double get totalCollected => _totalCollected;
-  double get totalOutstanding => _totalOutstanding;
-  double get totalCost => _totalCost;
-  double get totalMargin => _totalMargin;
+  Decimal get totalRevenue => _totalRevenue;
+  Decimal get totalCollected => _totalCollected;
+  Decimal get totalOutstanding => _totalOutstanding;
+  Decimal get totalCost => _totalCost;
+  Decimal get totalMargin => _totalMargin;
   int get totalTransactions => _totalTransactions;
 
-  Map<String, double> get revenueBySource => Map.unmodifiable(_revenueBySource);
-  Map<String, double> get revenueByInvoiceStatus =>
+  Map<String, Decimal> get revenueBySource =>
+      Map.unmodifiable(_revenueBySource);
+  Map<String, Decimal> get revenueByInvoiceStatus =>
       Map.unmodifiable(_revenueByInvoiceStatus);
-  Map<String, double> get dueByInvoiceStatus =>
+  Map<String, Decimal> get dueByInvoiceStatus =>
       Map.unmodifiable(_dueByInvoiceStatus);
-  Map<String, double> get revenueBySupplier =>
+  Map<String, Decimal> get revenueBySupplier =>
       Map.unmodifiable(_revenueBySupplier);
-  Map<String, double> get revenueByClient => Map.unmodifiable(_revenueByClient);
-  Map<String, double> get revenueByDay => Map.unmodifiable(_revenueByDay);
+  Map<String, Decimal> get revenueByClient =>
+      Map.unmodifiable(_revenueByClient);
+  Map<String, Decimal> get revenueByDay => Map.unmodifiable(_revenueByDay);
 
   BusinessAnalyticsCache? get cache => _cache;
 
-  /// Collection rate = paid / (paid + due).
+  /// Collection rate = `paid / (paid + due) * 100`, in [Decimal].
   /// Matches the backend's `stats.ratios.collection_rate`.
-  double get collectionRate {
+  ///
+  /// `.toDecimal(scaleOnInfinitePrecision: 2)` on the division: `Decimal / Decimal` returns a
+  /// `Rational`, which can't be assigned to a `Decimal`.
+  Decimal get collectionRate {
     final billable = _totalCollected + _totalOutstanding;
-    return billable > 0 ? (_totalCollected / billable) * 100 : 0.0;
+    if (billable <= Decimal.zero) return Decimal.zero;
+    return (_totalCollected / billable).toDecimal(scaleOnInfinitePrecision: 2) *
+        Decimal.fromInt(100);
   }
 
-  /// Overall ROI = (revenue - cost) / cost, matching `stats.ratios.overall_roi`.
-  double? get overallRoi =>
-      _totalCost > 0 ? (_totalRevenue - _totalCost) / _totalCost : null;
+  /// Overall ROI = `(revenue - cost) / cost`, in [Decimal]. Null when
+  /// cost is zero (matching the backend's nullable `overall_roi`).
+  ///
+  /// `.toDecimal(scaleOnInfinitePrecision: 2)` on the division, same reason as [collectionRate].
+  Decimal? get overallRoi {
+    if (_totalCost <= Decimal.zero) return null;
+    return ((_totalRevenue - _totalCost) / _totalCost)
+        .toDecimal(scaleOnInfinitePrecision: 2);
+  }
 
   Future<void> refresh(List<BusinessOperation> operations) async {
     if (_isCalculating || operations.isEmpty) return;
@@ -77,6 +102,8 @@ class BusinessAnalytics {
     _resetValues();
 
     for (final op in operations) {
+      // All money fields on `BusinessOperation` are non-null `Decimal`
+      // after the model migration.
       final revenue = op.grandTotal;
       final paid = op.paidAmount;
       final due = op.dueAmount;
@@ -145,11 +172,11 @@ class BusinessAnalytics {
   }
 
   void _resetValues() {
-    _totalRevenue = 0.0;
-    _totalCollected = 0.0;
-    _totalOutstanding = 0.0;
-    _totalCost = 0.0;
-    _totalMargin = 0.0;
+    _totalRevenue = Decimal.zero;
+    _totalCollected = Decimal.zero;
+    _totalOutstanding = Decimal.zero;
+    _totalCost = Decimal.zero;
+    _totalMargin = Decimal.zero;
     _totalTransactions = 0;
     _revenueBySource.clear();
     _revenueByInvoiceStatus.clear();
@@ -163,11 +190,11 @@ class BusinessAnalytics {
   // Ad-hoc queries over a list of operations (not memoized)
   // ---------------------------------------------------------------------
 
-  /// Total amount grouped by invoice status.
-  Map<String, double> getAmountByInvoiceStatus(
+  /// Total amount grouped by invoice status, in [Decimal].
+  Map<String, Decimal> getAmountByInvoiceStatus(
     List<BusinessOperation> operations,
   ) {
-    final amounts = <String, double>{};
+    final amounts = <String, Decimal>{};
     for (final op in operations) {
       final key = op.invoiceStatus ?? 'unknown';
       _accumulate(amounts, key, op.grandTotal);
@@ -186,69 +213,74 @@ class BusinessAnalytics {
     return counts;
   }
 
-  /// Average grand total grouped by source type.
-  Map<String, double> getAverageAmountBySource(
+  /// Average grand total grouped by source type, in [Decimal].
+  ///
+  /// The per-group division needs `.toDecimal(scaleOnInfinitePrecision: 2)`.
+  Map<String, Decimal> getAverageAmountBySource(
     List<BusinessOperation> operations,
   ) {
-    final sums = <String, double>{};
+    final sums = <String, Decimal>{};
     final counts = <String, int>{};
     for (final op in operations) {
-      sums[op.sourceType] = (sums[op.sourceType] ?? 0) + op.grandTotal;
+      sums[op.sourceType] =
+          (sums[op.sourceType] ?? Decimal.zero) + op.grandTotal;
       counts[op.sourceType] = (counts[op.sourceType] ?? 0) + 1;
     }
     return {
       for (final entry in sums.entries)
-        entry.key:
-            counts[entry.key]! > 0 ? entry.value / counts[entry.key]! : 0.0,
+        entry.key: counts[entry.key]! > 0
+            ? (entry.value / Decimal.fromInt(counts[entry.key]!))
+                .toDecimal(scaleOnInfinitePrecision: 2)
+            : Decimal.zero,
     };
   }
 
-  /// Top clients by grand total.
-  Map<int, double> getTopClientsByRevenue(
+  /// Top clients by grand total, in [Decimal].
+  Map<int, Decimal> getTopClientsByRevenue(
     List<BusinessOperation> operations, {
     int limit = 10,
   }) {
-    final revenue = <int, double>{};
+    final revenue = <int, Decimal>{};
     for (final op in operations) {
       final id = op.clientId;
       if (id == null) continue;
-      revenue[id] = (revenue[id] ?? 0) + op.grandTotal;
+      revenue[id] = (revenue[id] ?? Decimal.zero) + op.grandTotal;
     }
     final sorted = revenue.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     return Map.fromEntries(sorted.take(limit));
   }
 
-  /// Top suppliers by grand total.
-  Map<int, double> getTopSuppliersByRevenue(
+  /// Top suppliers by grand total, in [Decimal].
+  Map<int, Decimal> getTopSuppliersByRevenue(
     List<BusinessOperation> operations, {
     int limit = 10,
   }) {
-    final revenue = <int, double>{};
+    final revenue = <int, Decimal>{};
     for (final op in operations) {
       final id = op.supplierId;
       if (id == null) continue;
-      revenue[id] = (revenue[id] ?? 0) + op.grandTotal;
+      revenue[id] = (revenue[id] ?? Decimal.zero) + op.grandTotal;
     }
     final sorted = revenue.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     return Map.fromEntries(sorted.take(limit));
   }
 
-  /// Daily revenue trend over the last [days] days.
+  /// Daily revenue trend over the last [days] days, in [Decimal].
   ///
-  /// Days with no operations are present with value 0.0.
-  Map<DateTime, double> getDailyRevenueTrend(
+  /// Days with no operations are present with value `Decimal.zero`.
+  Map<DateTime, Decimal> getDailyRevenueTrend(
     List<BusinessOperation> operations, {
     int days = 30,
   }) {
     final endDate = DateTime.now();
     final startDate = endDate.subtract(Duration(days: days - 1));
 
-    final dailyRevenue = <DateTime, double>{};
+    final dailyRevenue = <DateTime, Decimal>{};
     for (var i = 0; i < days; i++) {
       final d = startDate.add(Duration(days: i));
-      dailyRevenue[DateTime(d.year, d.month, d.day)] = 0.0;
+      dailyRevenue[DateTime(d.year, d.month, d.day)] = Decimal.zero;
     }
 
     for (final op in operations) {
@@ -256,17 +288,17 @@ class BusinessAnalytics {
       if (created == null) continue;
       if (created.isBefore(startDate) || created.isAfter(endDate)) continue;
       final key = DateTime(created.year, created.month, created.day);
-      dailyRevenue[key] = (dailyRevenue[key] ?? 0) + op.grandTotal;
+      dailyRevenue[key] = (dailyRevenue[key] ?? Decimal.zero) + op.grandTotal;
     }
 
     return dailyRevenue;
   }
 
-  /// Margin breakdown by source type.
-  Map<String, double> getMarginBySource(
+  /// Margin breakdown by source type, in [Decimal].
+  Map<String, Decimal> getMarginBySource(
     List<BusinessOperation> operations,
   ) {
-    final margin = <String, double>{};
+    final margin = <String, Decimal>{};
     for (final op in operations) {
       _accumulate(margin, op.sourceType, op.marginAmount);
     }
@@ -278,11 +310,11 @@ class BusinessAnalytics {
   // ---------------------------------------------------------------------
 
   static void _accumulate(
-    Map<String, double> map,
+    Map<String, Decimal> map,
     String key,
-    double amount,
+    Decimal amount,
   ) {
-    map[key] = (map[key] ?? 0) + amount;
+    map[key] = (map[key] ?? Decimal.zero) + amount;
   }
 
   static String _dayKey(DateTime d) {
@@ -295,20 +327,20 @@ class BusinessAnalytics {
 
 /// Immutable snapshot of a completed analysis pass.
 class BusinessAnalyticsCache {
-  final double totalRevenue;
-  final double totalCollected;
-  final double totalOutstanding;
-  final double totalCost;
-  final double totalMargin;
+  final Decimal totalRevenue;
+  final Decimal totalCollected;
+  final Decimal totalOutstanding;
+  final Decimal totalCost;
+  final Decimal totalMargin;
   final int transactionCount;
-  final Map<String, double> revenueBySource;
-  final Map<String, double> revenueByInvoiceStatus;
-  final Map<String, double> dueByInvoiceStatus;
-  final Map<String, double> revenueBySupplier;
-  final Map<String, double> revenueByClient;
-  final Map<String, double> revenueByDay;
-  final double collectionRate;
-  final double? overallRoi;
+  final Map<String, Decimal> revenueBySource;
+  final Map<String, Decimal> revenueByInvoiceStatus;
+  final Map<String, Decimal> dueByInvoiceStatus;
+  final Map<String, Decimal> revenueBySupplier;
+  final Map<String, Decimal> revenueByClient;
+  final Map<String, Decimal> revenueByDay;
+  final Decimal collectionRate;
+  final Decimal? overallRoi;
 
   const BusinessAnalyticsCache({
     required this.totalRevenue,
@@ -327,19 +359,30 @@ class BusinessAnalyticsCache {
     required this.overallRoi,
   });
 
-  double get averageTicket =>
-      transactionCount > 0 ? totalRevenue / transactionCount : 0.0;
+  /// Average ticket = `totalRevenue / transactionCount`, in [Decimal].
+  ///
+  /// `.toDecimal(scaleOnInfinitePrecision: 2)` on the division.
+  Decimal get averageTicket => transactionCount > 0
+      ? (totalRevenue / Decimal.fromInt(transactionCount))
+          .toDecimal(scaleOnInfinitePrecision: 2)
+      : Decimal.zero;
 }
 
+/// Settlement-focused snapshot. Used by `FinanceAnalytics`, which
+/// doesn't need cost / margin / per-supplier / per-client breakdowns.
+///
+/// Kept separate from [BusinessAnalyticsCache] on purpose: the two
+/// domains have different shapes, and this one is what `FinanceAnalytics`
+/// consumes.
 class AnalyticsCache {
-  final double totalRevenue;
-  final double totalCollected;
-  final double totalOutstanding;
+  final Decimal totalRevenue;
+  final Decimal totalCollected;
+  final Decimal totalOutstanding;
   final int transactionCount;
-  final Map<String, double> revenueBySource;
-  final Map<String, double> collectionsByStatus;
-  // final Map<String, double> revenueByDocumentType;
-  final double collectionRate;
+  final Map<String, Decimal> revenueBySource;
+  final Map<String, Decimal> collectionsByStatus;
+  // final Map<String, Decimal> revenueByDocumentType;
+  final Decimal collectionRate;
 
   const AnalyticsCache({
     required this.totalRevenue,

@@ -1,4 +1,5 @@
 import 'package:app_constants/app_routes.dart';
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_core/app/AppUser.dart';
 import 'package:verdelia_core/app/Person.dart';
@@ -64,7 +65,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   // ==================== CHECKOUT FLOW ====================
 
   Future<void> _processCheckout() async {
-    if (_isSubmitting) return;
+    if (_isSubmitting || _viewModel.isProcessing) return;
     if (!(_formKey.currentState?.validate() ?? true)) return;
 
     final cart = context.read<CartChangeNotifier>();
@@ -89,12 +90,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      // Freeze the total before the cart is cleared so the success
-      // dialog shows the amount that was actually paid.
-      final totalAmount = cart.cart.subtotal;
+      // Freeze the total *before* the cart is cleared, using the same
+      // arithmetic the payload will use. `cart.cart.subtotal` is
+      // pre-VAT and ignores the deposit, so it can disagree with the
+      // amount actually sent.
+      final totals = _viewModel.calculateTotals(cart);
+      final totalAmount = totals['total'] ?? Decimal.zero;
 
-      final result = await _viewModel.processCartCheckout(
-        cart: cart.cart,
+      final result = await _viewModel.processCheckout(
+        cartNotifier: cart,
         sellingUserId: currentUser.idAppUser ?? 0,
         providerId: widget.supplierId,
       );
@@ -106,14 +110,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         return;
       }
 
+      // Refresh the product list so stock levels reflect the sale.
       await products.fetchProducts(
         providerId: products.currentProviderId,
         reset: true,
       );
       if (!mounted) return;
 
-      cart.clearCart();
-      _viewModel.resetAfterCheckout();
+      // No cart.clearCart() / resetAfterCheckout() — processCheckout
+      // already did both.
 
       await _showSuccess(result, totalAmount);
       if (!mounted) return;
@@ -126,6 +131,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final cart = context.read<CartChangeNotifier>();
     final loc = AppLocalizations.of(context)!;
     final vm = _viewModel;
+
+    // Use the same arithmetic the payload will use, so the number the
+    // user confirms is the number they are actually charged.
+    final previewTotals = vm.calculateTotals(cart);
+    final previewTotal = previewTotals['total'] ?? Decimal.zero;
 
     return showDialog<bool>(
       context: context,
@@ -155,7 +165,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               _SummaryRow(
                 icon: Icons.attach_money,
                 title: loc.total,
-                value: loc.price(cart.cartTotal.toStringAsFixed(2)),
+                value: loc.price(previewTotal.toStringAsFixed(2)),
                 isTotal: true,
               ),
               const Divider(height: 24),
@@ -200,7 +210,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  Future<void> _showSuccess(CheckoutResult result, double totalAmount) {
+  Future<void> _showSuccess(CheckoutResult result, Decimal totalAmount) {
     final loc = AppLocalizations.of(context)!;
 
     return showDialog<void>(
@@ -247,10 +257,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(dialogContext).popUntil((route) {
-                debugPrint('Route in stack: ${route.settings.name}');
-                return route.settings.name == AppRoutes.storeManage;
-              }),
+              onPressed: () {
+                Navigator.of(dialogContext).popUntil(
+                  (route) =>
+                      route.settings.name == AppRoutes.storeManage ||
+                      route.isFirst,
+                );
+              },
               child: Text(loc.continueShopping),
             ),
           ],
@@ -547,10 +560,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildLoadingOverlay() {
-    return Selector<CheckoutViewModel, bool>(
-      selector: (_, vm) => vm.isProcessing || _isSubmitting,
-      builder: (context, isProcessing, _) {
-        if (!isProcessing) return const SizedBox.shrink();
+    return Consumer<CheckoutViewModel>(
+      builder: (context, vm, _) {
+        if (!vm.isProcessing && !_isSubmitting) {
+          return const SizedBox.shrink();
+        }
         return Positioned.fill(
           child: AbsorbPointer(
             child: ColoredBox(

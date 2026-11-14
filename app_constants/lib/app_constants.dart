@@ -37,8 +37,8 @@ class AppConstants {
   static Color get backgroundColor => const Color(0xFF2ECC71);
   static Color get backgroundDarkColor => const Color(0xFF186A3B);
 
-  static const String apiBaseUrl = 'http://192.168.1.31:9000/api/v1';
-  static const String fsBaseUrl = 'http://192.168.1.31:9099/fs';
+  static const String apiBaseUrl = 'http://localhost:9000/api/v1';
+  static const String fsBaseUrl = 'http://localhost:9099/fs';
 
   static const String postImageEndpoint = '/upload';
 
@@ -176,6 +176,11 @@ class AppConstants {
       '/search/position/supplier';
   static const String getSupplierByIdEndpoint =
       '/suppliers'; // /suppliers/{provider_id}
+
+  static const String getAllBrokersEndpoint = '/business/delivery/brokers';
+  static const String getBrokerDetailsEndpoint =
+      '/business/delivery/details/brokers';
+
   // ==================== Organisation Endpoints ====================
 
   static const String getOrganisationsEndpoint = '/organisations';

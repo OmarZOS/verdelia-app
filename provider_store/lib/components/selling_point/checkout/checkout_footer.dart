@@ -4,6 +4,7 @@ import 'package:provider_store/components/selling_point/checkout/order_summary_s
 import 'package:provider/provider.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:event/cart_change_notifier.dart';
+import 'package:decimal/decimal.dart';
 
 class CheckoutFooter extends StatelessWidget {
   /// Called when the user taps the checkout button. When null, the
@@ -48,8 +49,8 @@ class CheckoutFooter extends StatelessWidget {
         children: [
           Consumer<CartChangeNotifier>(
             builder: (context, cart, child) => OrderSummarySection(
-              subtotal: cart.cartTotal * 0.81,
-              tax: cart.cartTotal * 0.19,
+              subtotal: cart.cartTotal * Decimal.parse("0.81"),
+              tax: cart.cartTotal * Decimal.parse("0.19"),
             ),
           ),
           const SizedBox(height: 16),

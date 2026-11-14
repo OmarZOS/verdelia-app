@@ -26,7 +26,6 @@ import 'package:verdelia_core/app/Services/AuthService.dart';
 import 'package:verdelia_core/app/Services/UserService.dart';
 import 'package:verdelia_core/business/services/OrderService.dart';
 import 'package:verdelia_core/business/services/ProductService.dart';
-import 'package:verdelia_core/business/services/RecipeService.dart';
 import 'package:verdelia_core/business/services/BusinessOperationService.dart';
 import 'package:verdelia_core/business/services/SupplierService.dart';
 import 'package:verdelia_core/mediation/StorageService.dart';
@@ -38,10 +37,8 @@ import 'package:event/cart_change_notifier.dart';
 import 'package:business/verdelia_impl_order.dart';
 import 'package:business/verdelia_impl_product.dart';
 import 'package:business/verdelia_impl_cart.dart';
-import 'package:business/verdelia_impl_recipe.dart';
 import 'package:business/verdelia_impl_service.dart';
 import 'package:business/verdelia_impl_supplier.dart';
-import 'package:event/recipe_change_notifier.dart';
 import 'package:event/product_change_notifier.dart';
 import 'package:event/supplier_change_notifier.dart';
 import 'package:impl_mediation/impl_mediation.dart';
@@ -57,7 +54,6 @@ void setupLocator() {
   AppLocator.registerSingletonService<StorageService>(StorageServiceImpl());
   AppLocator.registerSingletonService<AppUserService>(AppUserServiceImpl());
   AppLocator.registerSingletonService<DeliveryService>(DeliveryServiceImpl());
-  AppLocator.registerSingletonService<RecipeService>(RecipeServiceImpl());
   AppLocator.registerSingletonService<SupplierService>(SupplierServiceImpl());
   AppLocator.registerSingletonService<NotificationService>(NotificationImpl());
   AppLocator.registerSingletonService<ProductService>(ProductServiceImpl());
@@ -120,7 +116,6 @@ class VerdeliaApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider<ProductNotifier>(
             create: (_) => ProductNotifier()),
-        ChangeNotifierProvider<RecipeNotifier>(create: (_) => RecipeNotifier()),
         ChangeNotifierProvider<AppUserNotifier>(create: (_) => appUserNotifier),
         ChangeNotifierProvider<CartChangeNotifier>(
             create: (_) => CartChangeNotifier()),

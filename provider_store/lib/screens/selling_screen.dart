@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:developer' as developer;
@@ -196,6 +197,13 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
 
     final cartItem = widget.cartNotifier.getProductCartItem(product);
 
+    // NOTE: the check below only looks at `customPrice`, not at
+    // `quantity`. A cart item with a modified quantity but no custom
+    // price (added via the sheet, or fast-added N times) falls
+    // through to the fast path, so scanning again bumps the quantity
+    // instead of letting the user edit it. Left as-is pending a UX
+    // decision on whether the sheet should open for any existing
+    // cart line.
     final needsConfiguration = cartItem?.customPrice != null;
 
     if (needsConfiguration) {
@@ -225,10 +233,6 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
   }
 
   /// Match a scanned code against a product's barcode field.
-  ///
-  /// Adjust the candidate list to whatever barcode-ish fields exist on
-  /// your `Product` model. Comparison is case-insensitive and strips
-  /// whitespace plus leading zeros, since scanners disagree on both.
   Product? _findByBarcode(String rawCode, List<Product> products) {
     final needle = _normalizeBarcode(rawCode);
     if (needle.isEmpty) return null;
@@ -396,7 +400,7 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
         currentQuantity: currentQuantity,
         onConfirm: ({
           required int quantity,
-          double? customPrice,
+          Decimal? customPrice,
           String? notes,
         }) {
           final existing = widget.cartNotifier.getProductCartItem(product);
@@ -409,7 +413,10 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
             widget.cartNotifier.addItem(product, quantity);
           }
 
-          widget.cartNotifier.cart.updateItemPrice(
+          // `updateItemPrice` takes `Decimal?` after the
+          // CartChangeNotifier migration. The sheet passes a
+          // `Decimal?` through; no conversion at the call site.
+          widget.cartNotifier.updateItemPrice(
             productId: product.id_product,
             customPrice: customPrice,
           );
@@ -544,7 +551,11 @@ class _SellingPointScreenState extends State<SellingPointScreen> {
     if (count == 0) return const SizedBox.shrink();
 
     final cs = Theme.of(context).colorScheme;
-    final total = widget.cartNotifier.cart.totalAmount;
+
+    // `Cart.totalAmount` is `Decimal` after the Cart migration.
+    // `toStringAsFixed(2)` produces the same two-decimal string a
+    // `double` produced.
+    final Decimal total = widget.cartNotifier.cart.totalAmount;
 
     return FloatingActionButton.extended(
       onPressed: () {

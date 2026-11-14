@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 
 import 'package:app_constants/app_constants.dart';
 import 'package:verdelia_core/business/Delivery.dart';
+import 'package:verdelia_core/business/DeliveryBroker.dart';
 import 'package:verdelia_core/business/services/DeliveryService.dart';
 import 'package:verdelia_core/app/VerdeliaException.dart';
 import 'package:verdelia_core/mediation/StorageService.dart';
@@ -368,6 +369,89 @@ class DeliveryServiceImpl extends DeliveryService {
       return delivery;
     } catch (e) {
       _log('Error updating delivery details $deliveryId: $e');
+      _storeFailure(key, e.toString(),
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
+      return null;
+    }
+  }
+
+  @override
+  Future<List<DeliveryBroker>> getAllDeliveryBrokers({
+    int offset = 0,
+    int limit = 100,
+    bool? verifiedOnly,
+    String? searchQuery,
+    String? callerKey,
+  }) async {
+    final key = callerKey ??
+        _getCallerKey('getAllDeliveryBrokers',
+            suffix: 'offset_$offset-limit_$limit');
+
+    try {
+      final Map<String, String> queryParams = {
+        'offset': offset.toString(),
+        'limit': limit.toString(),
+      };
+      if (verifiedOnly == true) {
+        queryParams['verified'] = 'true';
+      }
+      if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+        queryParams['q'] = searchQuery.trim();
+      }
+
+      final queryString = Uri(queryParameters: queryParams).query;
+      final url = '${AppConstants.apiBaseUrl}'
+          '${AppConstants.getAllBrokersEndpoint}?$queryString';
+
+      _log('Fetching DeliveryBrokers from: $url');
+      final responseData = await _storageService.getAll(url, callerKey: key);
+
+      if (responseData == null ||
+          (responseData is Iterable && responseData.isEmpty) ||
+          (responseData is Map && responseData.isEmpty)) {
+        _log('No DeliveryBrokers found');
+        _storeSuccess(key, [], responseCode: 'EMPTY');
+        return [];
+      }
+
+      final List<dynamic> dataList = _extractList(responseData);
+      final List<DeliveryBroker> brokers = dataList
+          .map((data) => DeliveryBroker.fromJson(data as Map<String, dynamic>))
+          .toList();
+
+      _log('Found ${brokers.length} brokers');
+      _storeSuccess(key, brokers);
+      return brokers;
+    } catch (e, stackTrace) {
+      _log('Error getting all brokers: $e');
+      _log('Stacktrace: $stackTrace');
+      _storeFailure(key, e.toString(),
+          errorCode: e is VerdeliaException ? e.message : 'ERROR');
+      return [];
+    }
+  }
+
+  /// GET /api/v1/business/broker/{broker_id}
+  @override
+  Future<DeliveryBroker?> getBroker(String id, {String? callerKey}) async {
+    final key = callerKey ?? _getCallerKey('getBroker', id: id);
+    try {
+      const url = '${AppConstants.apiBaseUrl}'
+          '${AppConstants.getBrokerDetailsEndpoint}';
+      _log('Fetching broker $id from: $url');
+
+      final data = await _storageService.get(url, id, callerKey: key);
+      if (data == null) {
+        _log('Broker not found: $id');
+        _storeFailure(key, null, code: 404, errorCode: 'NOT_FOUND');
+        return null;
+      }
+
+      final broker = DeliveryBroker.fromJson(data as Map<String, dynamic>);
+      _storeSuccess(key, broker);
+      return broker;
+    } catch (e) {
+      _log('Error getting broker $id: $e');
       _storeFailure(key, e.toString(),
           errorCode: e is VerdeliaException ? e.message : 'ERROR');
       return null;

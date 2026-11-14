@@ -1,4 +1,8 @@
+// lib/screens/components/form/product_form_data.dart
+
 import 'dart:io';
+
+import 'package:decimal/decimal.dart';
 
 import '../app/VerdeliaImage.dart';
 import 'Product.dart';
@@ -14,13 +18,27 @@ class ProductFormData {
   File? imageFile;
   int? typeId;
 
-  /// Customer-facing price (what the buyer pays). Stored as `product_price`.
-  double? price;
+  /// Customer-facing price (what the buyer pays), in [Decimal].
+  /// Stored as `unit_price` / `product_price` on the write payload.
+  Decimal? price;
 
-  /// Supplier-side cost (what the supplier paid or produces it for).
-  /// Stored as `product_base_price`. Optional — a product can be listed
-  /// without a known cost, in which case margin is undefined.
-  double? productBasePrice;
+  /// Supplier-side cost (what the supplier paid or produces it for),
+  /// in [Decimal]. Stored as `product_base_price`. Optional — a
+  /// product can be listed without a known cost, in which case margin
+  /// is undefined.
+  Decimal? productBasePrice;
+
+  /// Applied VAT as a fraction in [0, 1], in [Decimal].
+  ///
+  /// The product payload uses fractions (`0.19`), not percentages
+  /// (`19`), so this mirrors that convention. `PricingState` on the
+  /// other side uses a percentage; conversion happens at the boundary
+  /// between the pricing card and this object.
+  ///
+  /// Null means "unspecified" — the server should apply its own
+  /// default. That is different from `Decimal.zero`, which is an
+  /// explicit claim that the product is tax-exempt.
+  Decimal? productVatValue;
 
   int? quantity;
   String? quantifier;
@@ -66,6 +84,7 @@ class ProductFormData {
     this.typeId,
     this.price,
     this.productBasePrice,
+    this.productVatValue,
     this.quantity,
     this.quantifier,
     this.ownerId,
@@ -100,15 +119,19 @@ class ProductFormData {
       product_ref_id: productId,
       // Write path sends the flat name. Read path resolves it via the
       // `product_name` getter on the Product model.
-      product_nameRaw: productName ?? '',
+      genericNameRaw: productName ?? '',
       product_brand: productBrand ?? '',
       product_barcode: productBarcode ?? '',
       product_category_name: '',
       product_images: productImages,
-      product_price: price ?? 0.0,
-      product_base_price: productBasePrice ?? 0.0,
-      product_quantity: quantity ?? 0,
-      product_reserved_quantity: reservedQuantity ?? 0,
+      unit_price: price,
+      base_price: productBasePrice,
+      vat_rate: productVatValue,
+      // `quantity` is an int on the form (head count). `Product`'s
+      // `total_quantity` is `Decimal?`, so widen.
+      total_quantity: quantity == null ? null : Decimal.fromInt(quantity!),
+      reserved_quantity:
+          reservedQuantity == null ? null : Decimal.fromInt(reservedQuantity!),
       product_visibility: visibility,
       product_origin_id: assistantProductOrigin?.idIproduct,
       product_description: productDescription ?? '',
@@ -132,8 +155,11 @@ class ProductFormData {
     productBrand = product.product_brand;
     productBarcode = product.product_barcode;
     typeId = product.product_category_id ?? 1;
+    // Money getters are `Decimal?` on the migrated Product.
     price = product.product_price;
     productBasePrice = product.product_base_price;
+    productVatValue = product.product_vat_value;
+    // Quantity accessors still return `int?` on Product, so no widening.
     quantity = product.product_quantity;
     quantifier = product.product_quantifier ?? 'pc';
     ownerId = product.product_owner_id;

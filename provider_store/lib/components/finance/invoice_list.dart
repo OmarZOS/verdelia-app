@@ -1,5 +1,6 @@
 // lib/ui/screens/finance/enhanced_invoice_list.dart
 
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_core/business/finance/Customer.dart';
 import 'package:verdelia_core/business/finance/FinancialDocument.dart';
@@ -218,14 +219,34 @@ class _EnhancedInvoiceListState extends State<EnhancedInvoiceList> {
       BuildContext context, FinanceChangeNotifier notifier) {
     final loc = AppLocalizations.of(context)!;
     final docs = notifier.filteredDocuments;
-    final totalAmount = notifier.totalAmount;
-    final paidAmount = docs.fold(0.0, (sum, doc) => sum + doc.totalReceived);
-    final overdueAmount = docs
-            .where((doc) => doc.isOverdue && !doc.isPaid)
-            .fold(0.0, (sum, doc) => sum + doc.documentAmount) +
-        docs
-            .where((doc) => doc.isOverdue && doc.isPartiallyPaid)
-            .fold(0.0, (sum, doc) => sum + doc.remainingAmount);
+
+    // `totalAmount` from the notifier is `Decimal` after the migration.
+    final Decimal totalAmount = notifier.totalAmount;
+
+    // `totalReceived` and `documentAmount` / `outstandingBalance` are
+    // all `Decimal` on `FinancialDocument`.
+    Decimal paidAmount = Decimal.zero;
+    Decimal overdueAmount = Decimal.zero;
+
+    for (final doc in docs) {
+      paidAmount += doc.totalReceived;
+
+      // Only count each overdue document once. The original folded
+      // overdue-not-paid documents *and* added overdue-partially-paid
+      // documents on top, double-counting every partially-paid
+      // overdue document.
+      if (doc.isOverdue && !doc.isPaid) {
+        overdueAmount += doc.outstandingBalance;
+      }
+    }
+
+    // Progress ratio for `LinearProgressIndicator` — a `double`.
+    final double progressRatio = totalAmount > Decimal.zero
+        ? (paidAmount / totalAmount)
+            .toDecimal(scaleOnInfinitePrecision: 2)
+            .toDouble()
+            .clamp(0.0, 1.0)
+        : 0.0;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -266,10 +287,10 @@ class _EnhancedInvoiceListState extends State<EnhancedInvoiceList> {
                   ),
                 ],
               ),
-              if (totalAmount > 0) ...[
+              if (totalAmount > Decimal.zero) ...[
                 const SizedBox(height: 12),
                 LinearProgressIndicator(
-                  value: paidAmount / totalAmount,
+                  value: progressRatio,
                   backgroundColor:
                       FinancialUIManager.unpaidColor.withOpacity(0.2),
                   color: FinancialUIManager.paidColor,
@@ -746,8 +767,10 @@ class _DocumentCard extends StatelessWidget {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
 
-    final customerId = document.customerId ?? 0;
-    final personId = document.customerPersonId ?? 0;
+    // `customerId` and `customerPersonId` are non-null `int` after
+    // the model migration.
+    final customerId = document.customerId;
+    final personId = document.customerPersonId;
 
     if (customerId <= 0 && personId <= 0) {
       return Text(
@@ -785,7 +808,8 @@ class _DocumentCard extends StatelessWidget {
   }
 
   String _guestLabel(FinancialDocument doc, AppLocalizations loc) {
-    final cartId = doc.sourceId ?? 0;
+    // `sourceId` is non-null after migration.
+    final cartId = doc.sourceId;
     return cartId > 0 ? loc.guestWithId(cartId.toString()) : loc.guestLabel;
   }
 
@@ -918,6 +942,13 @@ class _DocumentCard extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     final isPaid = document.isPaid;
 
+    // Use the clamped `outstandingBalance`, not the unclamped
+    // extension's `remainingAmount`. The extension can go negative on
+    // overpayment; the card should show `0.00` when there's nothing
+    // left to collect.
+    final Decimal balance = document.outstandingBalance;
+    final Decimal totalReceived = document.totalReceived;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -952,17 +983,16 @@ class _DocumentCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              isPaid
-                  ? FinancialUIManager.formatCurrency(
-                      document.totalReceived, context)
-                  : FinancialUIManager.formatCurrency(
-                      document.remainingAmount, context),
+              FinancialUIManager.formatCurrency(
+                isPaid ? totalReceived : balance,
+                context,
+              ),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: isPaid
                     ? FinancialUIManager.paidColor
-                    : (document.remainingAmount > 0
+                    : (balance > Decimal.zero
                         ? FinancialUIManager.unpaidColor
                         : FinancialUIManager.paidColor),
               ),
@@ -974,10 +1004,20 @@ class _DocumentCard extends StatelessWidget {
   }
 
   Widget _buildPaymentProgress(BuildContext context) {
-    final totalAmount = document.documentAmount;
-    final totalReceived = document.totalReceived;
-    final paymentPercentage =
-        totalAmount > 0 ? (totalReceived / totalAmount) : 0.0;
+    final Decimal totalAmount = document.documentAmount;
+    final Decimal totalReceived = document.totalReceived;
+
+    // `LinearProgressIndicator.value` is a `double`, so the ratio is
+    // the only place a `Decimal` becomes a `double` here. `.toDecimal(scaleOnInfinitePrecision: 2)`
+    // on the division is required because `Decimal / Decimal` returns a
+    // `Rational`.
+    final double paymentRatio = totalAmount > Decimal.zero
+        ? (totalReceived / totalAmount)
+            .toDecimal(scaleOnInfinitePrecision: 2)
+            .toDouble()
+            .clamp(0.0, 1.0)
+        : 0.0;
+
     final loc = AppLocalizations.of(context)!;
 
     return Column(
@@ -987,7 +1027,7 @@ class _DocumentCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '${(paymentPercentage * 100).toStringAsFixed(0)}% '
+              '${(paymentRatio * 100).toStringAsFixed(0)}% '
               '${_getPaymentStatusLabel(loc)}',
               style: TextStyle(
                 fontSize: 12,
@@ -1009,7 +1049,7 @@ class _DocumentCard extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
-            value: paymentPercentage.clamp(0.0, 1.0),
+            value: paymentRatio,
             backgroundColor: Colors.grey.shade200,
             color: _getPaymentStatusColor(),
             minHeight: 8,
@@ -1143,7 +1183,10 @@ class _DocumentCard extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => PaymentFormScreen(
-                      amountDue: document.remainingAmount,
+                      // Both `amountDue` and the `onSubmit` amount
+                      // parameter are `Decimal` after the payment flow
+                      // migration.
+                      amountDue: document.outstandingBalance,
                       onSubmit: (amount, method, notes) async {
                         final result = await notifier.submitPayment(
                           invoiceId: document.documentId,

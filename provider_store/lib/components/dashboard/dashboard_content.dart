@@ -763,17 +763,18 @@ class DashboardContentState extends State<DashboardContent> {
     cartNotifier.clearCart();
     deliveryNotifier.setFilters(providerId: supplierId);
 
+    await widget.personnelNotifier.loadPersonnel(
+      userId: userId,
+      supplierId: supplierId,
+      reset: true,
+    );
+
     await Future.wait([
       productNotifier.fetchProducts(
           providerId: supplierId, reset: true, includeHidden: true),
       serviceNotifier.fetchServices(providerId: supplierId, reset: true),
       deliveryNotifier.fetchFirstPage(),
       financeNotifier.setProvider(supplierId),
-      widget.personnelNotifier.loadPersonnel(
-        userId: userId,
-        supplierId: supplierId,
-        reset: true,
-      ),
     ]);
   }
 

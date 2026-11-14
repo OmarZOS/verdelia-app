@@ -1,3 +1,5 @@
+// lib/event/finance_filter.dart
+import 'package:decimal/decimal.dart';
 import 'package:event/finance_change_notifier.dart';
 import 'package:verdelia_core/business/finance/FinancialDocument.dart';
 
@@ -20,8 +22,10 @@ class FinanceFilter {
     String? status,
     DateTime? startDate,
     DateTime? endDate,
-    double? minAmount,
-    double? maxAmount,
+    // `minAmount` and `maxAmount` are `Decimal?` after the
+    // `FinanceDocumentFilter` migration.
+    Decimal? minAmount,
+    Decimal? maxAmount,
     int? supplierId,
     int? personId,
     int? clientId,
@@ -67,7 +71,8 @@ class FinanceFilter {
         if (!_matchesStatus(doc, _current.status!)) return false;
       }
 
-      // Date range filter
+      // Date range filter. `issueDate` is non-null `DateTime` after
+      // the migration, so the `??` guards are gone.
       if (_current.startDate != null &&
           doc.issueDate.isBefore(_current.startDate!)) {
         return false;
@@ -77,7 +82,8 @@ class FinanceFilter {
         return false;
       }
 
-      // Amount range filter
+      // Amount range filter — both sides are `Decimal`, so the
+      // comparison is exact.
       if (_current.minAmount != null &&
           doc.documentAmount < _current.minAmount!) {
         return false;
@@ -103,15 +109,16 @@ class FinanceFilter {
         return false;
       }
 
-      // Search query
+      // Search query. `documentNumber` is non-null `String` after the
+      // migration, so `?.` is dead.
       if (_current.searchQuery != null && _current.searchQuery!.isNotEmpty) {
         final query = _current.searchQuery!.toLowerCase();
-        final matches =
-            doc.documentNumber?.toLowerCase().contains(query) ?? false;
+        final matches = doc.documentNumber.toLowerCase().contains(query);
         if (!matches) return false;
       }
 
-      // Paid status
+      // Paid status. `doc.isPaid` resolves to the `FinancialDocument`
+      // getter (which shadows the extension's same-named getter).
       if (_current.isPaid != null && _current.isPaid! != doc.isPaid) {
         return false;
       }
@@ -121,7 +128,8 @@ class FinanceFilter {
   }
 
   bool _matchesStatus(FinancialDocument doc, String status) {
-    switch (status.toLowerCase()) {
+    final normalized = status.toLowerCase();
+    switch (normalized) {
       case 'paid':
         return doc.isPaid;
       case 'unpaid':
@@ -131,7 +139,10 @@ class FinanceFilter {
       case 'partially_paid':
         return doc.paymentStatus.toLowerCase().contains('partial');
       default:
-        return doc.paymentStatus == status;
+        // Was case-sensitive `doc.paymentStatus == status`; the
+        // status argument is normalised to lowercase above, so this
+        // now matches any casing from the UI.
+        return doc.paymentStatus.toLowerCase() == normalized;
     }
   }
 }

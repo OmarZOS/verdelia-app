@@ -1,4 +1,5 @@
 // components/staff_dialog.dart
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:verdelia_core/business/finance/ProvidedService.dart';
@@ -48,6 +49,8 @@ class _StaffRequirementDialogState extends State<StaffRequirementDialog> {
       _selectedRoleId = existing.role;
       _minCountController.text = existing.minCount.toString();
       _maxCountController.text = existing.maxCount.toString();
+      // `allocatedHours` and `hourlyRate` are `Decimal` now. Both have
+      // `toString` / `toStringAsFixed`.
       _allocatedHoursController.text = existing.allocatedHours.toString();
       _hourlyRateController.text = existing.hourlyRate.toStringAsFixed(2);
       _notesController.text = existing.notes ?? '';
@@ -69,8 +72,9 @@ class _StaffRequirementDialogState extends State<StaffRequirementDialog> {
     super.dispose();
   }
 
-  double _calculateCost(int count, double hours, double rate) {
-    return hours * rate * count;
+  /// Cost for a given head count: `hours × rate × count`, in [Decimal].
+  Decimal _calculateCost(int count, Decimal hours, Decimal rate) {
+    return hours * rate * Decimal.fromInt(count);
   }
 
   @override
@@ -190,8 +194,8 @@ class _StaffRequirementDialogState extends State<StaffRequirementDialog> {
                   if (value == null || value.isEmpty) {
                     return 'Please enter hours';
                   }
-                  final hours = double.tryParse(value);
-                  if (hours == null || hours < 0) {
+                  final hours = Decimal.tryParse(value);
+                  if (hours == null || hours < Decimal.zero) {
                     return 'Invalid';
                   }
                   return null;
@@ -216,8 +220,8 @@ class _StaffRequirementDialogState extends State<StaffRequirementDialog> {
                   if (value == null || value.isEmpty) {
                     return 'Please enter rate';
                   }
-                  final rate = double.tryParse(value);
-                  if (rate == null || rate < 0) {
+                  final rate = Decimal.tryParse(value);
+                  if (rate == null || rate < Decimal.zero) {
                     return 'Invalid';
                   }
                   return null;
@@ -258,8 +262,10 @@ class _StaffRequirementDialogState extends State<StaffRequirementDialog> {
                         label: 'Min Cost:',
                         value: _calculateCost(
                           int.tryParse(_minCountController.text) ?? 0,
-                          double.tryParse(_allocatedHoursController.text) ?? 0,
-                          double.tryParse(_hourlyRateController.text) ?? 0,
+                          Decimal.tryParse(_allocatedHoursController.text) ??
+                              Decimal.zero,
+                          Decimal.tryParse(_hourlyRateController.text) ??
+                              Decimal.zero,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -268,8 +274,10 @@ class _StaffRequirementDialogState extends State<StaffRequirementDialog> {
                         label: 'Max Cost:',
                         value: _calculateCost(
                           int.tryParse(_maxCountController.text) ?? 0,
-                          double.tryParse(_allocatedHoursController.text) ?? 0,
-                          double.tryParse(_hourlyRateController.text) ?? 0,
+                          Decimal.tryParse(_allocatedHoursController.text) ??
+                              Decimal.zero,
+                          Decimal.tryParse(_hourlyRateController.text) ??
+                              Decimal.zero,
                         ),
                       ),
                       const Divider(),
@@ -281,8 +289,10 @@ class _StaffRequirementDialogState extends State<StaffRequirementDialog> {
                                   (int.tryParse(_maxCountController.text) ??
                                       0)) ~/
                               2,
-                          double.tryParse(_allocatedHoursController.text) ?? 0,
-                          double.tryParse(_hourlyRateController.text) ?? 0,
+                          Decimal.tryParse(_allocatedHoursController.text) ??
+                              Decimal.zero,
+                          Decimal.tryParse(_hourlyRateController.text) ??
+                              Decimal.zero,
                         ),
                         isBold: true,
                       ),
@@ -308,8 +318,13 @@ class _StaffRequirementDialogState extends State<StaffRequirementDialog> {
                 minCount: int.parse(_minCountController.text),
                 maxCount: int.parse(_maxCountController.text),
                 role: _selectedRoleId!,
-                allocatedHours: double.parse(_allocatedHoursController.text),
-                hourlyRate: double.parse(_hourlyRateController.text),
+                // `allocatedHours` and `hourlyRate` are `Decimal` after
+                // the model migration. `double.parse` wouldn't compile.
+                allocatedHours:
+                    Decimal.tryParse(_allocatedHoursController.text) ??
+                        Decimal.zero,
+                hourlyRate: Decimal.tryParse(_hourlyRateController.text) ??
+                    Decimal.zero,
                 notes: _notesController.text.isNotEmpty
                     ? _notesController.text
                     : null,
@@ -330,7 +345,7 @@ class _StaffRequirementDialogState extends State<StaffRequirementDialog> {
   Widget _buildCostRow(
     BuildContext context, {
     required String label,
-    required double value,
+    required Decimal value,
     bool isBold = false,
   }) {
     final theme = Theme.of(context);

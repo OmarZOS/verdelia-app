@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:app_constants/app_routes.dart';
+import 'package:decimal/decimal.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
@@ -406,7 +407,7 @@ class AiAssistant {
       if (priceField != null && !priceField.isEdited) {
         final price = priceField.value?.toString() ?? '0.0';
         controllers.price.text = price;
-        formData.price = double.tryParse(price);
+        formData.price = Decimal.parse(price);
       }
 
       if (quantityField != null && !quantityField.isEdited) {
