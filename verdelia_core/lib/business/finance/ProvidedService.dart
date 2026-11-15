@@ -512,6 +512,7 @@ class ProvidedService {
     final Decimal finalPrice = _readDecimalOrZero(
       json['unit_price'] ?? json['provided_service_final_price'],
     );
+
     final Decimal vatRate = _readDecimalOrZero(json['vat_rate']);
 
     final int actualDuration = _asInt(
@@ -1049,10 +1050,30 @@ class ServiceStaffRequirement {
   }
 
   factory ServiceStaffRequirement.fromJson(Map<String, dynamic> json) {
-    final roleRaw = json['staff_role'];
-    final StaffRole? staffRole = roleRaw is Map
-        ? StaffRole.fromJson(Map<String, dynamic>.from(roleRaw))
-        : null;
+    // The role *may* be an inline object under
+    // `service_staff_requirement_role`, or a plain int under
+    // `service_staff_requirement_role_id` / `role`.
+    final roleRaw = json['service_staff_requirement_role'];
+    StaffRole? staffRole;
+    int role;
+
+    if (roleRaw is Map) {
+      staffRole = StaffRole.fromJson(Map<String, dynamic>.from(roleRaw));
+      role = staffRole.id;
+    } else if (roleRaw is num) {
+      role = roleRaw.toInt();
+    } else {
+      role = _asInt(
+        json['service_staff_requirement_role_id'] ?? json['role'],
+      );
+    }
+
+    // Some payloads also inline `staff_role` separately — honour it.
+    final explicitRoleRaw = json['staff_role'];
+    if (explicitRoleRaw is Map) {
+      staffRole =
+          StaffRole.fromJson(Map<String, dynamic>.from(explicitRoleRaw));
+    }
 
     return ServiceStaffRequirement(
       id: _asInt(
@@ -1068,9 +1089,7 @@ class ServiceStaffRequirement {
       maxCount: _asInt(
         json['service_staff_requirement_max_count'] ?? json['max_count'],
       ),
-      role: _asInt(
-        json['service_staff_requirement_role'] ?? json['role'],
-      ),
+      role: role,
       allocatedHours: _readDecimalOrZero(
         json['service_staff_requirement_allocated_hours'] ??
             json['allocated_hours'],
