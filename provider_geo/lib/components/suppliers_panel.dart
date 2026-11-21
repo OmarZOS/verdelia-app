@@ -261,7 +261,7 @@ class _SupplierTile extends StatelessWidget {
         title: _SupplierTitle(supplier: supplier),
         subtitle: _SupplierSubtitle(supplier: supplier),
         trailing: IconButton(
-          icon: Icon(
+          icon: FaIcon(
             FontAwesomeIcons.locationDot,
             color: supplier.hasLocation
                 ? theme.colorScheme.primary

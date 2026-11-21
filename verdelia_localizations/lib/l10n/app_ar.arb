@@ -2352,7 +2352,6 @@
   "noMoreDocuments": "لا توجد مستندات أخرى",
 
   "customerWithId": "عميل {id}",
-  "@customerWithId": { "placeholders": { "id": { "type": "String" } } },
 
   "guestWithId": "ضيف رقم {id}",
   "@guestWithId": { "placeholders": { "id": { "type": "String" } } },
@@ -2364,7 +2363,6 @@
   "partialOverdue": "جزئي / متأخر",
 
   "overdueDays": "متأخر {days} يوم",
-  "@overdueDays": { "placeholders": { "days": { "type": "String" } } },
 
   "payRemaining": "دفع المتبقي",
   "payNow": "ادفع الآن",
@@ -2841,7 +2839,123 @@
   "itemAvailableLabel": "المتوفر",
   "itemCategoryLabel": "الفئة",
   "itemProviderLabel": "المزوّد",
-  "itemDescriptionLabel": "الوصف"
+  "itemDescriptionLabel": "الوصف",
+
+  "loadingOrdersTxt": "جارٍ تحميل طلباتك...",
+  "loadingOrderDetailsTxt": "جارٍ تحميل تفاصيل الطلب...",
+  "shippedTxt": "تم الشحن",
+  "refundedTxt": "تم الاسترداد",
+
+  "inProgressTxt": "قيد التنفيذ",
+  "inTransitTxt": "قيد الشحن",
+  "allItemsDeliveredTxt": "تم تسليم جميع العناصر",
+  "fulfilmentLabel": "حالة التسليم",
+  "orderDetailsTitle": "تفاصيل الطلب",
+  "dateLabel": "التاريخ",
+  "customerLabel": "العميل",
+  "paymentStatusLabel": "حالة الدفع",
+  "invoiceLabel": "الفاتورة",
+  "noItemsTxt": "لا توجد عناصر",
+  "unknownItemTxt": "عنصر غير معروف",
+  "itemSingular": "عنصر",
+  "itemPlural": "عناصر",
+  "moreTxt": "إضافية",
+
+  "invoiceStatusPaidTxt": "مدفوع",
+  "invoiceStatusUnpaidTxt": "غير مدفوع",
+  "invoiceStatusPartiallyPaidTxt": "مدفوع جزئيا",
+  "invoiceStatusOverdueTxt": "متأخر",
+  "invoiceStatusRefundedTxt": "مرتجع",
+  "invoiceStatusCanceledTxt": "ملغى",
+  "invoiceDueLabel": "مستحق",
+  "invoiceAmountLabel": "المبلغ",
+  "invoiceOverdueByTxt": " {days} يوم متأخر",
+  "@invoiceOverdueByTxt": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "invoiceDueInTxt": " {days} يوم مستحق",
+  "@invoiceDueInTxt": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+
+  "noOrdersInTabTxt": "لا توجد طلبات في هذه الفئة.",
+  "invoicesToPayTitle": "فواتير للدفع",
+  "invoicesToPaySubtitle": "{count, plural, =0{لا توجد فواتير بانتظار الدفع} =1{فاتورة واحدة بانتظار الدفع} =2{فواتيران بانتظار الدفع} few{{count} فواتير بانتظار الدفع} many{{count} فاتورة بانتظار الدفع} other{{count} فاتورة بانتظار الدفع}}",
+  "@invoicesToPaySubtitle": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "payNowTxt": "ادفع الآن",
+  "payInvoiceAmountTxt": "ادفع {amount}",
+  "@payInvoiceAmountTxt": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "outstandingSummaryTxt": "{count, plural, =0{لا توجد فواتير مستحقة} =1{فاتورة واحدة مستحقة · {amount}} =2{فواتيران مستحقتان · {amount}} few{{count} فواتير مستحقة · {amount}} many{{count} فاتورة مستحقة · {amount}} other{{count} فاتورة مستحقة · {amount}}}",
+  "@outstandingSummaryTxt": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "amount": { "type": "String" }
+    }
+  },
+
+   "standardTxt": "قياسي",
+  "deliveriesTxt": "عمليات توصيل",
+  "shippingMethodLabel": "طريقة الشحن",
+  "providerLabel": "مزوّد الخدمة",
+  "brokerLabel": "الوسيط",
+  "deliverySourceLabel": "المصدر",
+  "invoiceReferenceLabel": "مرجع الفاتورة",
+  "packageCountLabel": "عدد الطرود",
+  "weightLabel": "الوزن",
+  "dimensionsLabel": "الأبعاد",
+  "goodsDescriptionLabel": "البضائع",
+  "specialInstructionsLabel": "تعليمات",
+  "hsCodeLabel": "رمز HS",
+  "deliveryAddressLabel": "العنوان",
+  "createdLabel": "أُنشئ في",
+  "updatedLabel": "آخر تحديث",
+  "deliveryStatusConfirmedTxt": "مؤكد",
+  "deliveryStatusPendingTxt": "قيد الانتظار",
+  "deliveryStatusInTransitTxt": "قيد النقل",
+  "deliveryStatusDeliveredTxt": "تم التوصيل",
+  "deliveryStatusCancelledTxt": "ملغى",
+
+  "paymentMethodWallet": "المحفظة",
+  "paymentCollectButton": "تحصيل {amount}",
+  "paymentCashHintTitle": "تحصيل نقدي",
+  "paymentCashHintBody": "استلم {amount} نقداً من العميل ثم اضغط تحصيل.",
+  "paymentQrTitle": "امسح للدفع",
+  "paymentQrSubtitle": "اطلب من الدافع مسح هذا الرمز باستخدام تطبيق محفظته.",
+  "paymentQrEmptyHint": "أدخل مبلغاً لإنشاء رمز QR.",
+  "paymentWalletAvailable": "الرصيد المتاح",
+  "paymentWalletEmpty": "المحفظة فارغة",
+  "paymentWalletLocked": "المحفظة مقفلة",
+  "paymentWalletMissingTitle": "لا توجد محفظة",
+  "paymentWalletMissingBody": "يلزم وجود محفظة للدفع من هذا الحساب.",
+  "paymentErrorNoWallet": "لا توجد محفظة مرتبطة بهذا الحساب.",
+  "paymentErrorWalletLocked": "هذه المحفظة مقفلة.",
+  "paymentErrorInsufficientWallet": "الرصيد غير كافٍ ({balance}).",
+
+  "paymentMarkQrPaid": "تحديد كمدفوع",
+  "paymentQrMissingPayeeTitle": "لا يوجد مستفيد مُعدّ",
+  "paymentQrMissingPayeeBody": "يجب تعيين مستفيد لإنشاء رمز QR للدفع.",
+
+  "paymentQrToggleTitle": "اترك شخصاً آخر يدفع",
+  "paymentQrToggleSubtitle": "اعرض رمز QR ليقوم شخص آخر بمسحه باستخدام محفظته.",
+  "paymentMarkQrPaidWithAmount": "تحديد {amount} كمدفوع",
+
+  "paymentBankReferenceLabel": "المرجع البنكي",
+  "paymentBankReferenceHint": "رقم الإيصال أو مرجع العملية",
+  "paymentBankIssueDateLabel": "تاريخ الإصدار",
+  "paymentBankIssueDateHint": "YYYY-MM-DD",
+  "paymentBankHintTitle": "تحويل بنكي",
+  "paymentBankHintBody": "تُحفظ هذه البيانات مع ملاحظات الدفع حتى يمكن مطابقة الفاتورة لاحقًا.",
+  "paymentErrorBankReferenceRequired": "المرجع البنكي مطلوب",
+  "paymentErrorBankIssueDateRequired": "تاريخ الإصدار مطلوب",
+
+  "scanToPayLabel": "امسح للدفع",
+
+  "paymentQrInvalidPayload": "الدفع غير صالح",
+  "paymentQrSelfPay": "ادفع لنفسك"
 
   
 }

@@ -4,11 +4,15 @@ import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:verdelia_core/business/Supplier.dart';
 import 'package:event/supplier_change_notifier.dart';
 import 'package:ui/components/LocationTile.dart';
+
 // import 'package:ui/components/SupplierProductCard.dart';
 
 // Add this method to your _OrganisationPickerState class
-Widget buildLocationInfo(BuildContext context,
-    SupplierChangeNotifier supplierNotifier, Supplier supplier) {
+Widget buildLocationInfo(
+  BuildContext context,
+  SupplierChangeNotifier supplierNotifier,
+  Supplier supplier,
+) {
   // Find the supplier by name
 
   // // If supplier not found, show appropriate message
@@ -33,7 +37,9 @@ Widget buildLocationInfo(BuildContext context,
       // Show data
       final detailedSupplier = snapshot.data;
       return _buildResponsiveLocationDetails(
-          context, detailedSupplier ?? supplier);
+        context,
+        detailedSupplier ?? supplier,
+      );
     },
   );
 }
@@ -48,9 +54,7 @@ Widget _buildLocationLoading() {
         height: 18,
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(
-            Colors.grey[400]!,
-          ),
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[400]!),
         ),
       ),
     ),
@@ -63,19 +67,9 @@ Widget _buildLocationError(String message) {
     padding: const EdgeInsets.symmetric(vertical: 8.0),
     child: Row(
       children: [
-        Icon(
-          Icons.error_outline,
-          size: 14,
-          color: Colors.red[400],
-        ),
+        Icon(Icons.error_outline, size: 14, color: Colors.red[400]),
         const SizedBox(width: 6),
-        Text(
-          message,
-          style: TextStyle(
-            color: Colors.red[600],
-            fontSize: 12,
-          ),
-        ),
+        Text(message, style: TextStyle(color: Colors.red[600], fontSize: 12)),
       ],
     ),
   );
@@ -127,7 +121,9 @@ Widget _buildNoLocationInfo(BuildContext context) {
 
 // Responsive grid version
 Widget _buildResponsiveLocationDetails(
-    BuildContext context, Supplier supplier) {
+  BuildContext context,
+  Supplier supplier,
+) {
   final hasLocationData = (supplier.addressStreet.isNotEmpty) ||
       (supplier.addressCity.isNotEmpty) ||
       (supplier.addressPostalCode.isNotEmpty) ||
@@ -172,7 +168,7 @@ Widget _buildResponsiveLocationDetails(
                       context,
                       supplier.addressCity,
                       AppLocalizations.of(context)!.cityText,
-                      Icons.location_city_outlined,
+                      FontAwesomeIcons.city,
                       Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
@@ -183,7 +179,7 @@ Widget _buildResponsiveLocationDetails(
                       context,
                       supplier.addressPostalCode,
                       AppLocalizations.of(context)!.postalCodeText,
-                      Icons.local_post_office_outlined,
+                      FontAwesomeIcons.code,
                       Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
@@ -194,7 +190,7 @@ Widget _buildResponsiveLocationDetails(
                       context,
                       supplier.addressCountry,
                       AppLocalizations.of(context)!.countryText,
-                      Icons.public_outlined,
+                      FontAwesomeIcons.globe,
                       Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
@@ -208,17 +204,19 @@ Widget _buildResponsiveLocationDetails(
 }
 
 // Premium grid item widget
-Widget _buildGridLocationItem(BuildContext context, String text, String label,
-    IconData icon, Color color) {
+Widget _buildGridLocationItem(
+  BuildContext context,
+  String text,
+  String label,
+  FaIconData icon,
+  Color color,
+) {
   return Container(
     padding: const EdgeInsets.all(10),
     decoration: BoxDecoration(
       // color: Colors.white,
       borderRadius: BorderRadius.circular(10),
-      border: Border.all(
-        color: Colors.grey[200]!,
-        width: 1,
-      ),
+      border: Border.all(color: Colors.grey[200]!, width: 1),
       boxShadow: [
         BoxShadow(
           color: Colors.black.withOpacity(0.03),
@@ -237,11 +235,7 @@ Widget _buildGridLocationItem(BuildContext context, String text, String label,
             color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(
-            icon,
-            size: 14,
-            color: color,
-          ),
+          child: FaIcon(icon, size: 14, color: color),
         ),
         const SizedBox(width: 8),
         Expanded(

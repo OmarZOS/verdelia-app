@@ -1,18 +1,31 @@
 import 'package:decimal/decimal.dart';
+import 'package:event/finance_change_notifier.dart';
 import 'package:flutter/material.dart';
-import 'package:verdelia_core/business/finance/OrderedItem.dart';
-import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
-import 'package:app_constants/app_constants.dart';
+import 'package:product_catalog/screens/components/orders/order_card.dart';
+import 'package:product_catalog/screens/components/orders/order_details_sheet.dart';
+import 'package:product_catalog/screens/components/orders/order_grouping.dart';
+import 'package:product_catalog/screens/components/orders/order_tab_bar.dart';
+import 'package:product_catalog/screens/components/orders/orders_header.dart';
+import 'package:ui/components/payment_dtos.dart';
+import 'package:ui/screens/payment_form_screen.dart';
+import 'package:verdelia_core/app/AppUser.dart';
 import 'package:verdelia_core/business/finance/Order.dart';
 import 'package:event/order_change_notifier.dart';
 import 'package:event/user_change_notifier.dart';
 import 'package:provider/provider.dart';
-import 'package:event/cart_change_notifier.dart';
-import 'package:intl/intl.dart';
+import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
+
+import 'components/orders/outstanding_invoice_banner.dart';
 
 class OrdersScreen extends StatefulWidget {
   final OrderChangeNotifier? cartChangeNotifier;
-  OrdersScreen({Key? key, required this.cartChangeNotifier}) : super(key: key);
+  final void Function(Order order, InvoiceSummary invoice)? onPayInvoice;
+
+  OrdersScreen({
+    Key? key,
+    required this.cartChangeNotifier,
+    this.onPayInvoice,
+  }) : super(key: key);
 
   @override
   State<OrdersScreen> createState() => _OrdersScreenState();
@@ -21,47 +34,22 @@ class OrdersScreen extends StatefulWidget {
 class _OrdersScreenState extends State<OrdersScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isInitialLoad = true;
+  OrderGrouping _grouping = OrderGrouping.delivery;
+  final Set<String> _collapsedGroups = <String>{};
+  late OrderChangeNotifier _orderNotifier;
+  OrderTab _tab = OrderTab.all;
 
   @override
   void initState() {
     super.initState();
-    // Load orders once when the screen initializes
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadOrders();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadOrders());
   }
 
-  Future<void> _loadOrders() async {
-    if (!mounted) return;
-
-    final userId = Provider.of<AppUserNotifier>(context, listen: false)
-        .appUser!
-        .idAppUser!;
-
-    // Use the provided cartChangeNotifier or get from context
-    if (widget.cartChangeNotifier != null) {
-      await widget.cartChangeNotifier!.fetchOrders(appUserId: userId);
-    } else {
-      await Provider.of<OrderChangeNotifier>(context, listen: false)
-          .fetchOrders(appUserId: userId);
-    }
-
-    if (mounted) {
-      setState(() => _isInitialLoad = false);
-    }
-  }
-
-  Future<void> _refreshOrders() async {
-    final userId = Provider.of<AppUserNotifier>(context, listen: false)
-        .appUser!
-        .idAppUser!;
-
-    if (widget.cartChangeNotifier != null) {
-      await widget.cartChangeNotifier!.fetchOrders(appUserId: userId);
-    } else {
-      await Provider.of<OrderChangeNotifier>(context, listen: false)
-          .fetchOrders(appUserId: userId);
-    }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _orderNotifier = widget.cartChangeNotifier ??
+        Provider.of<OrderChangeNotifier>(context, listen: false);
   }
 
   @override
@@ -69,6 +57,45 @@ class _OrdersScreenState extends State<OrdersScreen> {
     _scrollController.dispose();
     super.dispose();
   }
+
+  Future<void> _loadOrders() async {
+    if (!mounted) return;
+    final appUser =
+        Provider.of<AppUserNotifier>(context, listen: false).appUser;
+    final userId = appUser?.idAppUser;
+    if (userId == null) {
+      if (mounted) setState(() => _isInitialLoad = false);
+      return;
+    }
+    await _orderNotifier.fetchOrders(appUserId: userId);
+    if (mounted) setState(() => _isInitialLoad = false);
+  }
+
+  Future<void> _refreshOrders() async {
+    final appUser =
+        Provider.of<AppUserNotifier>(context, listen: false).appUser;
+    final userId = appUser?.idAppUser;
+    if (userId == null) return;
+    await _orderNotifier.fetchOrders(appUserId: userId);
+  }
+
+  List<Order> _filtered(List<Order> all) {
+    switch (_tab) {
+      case OrderTab.all:
+        return all;
+      case OrderTab.inProgress:
+        return all
+            .where((o) => o.isPending || o.isProcessing || o.isShipped)
+            .toList();
+      case OrderTab.completed:
+        return all.where((o) => o.isCompleted).toList();
+      case OrderTab.cancelled:
+        return all.where((o) => o.isCancelled || o.isRefunded).toList();
+    }
+  }
+
+  List<Order> _outstanding(List<Order> all) =>
+      all.where((o) => o.hasExpandedInvoice && o.isInvoiceOutstanding).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -84,17 +111,17 @@ class _OrdersScreenState extends State<OrdersScreen> {
         centerTitle: true,
       ),
       body: Consumer<OrderChangeNotifier>(
-        builder: (context, cartNotifier, child) {
-          // Handle initial loading
-          if (_isInitialLoad && cartNotifier.orders.isEmpty) {
-            return _buildLoadingState(theme);
-          }
+        builder: (context, notifier, _) {
+          final all = notifier.orders;
+          final isLoading = _isInitialLoad && all.isEmpty;
+          final isEmpty = all.isEmpty && !isLoading;
+          final outstanding = _outstanding(all);
+          final filtered = _filtered(all);
 
-          final orders = cartNotifier.orders;
-
-          if (orders.isEmpty) {
-            return _buildEmptyState(loc, theme);
-          }
+          final outstandingAmount = outstanding.fold(
+            Decimal.zero,
+            (sum, o) => sum + (o.invoice?.grandTotal ?? Decimal.zero),
+          );
 
           return RefreshIndicator(
             onRefresh: _refreshOrders,
@@ -103,26 +130,74 @@ class _OrdersScreenState extends State<OrdersScreen> {
             child: CustomScrollView(
               controller: _scrollController,
               slivers: [
-                // Header with order count
+                // ── Header ──
                 SliverToBoxAdapter(
-                  child: _buildHeader(orders.length, loc, theme, orders),
+                  child: isLoading || isEmpty
+                      ? const SizedBox.shrink()
+                      : OrdersHeader(
+                          orders: all,
+                          outstandingCount: outstanding.length,
+                          outstandingAmount: outstandingAmount,
+                        ),
                 ),
 
-                // Orders list
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final order = orders[index];
-                      return _buildOrderCard(order, loc, theme, context);
+                // ── Outstanding-invoice banner ──
+                SliverToBoxAdapter(
+                  child: outstanding.isEmpty
+                      ? const SizedBox.shrink()
+                      : OutstandingInvoiceBanner(
+                          orders: outstanding,
+                          onPayInvoice: (o, inv) => _handlePayInvoice(o, inv),
+                        ),
+                ),
+
+                // ── Tabs (pinned) ──
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: OrderTabBarDelegate(
+                    tab: _tab,
+                    onChanged: (t) => setState(() => _tab = t),
+                    counts: {
+                      OrderTab.all: all.length,
+                      OrderTab.inProgress: all
+                          .where((o) =>
+                              o.isPending || o.isProcessing || o.isShipped)
+                          .length,
+                      OrderTab.completed:
+                          all.where((o) => o.isCompleted).length,
+                      OrderTab.cancelled: all
+                          .where((o) => o.isCancelled || o.isRefunded)
+                          .length,
                     },
-                    childCount: orders.length,
+                    hidden: isLoading || isEmpty,
                   ),
                 ),
 
-                // Bottom padding
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 20),
-                ),
+                // ── Body ──
+                if (isLoading)
+                  SliverToBoxAdapter(child: _buildLoadingState(theme, loc))
+                else if (isEmpty)
+                  SliverToBoxAdapter(child: _buildEmptyState(loc, theme))
+                else if (filtered.isEmpty)
+                  SliverToBoxAdapter(child: _buildEmptyTabState(theme, loc))
+                else ...[
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                      child: _GroupingSelector(
+                        value: _grouping,
+                        onChanged: (g) => setState(() {
+                          _grouping = g;
+                          _collapsedGroups.clear();
+                        }),
+                        loc: loc,
+                      ),
+                    ),
+                  ),
+                  ..._buildGroupedSlivers(filtered, theme, loc),
+                ],
+
+                const SliverToBoxAdapter(child: SizedBox(height: 24)),
               ],
             ),
           );
@@ -131,435 +206,153 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  Widget _buildLoadingState(ThemeData theme) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(
-            color: theme.colorScheme.primary,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Loading your orders...',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
+  Widget _buildLoadingState(ThemeData theme, AppLocalizations loc) {
+    return SizedBox(
+      height: 300,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: theme.colorScheme.primary),
+            const SizedBox(height: 16),
+            Text(
+              loc.loadingOrdersTxt,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmptyState(AppLocalizations loc, ThemeData theme) {
-    return RefreshIndicator(
-      onRefresh: _refreshOrders,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.8,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.shopping_bag_outlined,
-                size: 80,
-                color: theme.colorScheme.onSurface.withOpacity(0.3),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                loc.noOrdersTxt,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                loc.yourOrdersWillAppearHere,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.5),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _refreshOrders,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: theme.colorScheme.onPrimary,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(loc.refreshTxt),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Decimal _calculateTotalPaid(List<dynamic> orders) {
-    return orders.fold(Decimal.zero, (sum, order) {
-      final price = order.totalPrice is Decimal
-          ? order.totalPrice as Decimal
-          : Decimal.tryParse(order.totalPrice?.toString() ?? '0') ??
-              Decimal.zero;
-      return sum + price;
-    });
-  }
-
-  Widget _buildHeader(
-    int orderCount,
-    AppLocalizations loc,
-    ThemeData theme,
-    List<dynamic> orders,
-  ) {
-    final totalPaid = _calculateTotalPaid(orders);
-    final completedOrders = orders
-        .where((order) =>
-            (order.status ?? '') == OrderStates.COMPLETED_ORDER_STATE)
-        .length;
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return SizedBox(
+      height: 300,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Icon section
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              Icons.analytics_outlined,
-              color: theme.colorScheme.primary,
-              size: 24,
-            ),
+          Icon(
+            Icons.shopping_bag_outlined,
+            size: 80,
+            color: theme.colorScheme.onSurface.withOpacity(0.3),
           ),
-          const SizedBox(width: 12),
-
-          // Stats section
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  loc.yourOrderStats,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 8),
-
-                // Mini stats row that wraps if needed
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 8,
-                  children: [
-                    _buildMiniStat(
-                      value: orderCount.toString(),
-                      label: loc.ordersText,
-                      theme: theme,
-                    ),
-                    _buildMiniStat(
-                      value: loc.price(totalPaid.toStringAsFixed(0)),
-                      label: loc.spentTxt,
-                      theme: theme,
-                    ),
-                    _buildMiniStat(
-                      value: completedOrders.toString(),
-                      label: loc.completedTxt,
-                      theme: theme,
-                    ),
-                  ],
-                ),
-              ],
+          const SizedBox(height: 20),
+          Text(
+            loc.noOrdersTxt,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
             ),
+            textAlign: TextAlign.center,
           ),
-
-          // Achievement badge (keeps its space minimal)
-          if (orderCount >= 5) ...[
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.amber.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.amber.withOpacity(0.3)),
+          const SizedBox(height: 12),
+          Text(
+            loc.yourOrdersWillAppearHere,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _refreshOrders,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 12,
               ),
-              child: Icon(
-                Icons.emoji_events,
-                color: Colors.amber,
-                size: 20,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
-          ],
+            child: Text(loc.refreshTxt),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildMiniStat({
-    required String value,
-    required String label,
-    required ThemeData theme,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          value,
-          style: theme.textTheme.bodyLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.primary,
-          ),
-        ),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildOrderCard(Order order, AppLocalizations loc, ThemeData theme,
-      BuildContext context) {
-    final dateFormat =
-        DateFormat('HH:mm dd-MM-yyyy'); // Example: 05 Oct 2025, 19:02
-
-    final orderDate = order.placedOrderLastMod;
-    // (order.orderedTimestamp != null &&
-    //         order.orderedTimestamp != "")
-    //     ? dateFormat.format(DateTime.parse(order.orderedTimestamp.toString()))
-    //     : loc.dateTimeNotAvailable;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Card(
-        elevation: 1,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            // Navigate to order details
-            _showOrderDetails(order, loc, theme, context);
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        loc.orderIdentifierTxt(order.idPlacedOrder.toString()),
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    _buildStatusChip(order.status, theme, loc),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                // Order details
-                Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today,
-                      size: 16,
-                      color: theme.colorScheme.onSurface.withOpacity(0.5),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      loc.dateTimeFormat(
-                          (orderDate.day < 10)
-                              ? '0${orderDate.day}'
-                              : orderDate.day,
-                          (orderDate.hour < 10)
-                              ? '0${orderDate.hour}'
-                              : orderDate.hour,
-                          (orderDate.minute < 10)
-                              ? '0${orderDate.minute}'
-                              : orderDate.minute,
-                          (orderDate.month < 10)
-                              ? '0${orderDate.month}'
-                              : orderDate.month,
-                          orderDate.year), // orderDate,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                // Price row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      loc.totalTxt,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: theme.colorScheme.onSurface.withOpacity(0.8),
-                      ),
-                    ),
-                    Text(
-                      loc.price(
-                        (order.totalPrice ?? Decimal.zero).toStringAsFixed(2),
-                      ),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  ],
-                ),
-
-                // Action buttons
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          _showOrderDetails(order, loc, theme, context);
-                        },
-                        icon: Icon(
-                          Icons.remove_red_eye_outlined,
-                          size: 18,
-                          color: theme.colorScheme.primary,
-                        ),
-                        label: Text(
-                          loc.viewDetails,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          side: BorderSide(
-                              color:
-                                  theme.colorScheme.primary.withOpacity(0.3)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // IconButton(
-                    //   onPressed: () {
-                    //     _showDeleteDialog(order, loc, theme, context);
-                    //   },
-                    //   icon: Icon(
-                    //     Icons.delete_outline,
-                    //     size: 20,
-                    //     color: theme.colorScheme.error.withOpacity(0.7),
-                    //   ),
-                    //   style: IconButton.styleFrom(
-                    //     backgroundColor:
-                    //         theme.colorScheme.error.withOpacity(0.1),
-                    //     padding: const EdgeInsets.all(8),
-                    //   ),
-                    // ),
-                  ],
-                ),
-              ],
+  Widget _buildEmptyTabState(ThemeData theme, AppLocalizations loc) {
+    return SizedBox(
+      height: 300,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.filter_alt_off_outlined,
+              size: 40,
+              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4),
             ),
+            const SizedBox(height: 12),
+            Text(
+              loc.noOrdersInTabTxt,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildGroupedSlivers(
+    List<Order> filtered,
+    ThemeData theme,
+    AppLocalizations loc,
+  ) {
+    final groups = _groupOrders(filtered, _grouping);
+    final slivers = <Widget>[];
+
+    for (final group in groups) {
+      final collapsed = _collapsedGroups.contains(group.key);
+
+      slivers.add(SliverToBoxAdapter(
+        child: _GroupHeader(
+          group: group,
+          collapsed: collapsed,
+          onToggle: () => setState(() {
+            if (collapsed) {
+              _collapsedGroups.remove(group.key);
+            } else {
+              _collapsedGroups.add(group.key);
+            }
+          }),
+          theme: theme,
+        ),
+      ));
+
+      if (!collapsed) {
+        slivers.add(SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, i) {
+              final order = group.orders[i];
+              return OrderCard(
+                order: order,
+                onTap: () => _showOrderDetails(order, loc, theme, context),
+              );
+            },
+            childCount: group.orders.length,
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusChip(
-      String? status, ThemeData theme, AppLocalizations loc) {
-    final statusColor = _getStatusColor(status, theme);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: statusColor.withOpacity(0.3)),
-      ),
-      child: Text(
-        _getStatusText(status, loc).toUpperCase(),
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: statusColor,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
-        ),
-      ),
-    );
-  }
-
-  String _getStatusText(String? status, AppLocalizations loc) {
-    switch (status?.toUpperCase()) {
-      case OrderStates.COMPLETED_ORDER_STATE:
-        return loc.completedTxt;
-      case OrderStates.DELIVERED_ORDER_STATE:
-        return loc.deliveredTxt;
-      case OrderStates.PENDING_ORDER_STATE:
-        return loc.pendingTxt;
-      case OrderStates.CANCELLED_ORDER_STATE:
-        return loc.cancelledTxt;
-      case OrderStates.PROCESSING_ORDER_STATE:
-        return loc.processingTxt;
-      default:
-        return loc.unknownTxt;
+        ));
+      }
     }
+
+    return slivers;
   }
 
-  Color _getStatusColor(String? status, ThemeData theme) {
-    switch (status?.toUpperCase()) {
-      case OrderStates.COMPLETED_ORDER_STATE:
-      case OrderStates.DELIVERED_ORDER_STATE:
-        return Colors.green;
-      case OrderStates.PENDING_ORDER_STATE:
-        return Colors.orange;
-      case OrderStates.CANCELLED_ORDER_STATE:
-        return Colors.red;
-      case OrderStates.PROCESSING_ORDER_STATE:
-        return theme.colorScheme.primary;
-      default:
-        return theme.colorScheme.onSurface.withOpacity(0.5);
-    }
-  }
-
-  void _showOrderDetails(Order order, AppLocalizations loc, ThemeData theme,
-      BuildContext context) async {
-    // Show loading bottom sheet first
+  void _showOrderDetails(
+    Order order,
+    AppLocalizations loc,
+    ThemeData theme,
+    BuildContext context,
+  ) async {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -577,7 +370,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
               CircularProgressIndicator(color: theme.colorScheme.primary),
               const SizedBox(height: 16),
               Text(
-                'Loading order details...',
+                loc.loadingOrderDetailsTxt,
                 style: theme.textTheme.bodyMedium,
               ),
             ],
@@ -587,29 +380,24 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
 
     try {
-      // Fetch details asynchronously
-      await widget.cartChangeNotifier!
-          .fetchOrderDetails(orderId: order.idPlacedOrder);
-
-      // Close the loading sheet
+      await _orderNotifier.fetchOrderDetails(orderId: order.idPlacedOrder);
+      if (!mounted) return;
       Navigator.pop(context);
-
-      // Now show the actual details sheet
       _showOrderDetailsSheet(order, loc, theme, context);
     } catch (e) {
-      // Close loading sheet on error
+      if (!mounted) return;
       Navigator.pop(context);
-
-      // Show error sheet
       _showErrorSheet(e.toString(), loc, theme, context);
     }
   }
 
-  void _showOrderDetailsSheet(Order order, AppLocalizations loc,
-      ThemeData theme, BuildContext context) {
-    final detailedOrder =
-        widget.cartChangeNotifier!.getOrderWithDetails(order.idPlacedOrder);
-
+  void _showOrderDetailsSheet(
+    Order order,
+    AppLocalizations loc,
+    ThemeData theme,
+    BuildContext context,
+  ) {
+    final detailed = _orderNotifier.getOrderWithDetails(order.idPlacedOrder);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -620,15 +408,22 @@ class _OrdersScreenState extends State<OrdersScreen> {
           color: theme.colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        child: detailedOrder == null || !detailedOrder.hasItems()
+        child: detailed == null || !detailed.hasItems()
             ? _buildErrorState(loc.failedToLoadDetails, theme, loc)
-            : _buildOrderDetailsContent(detailedOrder, loc, theme, context),
+            : OrderDetailsSheet(
+                order: detailed,
+                onPayInvoice: (o, inv) => _handlePayInvoice(o, inv),
+              ),
       ),
     );
   }
 
-  void _showErrorSheet(String error, AppLocalizations loc, ThemeData theme,
-      BuildContext context) {
+  void _showErrorSheet(
+    String error,
+    AppLocalizations loc,
+    ThemeData theme,
+    BuildContext context,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -640,240 +435,607 @@ class _OrdersScreenState extends State<OrdersScreen> {
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 48,
-                color: theme.colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                loc.failedToLoadDetails,
-                style: theme.textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Text(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: theme.colorScheme.error,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  loc.failedToLoadDetails,
+                  style: theme.textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
                   error,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                   textAlign: TextAlign.center,
                 ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(loc.close),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOrderDetailsContent(Order? order, AppLocalizations loc,
-      ThemeData theme, BuildContext context) {
-    return Column(
-      children: [
-        // Drag handle
-        Container(
-          margin: const EdgeInsets.only(top: 12, bottom: 8),
-          width: 40,
-          height: 4,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.onSurface.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            children: [
-              Text(
-                loc.order_number(order?.idPlacedOrder.toString() ?? "0"),
-                // "${loc.orderFor} #${}",
-                style: theme.textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                "${loc.totalTxt}: ${loc.price((order?.totalPrice ?? Decimal.zero).toStringAsFixed(2))}",
-                style: theme.textTheme.titleMedium,
-              ),
-              const SizedBox(height: 16),
-              Divider(color: theme.colorScheme.outlineVariant),
-              const SizedBox(height: 8),
-
-              // Order status
-              Row(
-                children: [
-                  Icon(
-                    Icons.local_shipping_outlined,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _getStatusText(order?.status ?? "", loc),
-                    style: theme.textTheme.titleMedium,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Order items
-              Text(
-                loc.orderItemsTxt, // Make sure this exists in your AppLocalizations
-                style: theme.textTheme.titleLarge
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              if (order != null)
-                ...order.items!
-                    .map((item) => _buildOrderItemCard(item, theme, loc)),
-
-              const SizedBox(height: 24),
-              Center(
-                child: ElevatedButton.icon(
+                const SizedBox(height: 24),
+                ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close_outlined),
-                  label: Text(loc.close),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
-                    iconColor: theme.colorScheme.onPrimary,
-                    foregroundColor: theme.colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                  child: Text(loc.close),
                 ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildOrderItemCard(
-      OrderedItem item, ThemeData theme, AppLocalizations loc) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: ListTile(
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            Icons.shopping_bag_outlined,
-            color: theme.colorScheme.primary,
-            size: 20,
-          ),
-        ),
-        title: Text(item.orderedProduct?.productName ?? ""),
-        subtitle: Text(loc.qtyTxt(
-          item.orderedQuantity,
-          loc.price(item.unitPrice.toStringAsFixed(2)),
-        )),
-        trailing: Text(
-          loc.price(item.totalPrice.toStringAsFixed(2)),
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.primary,
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildErrorState(String error, ThemeData theme, AppLocalizations loc) {
+  // ==================== PAYMENT FLOW ====================
+
+  Future<void> _handlePayInvoice(
+    Order order,
+    InvoiceSummary invoice,
+  ) async {
+    if (widget.onPayInvoice != null) {
+      widget.onPayInvoice!(order, invoice);
+      return;
+    }
+
+    final appUser =
+        Provider.of<AppUserNotifier>(context, listen: false).appUser;
+
+    if (appUser == null) {
+      _snack(AppLocalizations.of(context)!.loginRequiredError);
+      return;
+    }
+
+    final actor = _actorFor(appUser);
+    final wallet = await _loadWallet(appUser);
+    if (!mounted) return;
+
+    final payeeId = _payeeIdFor(appUser, order);
+
+    final ok = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => PaymentFormScreen(
+          actor: PaymentActor.client,
+          amountDue: invoice.grandTotal,
+          initialAmount: null,
+          wallet: wallet,
+          payeeId: payeeId,
+          currency: 'DZD',
+          title: invoice.reference ?? '#${order.idPlacedOrder}',
+          currencySymbol: '',
+          onSubmit: (amount, method, notes) async {
+            return _submitInvoicePayment(
+              order: order,
+              invoice: invoice,
+              amount: amount,
+              method: method,
+              notes: notes,
+              actor: actor,
+            );
+          },
+        ),
+      ),
+    );
+
+    if (ok == true && mounted) {
+      await _refreshOrders();
+    }
+  }
+
+  PaymentActor _actorFor(AppUser appUser) {
+    switch (appUser.appUserType) {
+      case AppUserType.provider:
+        return PaymentActor.provider;
+      case AppUserType.customer:
+      case AppUserType.patient:
+      case AppUserType.guest:
+      case null:
+        return PaymentActor.client;
+    }
+  }
+
+  String? _payeeIdFor(AppUser appUser, Order order) {
+    if (appUser.appUserType == AppUserType.provider) {
+      final userId = appUser.idAppUser;
+      if (userId != null && userId > 0) return 'user:$userId';
+      return null;
+    }
+
+    final supplierId = _supplierIdFromOrder(order);
+    if (supplierId != null && supplierId > 0) {
+      return 'provider:$supplierId';
+    }
+    return null;
+  }
+
+  static int? _supplierIdFromOrder(Order order) {
+    try {
+      final dynamic dynamicOrder = order;
+      final raw = dynamicOrder.providerUserId;
+      if (raw is int) return raw > 0 ? raw : null;
+      if (raw is num) {
+        final asInt = raw.toInt();
+        return asInt > 0 ? asInt : null;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<WalletAccount?> _loadWallet(AppUser appUser) async {
+    final wallet = appUser.wallet;
+    if (wallet == null) return null;
+    if (wallet.isClosed || wallet.isInactive) return null;
+
+    final locked = !wallet.canTransact;
+
+    return WalletAccount(
+      id: wallet.idWallet?.toString() ?? 'user:${appUser.idAppUser}',
+      label: appUser.displayName.isNotEmpty ? appUser.displayName : 'Wallet',
+      balance: Decimal.parse(wallet.walletBalance.toStringAsFixed(2)),
+      currency: wallet.walletCurrency,
+      isLocked: locked,
+    );
+  }
+
+  Future<String?> _submitInvoicePayment({
+    required Order order,
+    required InvoiceSummary invoice,
+    required Decimal amount,
+    required String method,
+    required String notes,
+    required PaymentActor actor,
+  }) async {
+    try {
+      final notifier =
+          Provider.of<FinanceChangeNotifier>(context, listen: false);
+      final r = await notifier.submitPayment(
+        invoiceId: invoice.invoiceId,
+        amount: amount,
+        method: method,
+        notes: notes,
+      );
+
+      if (method == "wallet" && r.isSuccess) {
+        final userNotifier =
+            Provider.of<AppUserNotifier>(context, listen: false);
+        final current = userNotifier.appUser;
+        if (current != null) {
+          if (current.canDebitWallet(amount.toDouble())) {
+            current.debitWallet(amount.toDouble());
+          } else {
+            // Local mirror disagrees with the server — refresh
+            // rather than persist an incorrect balance.
+            // await userNotifier.refresh();
+          }
+        }
+      }
+
+      return r.isSuccess ? null : r.message;
+    } catch (e) {
+      return 'Payment failed: $e';
+    }
+  }
+
+  void _snack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating),
+      );
+  }
+
+  Widget _buildErrorState(
+    String error,
+    ThemeData theme,
+    AppLocalizations loc,
+  ) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 48,
-            color: theme.colorScheme.error,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            loc.failedToLoadDetails,
-            style: theme.textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            error,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: theme.colorScheme.error,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+            const SizedBox(height: 16),
+            Text(
+              loc.failedToLoadDetails,
+              style: theme.textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  void _showDeleteDialog(Order order, AppLocalizations loc, ThemeData theme,
-      BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Delete Order?',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        content: Text(
-          'Are you sure you want to delete order #${order.idPlacedOrder}? This action cannot be undone.',
-          style: theme.textTheme.bodyMedium,
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              loc.cancelTxt,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+  // ==================== GROUPING ====================
+
+  List<OrderGroup> _groupOrders(List<Order> orders, OrderGrouping grouping) {
+    final loc = AppLocalizations.of(context)!;
+    final buckets = <String, List<Order>>{};
+
+    for (final o in orders) {
+      final key = _bucketKeyFor(o, grouping);
+      buckets.putIfAbsent(key, () => []).add(o);
+    }
+
+    final ordered = _orderedBucketKeys(grouping);
+    final groups = <OrderGroup>[];
+
+    // Known buckets, in fixed display order.
+    for (final key in ordered) {
+      final bucket = buckets.remove(key);
+      if (bucket == null || bucket.isEmpty) continue;
+      groups.add(OrderGroup(
+        key: key,
+        label: _bucketLabel(key, grouping, loc),
+        icon: _bucketIcon(key, grouping),
+        orders: bucket,
+      ));
+    }
+
+    // Unknown buckets — server introduced a state we don't recognize.
+    // Surface them at the bottom so nothing silently disappears.
+    for (final entry in buckets.entries) {
+      if (entry.value.isEmpty) continue;
+      groups.add(OrderGroup(
+        key: entry.key,
+        label: _bucketLabel(entry.key, grouping, loc),
+        icon: Icons.circle_outlined,
+        orders: entry.value,
+      ));
+    }
+    return groups;
+  }
+
+  String _bucketKeyFor(Order o, OrderGrouping g) {
+    switch (g) {
+      case OrderGrouping.delivery:
+        return _deliveryBucket(o);
+      case OrderGrouping.invoice:
+        return _invoiceBucket(o);
+      case OrderGrouping.status:
+        return _statusBucket(o);
+    }
+  }
+
+  String _deliveryBucket(Order o) {
+    final lines = o.items;
+    if (lines == null || lines.isEmpty) return 'no_delivery';
+
+    var anyPending = false;
+    var anyShipped = false;
+    var allDelivered = true;
+
+    for (final line in lines) {
+      final s = (line.orderedItemDeliveryStatus ?? '').toLowerCase();
+      if (s != 'delivered') allDelivered = false;
+      if (s == 'pending' || s.isEmpty) anyPending = true;
+      if (s == 'shipped' || s == 'out_for_delivery') anyShipped = true;
+    }
+
+    if (allDelivered) return 'delivered';
+    if (anyShipped) return 'in_transit';
+    if (anyPending) return 'awaiting_dispatch';
+    return 'partially_delivered';
+  }
+
+  String _invoiceBucket(Order o) {
+    if (!o.hasExpandedInvoice) return 'no_invoice';
+    final inv = o.invoice!;
+    if (inv.isPaid) return 'paid';
+    if (inv.isPartiallyPaid) return 'partially_paid';
+    if (inv.isRefunded) return 'refunded';
+    if (inv.isOutstanding) return 'outstanding';
+    return 'unpaid';
+  }
+
+  String _statusBucket(Order o) {
+    if (o.isPending) return 'pending';
+    if (o.isProcessing) return 'processing';
+    if (o.isShipped) return 'shipped';
+    if (o.isCompleted) return 'completed';
+    if (o.isCancelled) return 'cancelled';
+    if (o.isRefunded) return 'refunded';
+    return 'unknown';
+  }
+
+  List<String> _orderedBucketKeys(OrderGrouping g) {
+    switch (g) {
+      case OrderGrouping.delivery:
+        return const [
+          'awaiting_dispatch',
+          'in_transit',
+          'partially_delivered',
+          'delivered',
+          'no_delivery',
+        ];
+      case OrderGrouping.invoice:
+        return const [
+          'outstanding',
+          'partially_paid',
+          'unpaid',
+          'paid',
+          'refunded',
+          'no_invoice',
+        ];
+      case OrderGrouping.status:
+        return const [
+          'pending',
+          'processing',
+          'shipped',
+          'completed',
+          'cancelled',
+          'refunded',
+          'unknown',
+        ];
+    }
+  }
+
+  String _bucketLabel(String key, OrderGrouping g, AppLocalizations loc) {
+    switch (g) {
+      case OrderGrouping.delivery:
+        switch (key) {
+          case 'awaiting_dispatch':
+            return loc.deliveryTransitionReady;
+          case 'in_transit':
+            return loc.deliveryInTransit;
+          case 'partially_delivered':
+            return loc.partial;
+          case 'delivered':
+            return loc.deliveryDelivered;
+          case 'no_delivery':
+            return loc.none;
+        }
+        break;
+      case OrderGrouping.invoice:
+        switch (key) {
+          case 'outstanding':
+            return loc.outstanding;
+          case 'partially_paid':
+            return loc.partial;
+          case 'unpaid':
+            return loc.unpaid;
+          case 'paid':
+            return loc.paid;
+          case 'refunded':
+            return loc.refunded;
+          case 'no_invoice':
+            return loc.none;
+        }
+        break;
+      case OrderGrouping.status:
+        switch (key) {
+          case 'pending':
+            return loc.pending;
+          case 'processing':
+            return loc.processing;
+          case 'shipped':
+            return loc.shippedTxt;
+          case 'completed':
+            return loc.completed;
+          case 'cancelled':
+            return loc.canceled;
+          case 'refunded':
+            return loc.refunded;
+          case 'unknown':
+            return loc.none;
+        }
+        break;
+    }
+    return key.replaceAll('_', ' ');
+  }
+
+  IconData _bucketIcon(String key, OrderGrouping g) {
+    switch (g) {
+      case OrderGrouping.delivery:
+        switch (key) {
+          case 'awaiting_dispatch':
+            return Icons.inventory_2_outlined;
+          case 'in_transit':
+            return Icons.local_shipping_outlined;
+          case 'partially_delivered':
+            return Icons.incomplete_circle;
+          case 'delivered':
+            return Icons.check_circle_outline;
+          case 'no_delivery':
+            return Icons.storefront_outlined;
+        }
+        break;
+      case OrderGrouping.invoice:
+        switch (key) {
+          case 'outstanding':
+            return Icons.receipt_long_outlined;
+          case 'partially_paid':
+            return Icons.pie_chart_outline;
+          case 'unpaid':
+            return Icons.money_off_csred_outlined;
+          case 'paid':
+            return Icons.verified_outlined;
+          case 'refunded':
+            return Icons.replay_outlined;
+          case 'no_invoice':
+            return Icons.description_outlined;
+        }
+        break;
+      case OrderGrouping.status:
+        switch (key) {
+          case 'pending':
+            return Icons.schedule;
+          case 'processing':
+            return Icons.sync;
+          case 'shipped':
+            return Icons.local_shipping_outlined;
+          case 'completed':
+            return Icons.check_circle_outline;
+          case 'cancelled':
+            return Icons.cancel_outlined;
+          case 'refunded':
+            return Icons.replay_outlined;
+        }
+        break;
+    }
+    return Icons.circle_outlined;
+  }
+}
+
+class _GroupingSelector extends StatelessWidget {
+  final OrderGrouping value;
+  final ValueChanged<OrderGrouping> onChanged;
+  final AppLocalizations loc;
+
+  const _GroupingSelector({
+    required this.value,
+    required this.onChanged,
+    required this.loc,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: OrderGrouping.values.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final g = OrderGrouping.values[i];
+          final selected = g == value;
+          return ChoiceChip(
+            selected: selected,
+            onSelected: (_) => onChanged(g),
+            avatar: Icon(
+              g.icon,
+              size: 16,
+              color: selected ? cs.onPrimary : cs.onSurfaceVariant,
+            ),
+            label: Text(
+              g.label(loc),
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Implement delete functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Order #${order.idPlacedOrder} deleted'),
-                  backgroundColor: Colors.green,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+            selectedColor: cs.primary,
+            labelStyle: TextStyle(
+              color: selected ? cs.onPrimary : cs.onSurface,
+            ),
+            showCheckmark: false,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _GroupHeader extends StatelessWidget {
+  final OrderGroup group;
+  final bool collapsed;
+  final VoidCallback onToggle;
+  final ThemeData theme;
+
+  const _GroupHeader({
+    required this.group,
+    required this.collapsed,
+    required this.onToggle,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Material(
+        color: cs.surfaceContainerHighest.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onToggle,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Icon(group.icon, size: 18, color: cs.primary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    group.label,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.error,
-              foregroundColor: theme.colorScheme.onError,
+                _Badge(count: group.count, color: cs.primary),
+                const SizedBox(width: 8),
+                Text(
+                  '${group.total.toStringAsFixed(2)} DZD',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                AnimatedRotation(
+                  turns: collapsed ? 0.0 : 0.5,
+                  duration: const Duration(milliseconds: 180),
+                  child: Icon(
+                    Icons.expand_more,
+                    size: 20,
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
-            child: const Text('Delete'),
           ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Badge extends StatelessWidget {
+  final int count;
+  final Color color;
+  const _Badge({required this.count, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.14),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        '$count',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
       ),
     );
   }

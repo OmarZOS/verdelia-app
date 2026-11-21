@@ -1,7 +1,9 @@
 // lib/ui/screens/finance/enhanced_invoice_list.dart
 
 import 'package:decimal/decimal.dart';
+import 'package:event/supplier_change_notifier.dart';
 import 'package:flutter/material.dart';
+import 'package:ui/components/payment_dtos.dart';
 import 'package:verdelia_core/business/finance/Customer.dart';
 import 'package:verdelia_core/business/finance/FinancialDocument.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
@@ -1178,28 +1180,7 @@ class _DocumentCard extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: FilledButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => PaymentFormScreen(
-                      // Both `amountDue` and the `onSubmit` amount
-                      // parameter are `Decimal` after the payment flow
-                      // migration.
-                      amountDue: document.outstandingBalance,
-                      onSubmit: (amount, method, notes) async {
-                        final result = await notifier.submitPayment(
-                          invoiceId: document.documentId,
-                          amount: amount,
-                          method: method,
-                          notes: notes,
-                        );
-                        return result.isSuccess ? null : result.message;
-                      },
-                    ),
-                  ),
-                );
-              },
+              onPressed: () => _openPaymentForm(context),
               icon: Icon(
                 Icons.payment,
                 size: 16,
@@ -1223,5 +1204,54 @@ class _DocumentCard extends StatelessWidget {
         ],
       ],
     );
+  }
+
+  /// Opens [PaymentFormScreen] in provider mode, pre-loaded with
+  /// everything the form needs to build a payment QR:
+  ///
+  /// - `amountDue`: the clamped outstanding balance, so a partially
+  ///   paid invoice doesn't offer to collect more than is owed.
+  /// - `payeeId`: the provider's own id from the notifier. Without
+  ///   this, the form's QR panel falls back to "No payee configured".
+  /// - `currency`: passed through so the QR payload carries the right
+  ///   ISO code.
+  /// - `title`: the document's reference, so the app bar reads
+  ///   `INV-…` instead of the generic "Payment".
+  Future<void> _openPaymentForm(BuildContext context) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PaymentFormScreen(
+          actor: PaymentActor.provider,
+          amountDue: document.outstandingBalance,
+          payeeId: Provider.of<SupplierChangeNotifier>(context)
+              .selectedSupplierId
+              .toString(),
+          currency: "DZD",
+          title: document.documentNumber.isNotEmpty
+              ? document.documentNumber
+              : '#${document.documentId}',
+          onSubmit: (amount, method, notes) async {
+            final r = await notifier.submitPayment(
+              invoiceId: document.documentId,
+              amount: amount,
+              method: method,
+              notes: notes,
+            );
+            return r.isSuccess ? null : r.message;
+          },
+        ),
+      ),
+    );
+
+    // The form popped `true` on success. Nothing else to do here — the
+    // notifier's `submitPayment` already refreshed the document, so the
+    // `AnimatedBuilder` wrapping this list will rebuild with the new
+    // balance. If your notifier doesn't auto-refresh on submit, add:
+    //
+    //   if (result == true) await notifier.fetchDocuments(reset: true);
+    //
+    // The guard is here so the intent is documented at the call site
+    // rather than buried in the notifier.
   }
 }

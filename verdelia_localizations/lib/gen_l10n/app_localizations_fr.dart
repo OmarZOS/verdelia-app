@@ -1,5 +1,5 @@
+// ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -15,7 +15,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get welcomeMessage => 'Bienvenue sur Verdelia !';
 
   @override
-  String get errorOccurred => 'Une erreur s\'est produite. Veuillez réessayer plus tard.';
+  String get errorOccurred =>
+      'Une erreur s\'est produite. Veuillez réessayer plus tard.';
 
   @override
   String get noProductsFound => 'Aucun produit à afficher.';
@@ -51,16 +52,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pleaseLoginMsg => 'Veuillez vous connecter à votre compte';
 
   @override
-  String get pleaseInputUsernameMsg => 'Veuillez saisir votre nom d\'utilisateur';
+  String get pleaseInputUsernameMsg =>
+      'Veuillez saisir votre nom d\'utilisateur';
 
   @override
   String get pleaseInputPasswordMsg => 'Veuillez saisir votre mot de passe';
 
   @override
-  String get passwordLengthConstraintMsg => 'Le mot de passe doit contenir au moins 6 caractères';
+  String get passwordLengthConstraintMsg =>
+      'Le mot de passe doit contenir au moins 6 caractères';
 
   @override
-  String get suggestRegistrationMsg => 'Vous n\'avez pas de compte ? Inscrivez-vous';
+  String get suggestRegistrationMsg =>
+      'Vous n\'avez pas de compte ? Inscrivez-vous';
 
   @override
   String get suggest3rdPartyLogintMsg => 'Ou connectez-vous avec';
@@ -72,7 +76,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pleaseInputpasswordMsg => 'Veuillez saisir un mot de passe';
 
   @override
-  String get pleaseInputUserTypeMsg => 'Veuillez sélectionner un type d\'utilisateur';
+  String get pleaseInputUserTypeMsg =>
+      'Veuillez sélectionner un type d\'utilisateur';
 
   @override
   String get pleaseInputFirstNameMsg => 'Veuillez saisir un prénom';
@@ -81,7 +86,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pleaseInputLastNameMsg => 'Veuillez saisir un nom de famille';
 
   @override
-  String get pleaseInputBirthdateMsg => 'Veuillez sélectionner votre date de naissance';
+  String get pleaseInputBirthdateMsg =>
+      'Veuillez sélectionner votre date de naissance';
 
   @override
   String get pleaseInputLocationNameMsg => 'Veuillez saisir le nom du lieu';
@@ -90,10 +96,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pleaseInputgenderMsg => 'Veuillez sélectionner un genre';
 
   @override
-  String get pleaseInputnationalityMsg => 'Veuillez sélectionner une nationalité';
+  String get pleaseInputnationalityMsg =>
+      'Veuillez sélectionner une nationalité';
 
   @override
-  String get pleaseInputBloodTypeMsg => 'Veuillez sélectionner un groupe sanguin';
+  String get pleaseInputBloodTypeMsg =>
+      'Veuillez sélectionner un groupe sanguin';
 
   @override
   String get pleaseInputCountryMsg => 'Veuillez sélectionner un pays';
@@ -156,7 +164,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mapNotAvailableText => 'Carte non disponible sur cet appareil';
 
   @override
-  String get pdfNotSupportedOnWeb => 'Les fichiers PDF ne sont pas pris en charge sur le web. Veuillez utiliser un appareil mobile.';
+  String get pdfNotSupportedOnWeb =>
+      'Les fichiers PDF ne sont pas pris en charge sur le web. Veuillez utiliser un appareil mobile.';
 
   @override
   String get registrationConditionsText => 'Conditions d\'inscription';
@@ -186,7 +195,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get missingText => 'Manquant';
 
   @override
-  String get productdeletionConfirmationMessage => 'Êtes-vous sûr de vouloir supprimer ce produit ?';
+  String get productdeletionConfirmationMessage =>
+      'Êtes-vous sûr de vouloir supprimer ce produit ?';
 
   @override
   String get cartAddConfirmationMessage => 'Confirmer l\'ajout au panier';
@@ -201,25 +211,30 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pleaseInputProductPriceMsg => 'Veuillez saisir un prix de produit';
 
   @override
-  String get pleaseInputProductBrandMsg => 'Veuillez saisir une marque de produit';
+  String get pleaseInputProductBrandMsg =>
+      'Veuillez saisir une marque de produit';
 
   @override
-  String get pleaseInputProductBarcodeMsg => 'Veuillez saisir un code-barres de produit';
+  String get pleaseInputProductBarcodeMsg =>
+      'Veuillez saisir un code-barres de produit';
 
   @override
   String get pleaseInputvalidnumberMsg => 'Veuillez saisir un nombre valide';
 
   @override
-  String get pleaseInputProductDescriptionMsg => 'Veuillez saisir une description de produit';
+  String get pleaseInputProductDescriptionMsg =>
+      'Veuillez saisir une description de produit';
 
   @override
-  String get pleaseInputProductQuantityMsg => 'Veuillez saisir une quantité de produit';
+  String get pleaseInputProductQuantityMsg =>
+      'Veuillez saisir une quantité de produit';
 
   @override
   String get instructionsText => 'Instructions';
 
   @override
-  String get numberConstraintMsg => 'Veuillez saisir un nombre entre 0 et 999999';
+  String get numberConstraintMsg =>
+      'Veuillez saisir un nombre entre 0 et 999999';
 
   @override
   String get productQuantityText => 'Quantité du produit';
@@ -309,7 +324,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get contactInfoMsg => 'Informations de contact';
 
   @override
-  String get pleaseInputContactInfoMsg => 'Veuillez saisir les informations de contact';
+  String get pleaseInputContactInfoMsg =>
+      'Veuillez saisir les informations de contact';
 
   @override
   String get latitudeMsg => 'Latitude';
@@ -339,7 +355,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get notFoundError => 'Objet introuvable';
 
   @override
-  String get deleteFailure => 'Échec de la suppression de l\'élément de stockage';
+  String get deleteFailure =>
+      'Échec de la suppression de l\'élément de stockage';
 
   @override
   String get getFailure => 'Échec du chargement de l\'élément';
@@ -497,13 +514,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get featuresTitle => 'Fonctionnalités clés';
 
   @override
-  String get feature1 => '🛒 **Boutique en ligne sans gluten** - Achetez en toute confiance des produits certifiés sans gluten avec livraison directe.';
+  String get feature1 =>
+      '🛒 **Boutique en ligne sans gluten** - Achetez en toute confiance des produits certifiés sans gluten avec livraison directe.';
 
   @override
-  String get feature2 => '🎮 **Mini-jeux éducatifs** - Apprenez à identifier les aliments sûrs de manière ludique avec nos jeux interactifs.';
+  String get feature2 =>
+      '🎮 **Mini-jeux éducatifs** - Apprenez à identifier les aliments sûrs de manière ludique avec nos jeux interactifs.';
 
   @override
-  String get feature4 => '📍 **Annuaire des commerces locaux** - Trouvez des épiceries et restaurants certifiés sans gluten près de chez vous.';
+  String get feature4 =>
+      '📍 **Annuaire des commerces locaux** - Trouvez des épiceries et restaurants certifiés sans gluten près de chez vous.';
 
   @override
   String get contactUsTitle => 'Contactez-nous';
@@ -515,34 +535,43 @@ class AppLocalizationsFr extends AppLocalizations {
   String get contactPhone => '+213-XXX-XXX-XXX';
 
   @override
-  String get illnessOverviewContent => 'La maladie cœliaque est un trouble auto-immun où l\'ingestion de gluten endommage l\'intestin grêle. Elle peut causer des problèmes digestifs, des carences nutritionnelles et d\'autres complications. L\'éviction stricte et à vie du gluten est le seul traitement efficace.';
+  String get illnessOverviewContent =>
+      'La maladie cœliaque est un trouble auto-immun où l\'ingestion de gluten endommage l\'intestin grêle. Elle peut causer des problèmes digestifs, des carences nutritionnelles et d\'autres complications. L\'éviction stricte et à vie du gluten est le seul traitement efficace.';
 
   @override
-  String get symptom1 => '💨 **Troubles digestifs** - Ballonnements, diarrhée, constipation, nausées et vomissements.';
+  String get symptom1 =>
+      '💨 **Troubles digestifs** - Ballonnements, diarrhée, constipation, nausées et vomissements.';
 
   @override
-  String get symptom2 => '⚡ **Fatigue chronique** - Causée par la malabsorption des nutriments essentiels.';
+  String get symptom2 =>
+      '⚡ **Fatigue chronique** - Causée par la malabsorption des nutriments essentiels.';
 
   @override
-  String get symptom3 => '🦴 **Complications osseuses** - Risque accru d\'ostéoporose dû à une mauvaise absorption du calcium et de la vitamine D.';
+  String get symptom3 =>
+      '🦴 **Complications osseuses** - Risque accru d\'ostéoporose dû à une mauvaise absorption du calcium et de la vitamine D.';
 
   @override
-  String get treatmentContent => 'Le traitement nécessite un régime strict sans gluten à vie. Les patients doivent éviter le blé, l\'orge, le seigle et leurs dérivés. Le soutien nutritionnel et des outils comme Verdelia aident à prévenir l\'exposition accidentelle.';
+  String get treatmentContent =>
+      'Le traitement nécessite un régime strict sans gluten à vie. Les patients doivent éviter le blé, l\'orge, le seigle et leurs dérivés. Le soutien nutritionnel et des outils comme Verdelia aident à prévenir l\'exposition accidentelle.';
 
   @override
-  String get resource1 => '📖 **Fondation pour la maladie cœliaque** - [www.celiac.org](https://www.celiac.org)';
+  String get resource1 =>
+      '📖 **Fondation pour la maladie cœliaque** - [www.celiac.org](https://www.celiac.org)';
 
   @override
-  String get resource2 => '📱 **Guide d\'achat interactif** - Fonctionnalité intégrée à l\'application pour scanner les listes d\'ingrédients suspectes.';
+  String get resource2 =>
+      '📱 **Guide d\'achat interactif** - Fonctionnalité intégrée à l\'application pour scanner les listes d\'ingrédients suspectes.';
 
   @override
-  String get resource3 => '👩‍⚕️ **Annuaire des spécialistes** - Trouvez des gastro-entérologues et nutritionnistes spécialisés dans la maladie cœliaque près de chez vous.';
+  String get resource3 =>
+      '👩‍⚕️ **Annuaire des spécialistes** - Trouvez des gastro-entérologues et nutritionnistes spécialisés dans la maladie cœliaque près de chez vous.';
 
   @override
   String get resourcesTitle => 'Ressources utiles';
 
   @override
-  String get userCredentialsText => 'Vos identifiants de connexion comprennent votre nom d\'utilisateur et votre mot de passe. Assurez-vous de les garder en sécurité et de ne les partager avec personne.';
+  String get userCredentialsText =>
+      'Vos identifiants de connexion comprennent votre nom d\'utilisateur et votre mot de passe. Assurez-vous de les garder en sécurité et de ne les partager avec personne.';
 
   @override
   String get processingRequest => 'Traitement de votre demande...';
@@ -581,40 +610,51 @@ class AppLocalizationsFr extends AppLocalizations {
   String get treatmentTitle => 'Traitement et gestion';
 
   @override
-  String get internal_server_error => 'Erreur interne du serveur. Veuillez réessayer plus tard.';
+  String get internal_server_error =>
+      'Erreur interne du serveur. Veuillez réessayer plus tard.';
 
   @override
-  String get http_exception => 'Échec de la requête HTTP. Vérifiez votre connexion.';
+  String get http_exception =>
+      'Échec de la requête HTTP. Vérifiez votre connexion.';
 
   @override
-  String get integrity_error => 'Violation de l\'intégrité des données. L\'opération ne peut pas être effectuée.';
+  String get integrity_error =>
+      'Violation de l\'intégrité des données. L\'opération ne peut pas être effectuée.';
 
   @override
-  String get data_error => 'Format de données invalide. Veuillez vérifier votre saisie.';
+  String get data_error =>
+      'Format de données invalide. Veuillez vérifier votre saisie.';
 
   @override
-  String get operational_error => 'Une erreur opérationnelle s\'est produite. Contactez le support si le problème persiste.';
+  String get operational_error =>
+      'Une erreur opérationnelle s\'est produite. Contactez le support si le problème persiste.';
 
   @override
-  String get programming_error => 'Une erreur de programmation s\'est produite. Les développeurs ont été notifiés.';
+  String get programming_error =>
+      'Une erreur de programmation s\'est produite. Les développeurs ont été notifiés.';
 
   @override
-  String get database_error => 'Échec de l\'opération de base de données. Réessayez ou contactez le support.';
+  String get database_error =>
+      'Échec de l\'opération de base de données. Réessayez ou contactez le support.';
 
   @override
   String get internal_error => 'Une erreur système interne s\'est produite.';
 
   @override
-  String get interface_error => 'Échec de la communication avec l\'interface. Vérifiez les configurations.';
+  String get interface_error =>
+      'Échec de la communication avec l\'interface. Vérifiez les configurations.';
 
   @override
-  String get statement_error => 'Instruction SQL invalide. Erreur de syntaxe ou de logique détectée.';
+  String get statement_error =>
+      'Instruction SQL invalide. Erreur de syntaxe ou de logique détectée.';
 
   @override
-  String get incorrect_credentials => 'Nom d\'utilisateur ou mot de passe incorrect';
+  String get incorrect_credentials =>
+      'Nom d\'utilisateur ou mot de passe incorrect';
 
   @override
-  String get sqlalchemy_error => 'Erreur de base de données SQLAlchemy. Vérifiez la requête ou la connexion.';
+  String get sqlalchemy_error =>
+      'Erreur de base de données SQLAlchemy. Vérifiez la requête ou la connexion.';
 
   @override
   String get changePassword => 'Changer le mot de passe';
@@ -623,7 +663,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get passwordChangeTitle => 'Créer un nouveau mot de passe';
 
   @override
-  String get passwordChangeSubtitle => 'Votre nouveau mot de passe doit être différent des mots de passe précédents';
+  String get passwordChangeSubtitle =>
+      'Votre nouveau mot de passe doit être différent des mots de passe précédents';
 
   @override
   String get currentPassword => 'Mot de passe actuel';
@@ -641,7 +682,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get confirmPassword => 'Confirmer le mot de passe';
 
   @override
-  String get confirmPasswordHint => 'Saisissez à nouveau votre nouveau mot de passe';
+  String get confirmPasswordHint =>
+      'Saisissez à nouveau votre nouveau mot de passe';
 
   @override
   String get changePasswordButton => 'Changer le mot de passe';
@@ -677,22 +719,26 @@ class AppLocalizationsFr extends AppLocalizations {
   String get currentPasswordRequired => 'Le mot de passe actuel est requis';
 
   @override
-  String get passwordTooShort => 'Le mot de passe doit contenir au moins 8 caractères';
+  String get passwordTooShort =>
+      'Le mot de passe doit contenir au moins 8 caractères';
 
   @override
   String get newPasswordRequired => 'Le nouveau mot de passe est requis';
 
   @override
-  String get passwordUppercaseError => 'Doit contenir au moins une lettre majuscule';
+  String get passwordUppercaseError =>
+      'Doit contenir au moins une lettre majuscule';
 
   @override
   String get passwordNumberError => 'Doit contenir au moins un chiffre';
 
   @override
-  String get passwordSameAsCurrent => 'Le nouveau mot de passe doit être différent du mot de passe actuel';
+  String get passwordSameAsCurrent =>
+      'Le nouveau mot de passe doit être différent du mot de passe actuel';
 
   @override
-  String get confirmPasswordRequired => 'Veuillez confirmer votre nouveau mot de passe';
+  String get confirmPasswordRequired =>
+      'Veuillez confirmer votre nouveau mot de passe';
 
   @override
   String get passwordsDontMatch => 'Les mots de passe ne correspondent pas';
@@ -740,16 +786,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get termsTitle => 'Conditions générales';
 
   @override
-  String get termsContent => 'En utilisant cette application, vous acceptez de :';
+  String get termsContent =>
+      'En utilisant cette application, vous acceptez de :';
 
   @override
-  String get termsPoint1 => 'Utiliser l\'application uniquement à des fins personnelles';
+  String get termsPoint1 =>
+      'Utiliser l\'application uniquement à des fins personnelles';
 
   @override
   String get guideTitle => 'Guide d\'utilisation';
 
   @override
-  String get guideStep1 => 'Créez votre profil pour enregistrer vos préférences';
+  String get guideStep1 =>
+      'Créez votre profil pour enregistrer vos préférences';
 
   @override
   String get guideStep3 => 'Ajoutez des favoris pour un accès rapide';
@@ -794,16 +843,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get close => 'Fermer';
 
   @override
-  String get termsAgreementText => 'J\'accepte les conditions d\'utilisation régissant mon utilisation de Verdelia';
+  String get termsAgreementText =>
+      'J\'accepte les conditions d\'utilisation régissant mon utilisation de Verdelia';
 
   @override
-  String get privacyAgreementText => 'J\'accepte la manière dont Verdelia collecte et traite mes données';
+  String get privacyAgreementText =>
+      'J\'accepte la manière dont Verdelia collecte et traite mes données';
 
   @override
   String get readFullDocument => 'Lire le document complet';
 
   @override
-  String get acceptAllTermsError => 'Vous devez accepter les deux documents pour continuer';
+  String get acceptAllTermsError =>
+      'Vous devez accepter les deux documents pour continuer';
 
   @override
   String get outOfStock => 'En rupture de stock';
@@ -814,7 +866,8 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get ingredientUnits => 'Gramme,Kilogramme,Milligramme,Livre,Once,Millilitre,Litre,Tasse,Cuillère à soupe,Cuillère à café,Pincée';
+  String get ingredientUnits =>
+      'Gramme,Kilogramme,Milligramme,Livre,Once,Millilitre,Litre,Tasse,Cuillère à soupe,Cuillère à café,Pincée';
 
   @override
   String get unitText => 'Unité';
@@ -838,7 +891,8 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get noOtherProductsAvailable => 'Aucun produit disponible de ce fournisseur.';
+  String get noOtherProductsAvailable =>
+      'Aucun produit disponible de ce fournisseur.';
 
   @override
   String get gallery => 'Galerie';
@@ -871,7 +925,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get confirm => 'Confirmer';
 
   @override
-  String get selectOrganisationHintText => 'Veuillez sélectionner une organisation';
+  String get selectOrganisationHintText =>
+      'Veuillez sélectionner une organisation';
 
   @override
   String get providerImage => 'Image du fournisseur';
@@ -897,7 +952,8 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get no_location_information_available => 'Aucune information disponible sur la localisation';
+  String get no_location_information_available =>
+      'Aucune information disponible sur la localisation';
 
   @override
   String get orderFor => 'Commander pour';
@@ -955,7 +1011,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dateTimeNotAvailable => 'Date non disponible';
 
   @override
-  String dateTimeFormat(Object day, Object hour, Object min, Object month, Object year) {
+  String dateTimeFormat(
+      Object day, Object hour, Object min, Object month, Object year) {
     return '$day/$month/$year $hour:$min';
   }
 
@@ -1018,10 +1075,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get laterText => 'Plus tard';
 
   @override
-  String get failedAuthAfterSignIn => 'Échec de l\'authentification après la connexion.';
+  String get failedAuthAfterSignIn =>
+      'Échec de l\'authentification après la connexion.';
 
   @override
-  String get loginTimeoutMsg => 'Délai de connexion expiré. Veuillez réessayer.';
+  String get loginTimeoutMsg =>
+      'Délai de connexion expiré. Veuillez réessayer.';
 
   @override
   String get failedLogin => 'Échec de la connexion. Vérifiez vos identifiants.';
@@ -1045,7 +1104,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get alignBarcode => 'Alignez le code-barres dans le cadre';
 
   @override
-  String get positionBarcode => 'Positionnez le code-barres dans la zone de scan pour une détection automatique';
+  String get positionBarcode =>
+      'Positionnez le code-barres dans la zone de scan pour une détection automatique';
 
   @override
   String get barcodeScanSuccess => 'Code-barres scanné avec succès !';
@@ -1087,13 +1147,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiAnalysing => 'L\'IA analyse votre produit...';
 
   @override
-  String get aiAssistantSubtitle => 'Remplir automatiquement les détails du produit';
+  String get aiAssistantSubtitle =>
+      'Remplir automatiquement les détails du produit';
 
   @override
   String get aiAssistantTitle => 'Assistant produit IA';
 
   @override
-  String get productDetailsFilled => 'Détails du produit remplis automatiquement !';
+  String get productDetailsFilled =>
+      'Détails du produit remplis automatiquement !';
 
   @override
   String get scanQR => 'Scanner le code QR';
@@ -1102,7 +1164,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get scannerHint => 'Positionnez le code QR dans le cadre';
 
   @override
-  String get alignQR => 'Alignez le code QR dans la zone de scan pour une détection automatique';
+  String get alignQR =>
+      'Alignez le code QR dans la zone de scan pour une détection automatique';
 
   @override
   String get manualInput => 'Saisie manuelle';
@@ -1126,7 +1189,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiWillAnalyseImage => 'L\'IA analysera l\'image du produit';
 
   @override
-  String get automaticallyFillDetailsFromBarcode => 'Remplir automatiquement les détails à partir du code-barres';
+  String get automaticallyFillDetailsFromBarcode =>
+      'Remplir automatiquement les détails à partir du code-barres';
 
   @override
   String get aiGenerated => 'Généré par IA';
@@ -1153,10 +1217,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get notificationOrderReceivedSubtitle => 'Prête à être traitée';
 
   @override
-  String get notificationProductUpdatedSubtitle => 'Nouvelles modifications disponibles';
+  String get notificationProductUpdatedSubtitle =>
+      'Nouvelles modifications disponibles';
 
   @override
-  String get notificationOrderReceivedMessage => 'Votre commande a été reçue avec succès et est en cours de traitement. Vous pouvez suivre son statut dans vos commandes.';
+  String get notificationOrderReceivedMessage =>
+      'Votre commande a été reçue avec succès et est en cours de traitement. Vous pouvez suivre son statut dans vos commandes.';
 
   @override
   String notificationRoleInvitationMessage(String ruleName, String ruleType) {
@@ -1164,13 +1230,16 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get notificationRoleInvitationDefaultMessage => 'Vous avez été invité à rejoindre une équipe.';
+  String get notificationRoleInvitationDefaultMessage =>
+      'Vous avez été invité à rejoindre une équipe.';
 
   @override
-  String get notificationProductUpdatedMessage => 'Un produit que vous suivez a été mis à jour avec de nouvelles fonctionnalités et améliorations. Découvrez-le !';
+  String get notificationProductUpdatedMessage =>
+      'Un produit que vous suivez a été mis à jour avec de nouvelles fonctionnalités et améliorations. Découvrez-le !';
 
   @override
-  String get notificationDefaultMessage => 'Vous avez une nouvelle notification';
+  String get notificationDefaultMessage =>
+      'Vous avez une nouvelle notification';
 
   @override
   String get timeJustNow => 'À l\'instant';
@@ -1266,37 +1335,43 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inventory_view_title => 'Voir l\'inventaire';
 
   @override
-  String get inventory_view_description => 'Peut consulter les niveaux de stock actuels';
+  String get inventory_view_description =>
+      'Peut consulter les niveaux de stock actuels';
 
   @override
   String get inventory_manage_title => 'Gérer l\'inventaire';
 
   @override
-  String get inventory_manage_description => 'Peut mettre à jour les niveaux de stock et gérer les produits';
+  String get inventory_manage_description =>
+      'Peut mettre à jour les niveaux de stock et gérer les produits';
 
   @override
   String get orders_view_title => 'Voir les commandes';
 
   @override
-  String get orders_view_description => 'Peut consulter les commandes clients et fournisseurs';
+  String get orders_view_description =>
+      'Peut consulter les commandes clients et fournisseurs';
 
   @override
   String get orders_manage_title => 'Gérer les commandes';
 
   @override
-  String get orders_manage_description => 'Peut créer, modifier et traiter les commandes';
+  String get orders_manage_description =>
+      'Peut créer, modifier et traiter les commandes';
 
   @override
   String get personnel_view_title => 'Voir l\'équipe';
 
   @override
-  String get personnel_view_description => 'Peut consulter les autres membres de l\'équipe';
+  String get personnel_view_description =>
+      'Peut consulter les autres membres de l\'équipe';
 
   @override
   String get personnel_manage_title => 'Gérer l\'équipe';
 
   @override
-  String get personnel_manage_description => 'Peut ajouter/supprimer des membres et définir les permissions';
+  String get personnel_manage_description =>
+      'Peut ajouter/supprimer des membres et définir les permissions';
 
   @override
   String get manage_permissions => 'Gérer les permissions';
@@ -1341,7 +1416,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get actionNotify => 'Notifier';
 
   @override
-  String get pendingInvitationMessage => 'Cet utilisateur a une invitation en attente.';
+  String get pendingInvitationMessage =>
+      'Cet utilisateur a une invitation en attente.';
 
   @override
   String get actionResendInvite => 'Renvoyer l\'invitation';
@@ -1381,10 +1457,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noBusinessesFound => 'Aucune entreprise trouvée';
 
   @override
-  String get adjustFilterBusinessHint => 'Essayez d\'ajuster votre recherche ou vos filtres';
+  String get adjustFilterBusinessHint =>
+      'Essayez d\'ajuster votre recherche ou vos filtres';
 
   @override
-  String get addFirstBusinessHint => 'Ajoutez votre première entreprise pour commencer';
+  String get addFirstBusinessHint =>
+      'Ajoutez votre première entreprise pour commencer';
 
   @override
   String get addMemberText => 'Ajouter un membre';
@@ -1401,13 +1479,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get scanQrCodeText => 'Scanner le code QR';
 
   @override
-  String get scanUserProfileQrText => 'Scanner le code QR du profil utilisateur';
+  String get scanUserProfileQrText =>
+      'Scanner le code QR du profil utilisateur';
 
   @override
   String get searchAndInviteText => 'Rechercher et inviter';
 
   @override
-  String get searchAndInviteExistingUsersText => 'Rechercher et inviter des utilisateurs existants';
+  String get searchAndInviteExistingUsersText =>
+      'Rechercher et inviter des utilisateurs existants';
 
   @override
   String get cancelText => 'Annuler';
@@ -1416,7 +1496,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get cancelInvitationTitle => 'Annuler l\'invitation';
 
   @override
-  String get cancelInvitationMessage => 'Annuler l\'invitation ? Cette action est irréversible.';
+  String get cancelInvitationMessage =>
+      'Annuler l\'invitation ? Cette action est irréversible.';
 
   @override
   String get cancelInvitationAction => 'Annuler l\'invitation';
@@ -1441,10 +1522,12 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get privilegesUpdateFailedMessage => 'Échec de la mise à jour des privilèges';
+  String get privilegesUpdateFailedMessage =>
+      'Échec de la mise à jour des privilèges';
 
   @override
-  String get privilegesUpdateError => 'Une erreur s\'est produite lors de la mise à jour des privilèges';
+  String get privilegesUpdateError =>
+      'Une erreur s\'est produite lors de la mise à jour des privilèges';
 
   @override
   String get barcodeText => 'Code-barres';
@@ -1477,10 +1560,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noProductDataTitle => 'Produit introuvable';
 
   @override
-  String get noProductDataDescription => 'Aucune information produit trouvée pour ce code-barres. Le produit est peut-être nouveau ou pas encore dans notre base de données.';
+  String get noProductDataDescription =>
+      'Aucune information produit trouvée pour ce code-barres. Le produit est peut-être nouveau ou pas encore dans notre base de données.';
 
   @override
-  String get noProductDataHelp => 'Vous pouvez réessayer le scan ou ajouter manuellement les détails du produit.';
+  String get noProductDataHelp =>
+      'Vous pouvez réessayer le scan ou ajouter manuellement les détails du produit.';
 
   @override
   String get scanAgainText => 'Scanner à nouveau';
@@ -1498,25 +1583,29 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noOwnedBusinessesTitle => 'Aucune entreprise possédée';
 
   @override
-  String get noOwnedBusinessesDescription => 'Vous ne possédez encore aucune entreprise';
+  String get noOwnedBusinessesDescription =>
+      'Vous ne possédez encore aucune entreprise';
 
   @override
   String get noManagedBusinessesTitle => 'Aucune entreprise gérée';
 
   @override
-  String get noManagedBusinessesDescription => 'Vous ne gérez aucune entreprise';
+  String get noManagedBusinessesDescription =>
+      'Vous ne gérez aucune entreprise';
 
   @override
   String get noBusinessesTitle => 'Aucune entreprise';
 
   @override
-  String get noBusinessesDescription => 'Vous ne possédez ni ne gérez encore d\'entreprise';
+  String get noBusinessesDescription =>
+      'Vous ne possédez ni ne gérez encore d\'entreprise';
 
   @override
   String get noResultsTitle => 'Aucun résultat';
 
   @override
-  String get adjustSearchFiltersText => 'Essayez d\'ajuster votre recherche ou vos filtres';
+  String get adjustSearchFiltersText =>
+      'Essayez d\'ajuster votre recherche ou vos filtres';
 
   @override
   String get orderManagement => 'Gestion des commandes';
@@ -1531,7 +1620,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get selectSupplier => 'Sélectionner un fournisseur';
 
   @override
-  String get noOrderManagementPrivileges => 'Aucun privilège de gestion des commandes';
+  String get noOrderManagementPrivileges =>
+      'Aucun privilège de gestion des commandes';
 
   @override
   String get orderDetails => 'Détails de la commande';
@@ -1555,7 +1645,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get financeAndPricing => 'Finance et tarification';
 
   @override
-  String get manageInvoicesAndConfigurePricing => 'Gérer les factures et configurer la tarification';
+  String get manageInvoicesAndConfigurePricing =>
+      'Gérer les factures et configurer la tarification';
 
   @override
   String get exportData => 'Exporter les données';
@@ -1597,7 +1688,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get selectSupplierFirstText => 'Sélectionnez d\'abord un fournisseur';
 
   @override
-  String get selectSupplierToViewText => 'Veuillez sélectionner un fournisseur pour voir son inventaire de produits';
+  String get selectSupplierToViewText =>
+      'Veuillez sélectionner un fournisseur pour voir son inventaire de produits';
 
   @override
   String get noProductsText => 'Aucun produit disponible';
@@ -1606,19 +1698,23 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noProductsFoundText => 'Aucun produit trouvé';
 
   @override
-  String get tryDifferentSearchText => 'Essayez un autre terme de recherche ou parcourez d\'autres fournisseurs';
+  String get tryDifferentSearchText =>
+      'Essayez un autre terme de recherche ou parcourez d\'autres fournisseurs';
 
   @override
-  String get addFirstProductText => 'Ajoutez votre premier produit pour commencer à vendre';
+  String get addFirstProductText =>
+      'Ajoutez votre premier produit pour commencer à vendre';
 
   @override
   String get quickTransactions => 'Transactions rapides';
 
   @override
-  String get barcodeScanningComingSoon => 'Scan de code-barres bientôt disponible';
+  String get barcodeScanningComingSoon =>
+      'Scan de code-barres bientôt disponible';
 
   @override
-  String get chooseStoreToViewProducts => 'Choisissez un magasin pour voir les produits';
+  String get chooseStoreToViewProducts =>
+      'Choisissez un magasin pour voir les produits';
 
   @override
   String get added => 'Ajouté';
@@ -1663,13 +1759,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get accessRequired => 'Accès requis';
 
   @override
-  String get pleaseLoginToAccessDashboard => 'Veuillez vous connecter pour accéder au tableau de bord.';
+  String get pleaseLoginToAccessDashboard =>
+      'Veuillez vous connecter pour accéder au tableau de bord.';
 
   @override
-  String get needBusinessAssignment => 'Vous devez être affecté à une entreprise pour accéder aux fonctionnalités de gestion.';
+  String get needBusinessAssignment =>
+      'Vous devez être affecté à une entreprise pour accéder aux fonctionnalités de gestion.';
 
   @override
-  String get contactAdminOrJoinTeam => 'Contactez votre administrateur ou rejoignez une équipe d\'entreprise.';
+  String get contactAdminOrJoinTeam =>
+      'Contactez votre administrateur ou rejoignez une équipe d\'entreprise.';
 
   @override
   String get checkAccessStatus => 'Vérifier le statut d\'accès';
@@ -1708,7 +1807,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noAnalyticsData => 'Aucune donnée analytique';
 
   @override
-  String get generateInvoicesToSeeAnalytics => 'Générez des factures pour voir les données analytiques';
+  String get generateInvoicesToSeeAnalytics =>
+      'Générez des factures pour voir les données analytiques';
 
   @override
   String get financialOverview => 'Aperçu financier';
@@ -1783,7 +1883,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noInvoicesYet => 'Aucune facture pour le moment';
 
   @override
-  String get noInvoicesDescription => 'Vos factures apparaîtront ici une fois vos ventes complétées';
+  String get noInvoicesDescription =>
+      'Vos factures apparaîtront ici une fois vos ventes complétées';
 
   @override
   String get createFirstInvoice => 'Créer la première facture';
@@ -1854,13 +1955,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noServicesFound => 'Aucun service trouvé';
 
   @override
-  String get noServicesDescription => 'Ajoutez votre premier service pour commencer à proposer des services de santé aux patients.';
+  String get noServicesDescription =>
+      'Ajoutez votre premier service pour commencer à proposer des services de santé aux patients.';
 
   @override
   String get proTip => 'Astuce';
 
   @override
-  String get addServicesToManage => 'Ajoutez des services pour gérer les rendez-vous, la tarification et l\'allocation des ressources efficacement.';
+  String get addServicesToManage =>
+      'Ajoutez des services pour gérer les rendez-vous, la tarification et l\'allocation des ressources efficacement.';
 
   @override
   String get edit => 'Modifier';
@@ -1947,13 +2050,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noBusinessOperations => 'Aucune opération commerciale';
 
   @override
-  String get generateOperationsToSeeData => 'Générez des opérations commerciales pour voir les analyses détaillées et les données de transaction';
+  String get generateOperationsToSeeData =>
+      'Générez des opérations commerciales pour voir les analyses détaillées et les données de transaction';
 
   @override
   String get exportOperations => 'Exporter les opérations';
 
   @override
-  String get viewAllBusinessTransactions => 'Voir toutes les transactions et opérations commerciales';
+  String get viewAllBusinessTransactions =>
+      'Voir toutes les transactions et opérations commerciales';
 
   @override
   String get topSuppliers => 'Meilleurs fournisseurs';
@@ -2058,7 +2163,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noItemsFound => 'Aucun article trouvé';
 
   @override
-  String get itemsWillBeLoadedFromServer => 'Les articles seront chargés depuis le serveur';
+  String get itemsWillBeLoadedFromServer =>
+      'Les articles seront chargés depuis le serveur';
 
   @override
   String get loadItems => 'Charger les articles';
@@ -2097,13 +2203,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get products => 'Produits';
 
   @override
-  String get browseAndSelectServices => 'Parcourir et sélectionner des services';
+  String get browseAndSelectServices =>
+      'Parcourir et sélectionner des services';
 
   @override
   String get noServicesAvailable => 'Aucun service disponible';
 
   @override
-  String get servicesWillAppearHere => 'Les services apparaîtront ici lorsqu\'ils seront disponibles';
+  String get servicesWillAppearHere =>
+      'Les services apparaîtront ici lorsqu\'ils seront disponibles';
 
   @override
   String get loadingProducts => 'Chargement des produits...';
@@ -2112,7 +2220,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noProductsAvailable => 'Aucun produit disponible';
 
   @override
-  String get preparingServiceCatalog => 'Préparation de votre catalogue de services';
+  String get preparingServiceCatalog =>
+      'Préparation de votre catalogue de services';
 
   @override
   String get refreshServices => 'Actualiser les services';
@@ -2331,10 +2440,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noResultsForFilter => 'Aucun résultat pour le filtre actuel';
 
   @override
-  String get createYourFirstInvoice => 'Créez votre première facture pour commencer';
+  String get createYourFirstInvoice =>
+      'Créez votre première facture pour commencer';
 
   @override
-  String get tryDifferentFilter => 'Essayez un autre filtre ou terme de recherche';
+  String get tryDifferentFilter =>
+      'Essayez un autre filtre ou terme de recherche';
 
   @override
   String get createInvoice => 'Créer une facture';
@@ -2415,7 +2526,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get confirmDelete => 'Confirmer la suppression';
 
   @override
-  String get deleteDocumentConfirmation => 'Êtes-vous sûr de vouloir supprimer ce document ?';
+  String get deleteDocumentConfirmation =>
+      'Êtes-vous sûr de vouloir supprimer ce document ?';
 
   @override
   String get documentDeleted => 'Document supprimé';
@@ -2505,7 +2617,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get connectionError => 'Erreur de connexion. Vérifiez votre internet.';
 
   @override
-  String get serverErrorGeneric => 'Erreur serveur. Veuillez réessayer plus tard.';
+  String get serverErrorGeneric =>
+      'Erreur serveur. Veuillez réessayer plus tard.';
 
   @override
   String get loadingMore => 'Chargement...';
@@ -2758,7 +2871,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get serviceParameters => 'Paramètres du service';
 
   @override
-  String get customizeServiceParameters => 'Personnaliser les paramètres du service';
+  String get customizeServiceParameters =>
+      'Personnaliser les paramètres du service';
 
   @override
   String get saveConfiguration => 'Enregistrer la configuration';
@@ -2767,13 +2881,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get services_view_title => 'Voir les services';
 
   @override
-  String get services_view_description => 'Voir les services disponibles et la tarification';
+  String get services_view_description =>
+      'Voir les services disponibles et la tarification';
 
   @override
   String get services_manage_title => 'Gérer les services';
 
   @override
-  String get services_manage_description => 'Ajouter, modifier et supprimer des services';
+  String get services_manage_description =>
+      'Ajouter, modifier et supprimer des services';
 
   @override
   String get pos_view_title => 'Voir le point de vente';
@@ -2785,31 +2901,36 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pos_manage_title => 'Gérer le point de vente';
 
   @override
-  String get pos_manage_description => 'Traiter les ventes et gérer les opérations du point de vente';
+  String get pos_manage_description =>
+      'Traiter les ventes et gérer les opérations du point de vente';
 
   @override
   String get operations_view_title => 'Voir les opérations';
 
   @override
-  String get operations_view_description => 'Voir les rapports et métriques opérationnels';
+  String get operations_view_description =>
+      'Voir les rapports et métriques opérationnels';
 
   @override
   String get operations_manage_title => 'Gérer les opérations';
 
   @override
-  String get operations_manage_description => 'Configurer les opérations et paramètres du système';
+  String get operations_manage_description =>
+      'Configurer les opérations et paramètres du système';
 
   @override
   String get finance_view_title => 'Voir la finance';
 
   @override
-  String get finance_view_description => 'Voir les rapports financiers et les transactions';
+  String get finance_view_description =>
+      'Voir les rapports financiers et les transactions';
 
   @override
   String get finance_manage_title => 'Gérer la finance';
 
   @override
-  String get finance_manage_description => 'Gérer les opérations financières et la comptabilité';
+  String get finance_manage_description =>
+      'Gérer les opérations financières et la comptabilité';
 
   @override
   String get category_services => 'Gestion des services';
@@ -2836,7 +2957,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get privilegesUpdated => 'Privilèges mis à jour avec succès';
 
   @override
-  String get confirmPrivilegeChange => 'Êtes-vous sûr de vouloir modifier les privilèges ?';
+  String get confirmPrivilegeChange =>
+      'Êtes-vous sûr de vouloir modifier les privilèges ?';
 
   @override
   String get noPrivilegesSelected => 'Aucun privilège sélectionné';
@@ -2857,7 +2979,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get togglePrivilegeTooltip => 'Basculer le privilège';
 
   @override
-  String get categoryToggleTooltip => 'Basculer tous les privilèges de la catégorie';
+  String get categoryToggleTooltip =>
+      'Basculer tous les privilèges de la catégorie';
 
   @override
   String get active => 'Actif';
@@ -3169,7 +3292,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get orderConfirmed => 'Commande confirmée';
 
   @override
-  String get orderPlacedSuccessfully => 'Votre commande a été passée avec succès';
+  String get orderPlacedSuccessfully =>
+      'Votre commande a été passée avec succès';
 
   @override
   String get backToHome => 'Retour à l\'accueil';
@@ -3280,7 +3404,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checkDetails => 'Détails du chèque';
 
   @override
-  String get checkPaymentNote => 'Le paiement par chèque sera traité dès réception et compensation.';
+  String get checkPaymentNote =>
+      'Le paiement par chèque sera traité dès réception et compensation.';
 
   @override
   String get printDocument => 'Imprimer';
@@ -3295,10 +3420,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get searchForCustomer => 'Rechercher un client';
 
   @override
-  String get searchCustomersHint => 'Rechercher par nom, e-mail ou téléphone...';
+  String get searchCustomersHint =>
+      'Rechercher par nom, e-mail ou téléphone...';
 
   @override
-  String get searchCustomerInstructions => 'Saisissez le nom, l\'e-mail ou le numéro de téléphone du client pour rechercher';
+  String get searchCustomerInstructions =>
+      'Saisissez le nom, l\'e-mail ou le numéro de téléphone du client pour rechercher';
 
   @override
   String get addNewCustomer => 'Ajouter un nouveau client';
@@ -3319,7 +3446,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get searchResults => 'Résultats de recherche';
 
   @override
-  String get addNewCustomerInstruction => 'Créez un nouveau profil client pour l\'ajouter au système';
+  String get addNewCustomerInstruction =>
+      'Créez un nouveau profil client pour l\'ajouter au système';
 
   @override
   String get create => 'Créer';
@@ -3358,16 +3486,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checkoutHelp => 'Aide au paiement';
 
   @override
-  String get customerHelpDescription => 'Sélectionnez ou recherchez un client à associer à cette commande';
+  String get customerHelpDescription =>
+      'Sélectionnez ou recherchez un client à associer à cette commande';
 
   @override
-  String get documentTypeHelpDescription => 'Choisissez le type de document à générer';
+  String get documentTypeHelpDescription =>
+      'Choisissez le type de document à générer';
 
   @override
-  String get paymentMethodHelpDescription => 'Sélectionnez votre mode de paiement préféré';
+  String get paymentMethodHelpDescription =>
+      'Sélectionnez votre mode de paiement préféré';
 
   @override
-  String get notesParametersHelpDescription => 'Ajoutez des notes et des paramètres personnalisés à cette commande';
+  String get notesParametersHelpDescription =>
+      'Ajoutez des notes et des paramètres personnalisés à cette commande';
 
   @override
   String get gotIt => 'Compris !';
@@ -3388,7 +3520,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noParametersAdded => 'Aucun paramètre ajouté';
 
   @override
-  String get addParametersToCustomizeOrder => 'Ajoutez des paramètres pour personnaliser cette commande';
+  String get addParametersToCustomizeOrder =>
+      'Ajoutez des paramètres pour personnaliser cette commande';
 
   @override
   String get changeCustomer => 'Changer de client';
@@ -3400,7 +3533,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get help => 'Aide';
 
   @override
-  String get addParameterDescription => 'Ajouter un paramètre personnalisé à cette commande';
+  String get addParameterDescription =>
+      'Ajouter un paramètre personnalisé à cette commande';
 
   @override
   String get parameterKey => 'Clé du paramètre';
@@ -3412,7 +3546,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get parameterKeyRequired => 'Veuillez saisir une clé';
 
   @override
-  String get parameterKeyTooLong => 'La clé est trop longue (max 50 caractères)';
+  String get parameterKeyTooLong =>
+      'La clé est trop longue (max 50 caractères)';
 
   @override
   String get parameterValue => 'Valeur du paramètre';
@@ -3424,7 +3559,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get parameterValueRequired => 'Veuillez saisir une valeur';
 
   @override
-  String get parameterValueTooLong => 'La valeur est trop longue (max 200 caractères)';
+  String get parameterValueTooLong =>
+      'La valeur est trop longue (max 200 caractères)';
 
   @override
   String get suggestedParameters => 'Paramètres suggérés';
@@ -3439,13 +3575,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get cartEmpty => 'Votre panier est vide';
 
   @override
-  String get pleaseEnterCardDetails => 'Veuillez saisir les détails de la carte';
+  String get pleaseEnterCardDetails =>
+      'Veuillez saisir les détails de la carte';
 
   @override
   String get pleaseEnterBankDetails => 'Veuillez saisir les détails bancaires';
 
   @override
-  String get pleaseEnterMobilePaymentDetails => 'Veuillez sélectionner un fournisseur de paiement mobile';
+  String get pleaseEnterMobilePaymentDetails =>
+      'Veuillez sélectionner un fournisseur de paiement mobile';
 
   @override
   String get visa => 'VISA';
@@ -3472,7 +3610,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get stcPay => 'STC Pay';
 
   @override
-  String get saveToPreferences => 'Enregistrer dans les préférences pour une utilisation future';
+  String get saveToPreferences =>
+      'Enregistrer dans les préférences pour une utilisation future';
 
   @override
   String get savedParameters => 'Paramètres enregistrés';
@@ -3487,13 +3626,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get manageSavedParameters => 'Gérer les paramètres enregistrés';
 
   @override
-  String get selectCustomerForOrder => 'Sélectionner un client pour cette commande';
+  String get selectCustomerForOrder =>
+      'Sélectionner un client pour cette commande';
 
   @override
   String get searchForCustomers => 'Rechercher des clients';
 
   @override
-  String get enterNameOrEmailToFindCustomers => 'Saisissez un nom, un nom d\'utilisateur ou un e-mail pour trouver des clients';
+  String get enterNameOrEmailToFindCustomers =>
+      'Saisissez un nom, un nom d\'utilisateur ou un e-mail pour trouver des clients';
 
   @override
   String get allCustomers => 'Tous les clients';
@@ -3502,7 +3643,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clearSelection => 'Effacer la sélection';
 
   @override
-  String get newCustomerComingSoon => 'Création de nouveau client bientôt disponible';
+  String get newCustomerComingSoon =>
+      'Création de nouveau client bientôt disponible';
 
   @override
   String get selectPaymentType => 'Sélectionnez comment vous souhaitez payer';
@@ -3514,10 +3656,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get fullPaymentApplied => 'Paiement complet appliqué';
 
   @override
-  String get fullPaymentDescDetail => 'Le montant total vous sera débité immédiatement';
+  String get fullPaymentDescDetail =>
+      'Le montant total vous sera débité immédiatement';
 
   @override
-  String get depositOnlyDesc => 'Payer un acompte maintenant, le solde plus tard';
+  String get depositOnlyDesc =>
+      'Payer un acompte maintenant, le solde plus tard';
 
   @override
   String get enterDepositAmount => 'Saisir le montant de l\'acompte';
@@ -3541,7 +3685,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get selectDate => 'Sélectionner une date';
 
   @override
-  String get installmentNote => 'Le montant total sera débité à la date sélectionnée';
+  String get installmentNote =>
+      'Le montant total sera débité à la date sélectionnée';
 
   @override
   String get persons => 'Personnes';
@@ -3553,7 +3698,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get searchForPersons => 'Rechercher des personnes';
 
   @override
-  String get enterNameToFindPersons => 'Saisissez un nom pour trouver des personnes';
+  String get enterNameToFindPersons =>
+      'Saisissez un nom pour trouver des personnes';
 
   @override
   String get noPersonsFound => 'Aucune personne trouvée';
@@ -3568,7 +3714,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noCustomersYet => 'Aucun client pour le moment';
 
   @override
-  String get startByAddingCustomers => 'Commencez par ajouter des clients ci-dessous';
+  String get startByAddingCustomers =>
+      'Commencez par ajouter des clients ci-dessous';
 
   @override
   String get personAccounts => 'Comptes de personnes';
@@ -3613,16 +3760,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get customerRequiredError => 'Veuillez sélectionner un client';
 
   @override
-  String get loginRequiredError => 'Veuillez vous connecter pour passer à la caisse';
+  String get loginRequiredError =>
+      'Veuillez vous connecter pour passer à la caisse';
 
   @override
   String get checkoutError => 'Erreur de paiement';
 
   @override
-  String get itemsHelpDescription => 'Vérifiez les articles de votre panier avant le paiement. Vous pouvez modifier les quantités si nécessaire.';
+  String get itemsHelpDescription =>
+      'Vérifiez les articles de votre panier avant le paiement. Vous pouvez modifier les quantités si nécessaire.';
 
   @override
-  String get deliveryHelpDescription => 'Choisissez si le client récupérera la commande ou si elle doit être livrée.';
+  String get deliveryHelpDescription =>
+      'Choisissez si le client récupérera la commande ou si elle doit être livrée.';
 
   @override
   String get deliveryDetails => 'Détails de la livraison';
@@ -3667,7 +3817,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get addressSelected => 'Adresse sélectionnée';
 
   @override
-  String get addressFilled => 'Adresse remplie à partir des informations client';
+  String get addressFilled =>
+      'Adresse remplie à partir des informations client';
 
   @override
   String get calculatePrice => 'Calculer le prix';
@@ -3949,7 +4100,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get addressComplete => 'Adresse complète';
 
   @override
-  String get addressIncomplete => 'Veuillez remplir tous les champs obligatoires';
+  String get addressIncomplete =>
+      'Veuillez remplir tous les champs obligatoires';
 
   @override
   String get selectCountry => 'Sélectionner un pays';
@@ -4039,13 +4191,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get locationPermission => 'Autorisation de localisation';
 
   @override
-  String get locationPermissionMessage => 'Veuillez activer les services de localisation pour utiliser votre position actuelle';
+  String get locationPermissionMessage =>
+      'Veuillez activer les services de localisation pour utiliser votre position actuelle';
 
   @override
   String get enableLocation => 'Activer la localisation';
 
   @override
-  String get locationServicesDisabled => 'Les services de localisation sont désactivés';
+  String get locationServicesDisabled =>
+      'Les services de localisation sont désactivés';
 
   @override
   String get locationNotFound => 'Position introuvable';
@@ -4210,13 +4364,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get freightShipping => 'Expédition par fret';
 
   @override
-  String get selectDeliveryType => 'Choisissez comment vous souhaitez recevoir votre commande';
+  String get selectDeliveryType =>
+      'Choisissez comment vous souhaitez recevoir votre commande';
 
   @override
   String get totalDeliveryCost => 'Coût total de livraison';
 
   @override
-  String get fillAddressAutomatically => 'Remplir l\'adresse automatiquement à partir du profil client';
+  String get fillAddressAutomatically =>
+      'Remplir l\'adresse automatiquement à partir du profil client';
 
   @override
   String get weightUnit => 'kg';
@@ -4225,7 +4381,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dimensionUnitCm => 'cm';
 
   @override
-  String get enterPackageDimensions => 'Saisissez les dimensions du colis pour une expédition précise';
+  String get enterPackageDimensions =>
+      'Saisissez les dimensions du colis pour une expédition précise';
 
   @override
   String get dimensionUnitM => 'm';
@@ -4338,7 +4495,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get installmentDetails => 'Détails du versement';
 
   @override
-  String get installmentScheduled => 'Versement planifié pour la date sélectionnée';
+  String get installmentScheduled =>
+      'Versement planifié pour la date sélectionnée';
 
   @override
   String get depositAmount => 'Montant de l\'acompte';
@@ -4350,13 +4508,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get enterValidAmount => 'Veuillez saisir un montant valide';
 
   @override
-  String get selectDateForInstallment => 'Veuillez sélectionner une date pour le versement';
+  String get selectDateForInstallment =>
+      'Veuillez sélectionner une date pour le versement';
 
   @override
   String get success => 'Succès';
 
   @override
-  String get additionalDepositSubmitted => 'Acompte supplémentaire soumis avec succès';
+  String get additionalDepositSubmitted =>
+      'Acompte supplémentaire soumis avec succès';
 
   @override
   String get depositSubmitted => 'Acompte soumis avec succès';
@@ -4377,7 +4537,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noDocumentsMatchQuery => 'Aucun document ne correspond';
 
   @override
-  String get documentsWillAppearHere => 'Les documents apparaîtront ici une fois créés';
+  String get documentsWillAppearHere =>
+      'Les documents apparaîtront ici une fois créés';
 
   @override
   String get tip => '💡 Astuce';
@@ -4388,7 +4549,8 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get tryDifferentFilters => 'Essayez d\'autres filtres ou termes de recherche.';
+  String get tryDifferentFilters =>
+      'Essayez d\'autres filtres ou termes de recherche.';
 
   @override
   String get editService => 'Modifier le service';
@@ -4553,19 +4715,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get guestLocation => 'Emplacement du magasin';
 
   @override
-  String get something_went_wrong => 'Une erreur s\'est produite. Veuillez réessayer.';
+  String get something_went_wrong =>
+      'Une erreur s\'est produite. Veuillez réessayer.';
 
   @override
-  String get auth_required => 'Authentification requise. Veuillez vous connecter.';
+  String get auth_required =>
+      'Authentification requise. Veuillez vous connecter.';
 
   @override
-  String get auth_decode_failed => 'Session expirée. Veuillez vous reconnecter.';
+  String get auth_decode_failed =>
+      'Session expirée. Veuillez vous reconnecter.';
 
   @override
-  String get auth_unauthorized => 'Vous n\'avez pas la permission d\'effectuer cette action.';
+  String get auth_unauthorized =>
+      'Vous n\'avez pas la permission d\'effectuer cette action.';
 
   @override
-  String get user_auth_creation_failed => 'Échec de la création du compte. Veuillez réessayer.';
+  String get user_auth_creation_failed =>
+      'Échec de la création du compte. Veuillez réessayer.';
 
   @override
   String get user_net_failed => 'Erreur réseau. Vérifiez votre connexion.';
@@ -4586,7 +4753,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get user_insert_failed => 'Échec de la création de l\'utilisateur.';
 
   @override
-  String get user_update_failed => 'Échec de la mise à jour des informations utilisateur.';
+  String get user_update_failed =>
+      'Échec de la mise à jour des informations utilisateur.';
 
   @override
   String get user_delete_failed => 'Échec de la suppression de l\'utilisateur.';
@@ -4595,16 +4763,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get person_not_exists => 'Personne introuvable.';
 
   @override
-  String get person_insert_failed => 'Échec de la création de l\'enregistrement de la personne.';
+  String get person_insert_failed =>
+      'Échec de la création de l\'enregistrement de la personne.';
 
   @override
-  String get person_update_failed => 'Échec de la mise à jour des informations de la personne.';
+  String get person_update_failed =>
+      'Échec de la mise à jour des informations de la personne.';
 
   @override
-  String get person_delete_failed => 'Échec de la suppression de l\'enregistrement de la personne.';
+  String get person_delete_failed =>
+      'Échec de la suppression de l\'enregistrement de la personne.';
 
   @override
-  String get person_detail_insert_failed => 'Échec de la création des détails de la personne.';
+  String get person_detail_insert_failed =>
+      'Échec de la création des détails de la personne.';
 
   @override
   String get person_details_not_found => 'Détails de la personne introuvables.';
@@ -4625,13 +4797,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get product_quantity_not_enough => 'Quantité de produit insuffisante.';
 
   @override
-  String get product_quantity_restore_failed => 'Échec de la restauration de la quantité du produit.';
+  String get product_quantity_restore_failed =>
+      'Échec de la restauration de la quantité du produit.';
 
   @override
-  String get product_supplier_not_exists => 'Fournisseur du produit introuvable.';
+  String get product_supplier_not_exists =>
+      'Fournisseur du produit introuvable.';
 
   @override
-  String get product_supplier_already_exists => 'Le fournisseur du produit existe déjà.';
+  String get product_supplier_already_exists =>
+      'Le fournisseur du produit existe déjà.';
 
   @override
   String get product_fetch_not_found => 'Produit introuvable.';
@@ -4664,16 +4839,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get supplier_insert_failed => 'Échec de la création du fournisseur.';
 
   @override
-  String get supplier_update_failed => 'Échec de la mise à jour du fournisseur.';
+  String get supplier_update_failed =>
+      'Échec de la mise à jour du fournisseur.';
 
   @override
-  String get supplier_delete_failed => 'Échec de la suppression du fournisseur.';
+  String get supplier_delete_failed =>
+      'Échec de la suppression du fournisseur.';
 
   @override
   String get organisation_not_found => 'Organisation introuvable.';
 
   @override
-  String get organisation_name_used => 'Le nom de l\'organisation est déjà utilisé.';
+  String get organisation_name_used =>
+      'Le nom de l\'organisation est déjà utilisé.';
 
   @override
   String get org_already_exists => 'L\'organisation existe déjà.';
@@ -4694,13 +4872,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ingredient_already_exists => 'L\'ingrédient existe déjà.';
 
   @override
-  String get ingredient_insert_failed => 'Échec de la création de l\'ingrédient.';
+  String get ingredient_insert_failed =>
+      'Échec de la création de l\'ingrédient.';
 
   @override
-  String get ingredient_update_failed => 'Échec de la mise à jour de l\'ingrédient.';
+  String get ingredient_update_failed =>
+      'Échec de la mise à jour de l\'ingrédient.';
 
   @override
-  String get ingredient_delete_failed => 'Échec de la suppression de l\'ingrédient.';
+  String get ingredient_delete_failed =>
+      'Échec de la suppression de l\'ingrédient.';
 
   @override
   String get order_not_exists => 'Commande introuvable.';
@@ -4712,7 +4893,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get order_insert_failed => 'Échec de la création de la commande.';
 
   @override
-  String get order_insert_conflict => 'Impossible de créer la commande en raison d\'un conflit.';
+  String get order_insert_conflict =>
+      'Impossible de créer la commande en raison d\'un conflit.';
 
   @override
   String get order_update_failed => 'Échec de la mise à jour de la commande.';
@@ -4721,13 +4903,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get order_delete_failed => 'Échec de la suppression de la commande.';
 
   @override
-  String get invalid_order_status => 'Changement de statut de commande invalide.';
+  String get invalid_order_status =>
+      'Changement de statut de commande invalide.';
 
   @override
-  String get order_items_delete_failed => 'Échec de la suppression des articles de la commande.';
+  String get order_items_delete_failed =>
+      'Échec de la suppression des articles de la commande.';
 
   @override
-  String get order_item_insert_failed => 'Échec de l\'ajout d\'un article à la commande.';
+  String get order_item_insert_failed =>
+      'Échec de l\'ajout d\'un article à la commande.';
 
   @override
   String get cart_not_exists => 'Panier introuvable.';
@@ -4739,25 +4924,31 @@ class AppLocalizationsFr extends AppLocalizations {
   String get delivery_not_exists => 'Livraison introuvable.';
 
   @override
-  String get delivery_update_failed_label => 'Échec de la mise à jour de la livraison.';
+  String get delivery_update_failed_label =>
+      'Échec de la mise à jour de la livraison.';
 
   @override
-  String get delivery_cannot_be_updated => 'La livraison ne peut pas être mise à jour dans son statut actuel.';
+  String get delivery_cannot_be_updated =>
+      'La livraison ne peut pas être mise à jour dans son statut actuel.';
 
   @override
-  String get delivery_bulk_update_failed => 'Échec de la mise à jour des livraisons.';
+  String get delivery_bulk_update_failed =>
+      'Échec de la mise à jour des livraisons.';
 
   @override
-  String get delivery_delete_failed => 'Échec de la suppression de la livraison.';
+  String get delivery_delete_failed =>
+      'Échec de la suppression de la livraison.';
 
   @override
-  String get delivery_bulk_delete_failed => 'Échec de la suppression des livraisons.';
+  String get delivery_bulk_delete_failed =>
+      'Échec de la suppression des livraisons.';
 
   @override
   String get delivery_insert_failed => 'Échec de la création de la livraison.';
 
   @override
-  String get delivery_validation_failed => 'Informations de livraison invalides.';
+  String get delivery_validation_failed =>
+      'Informations de livraison invalides.';
 
   @override
   String get service_not_found => 'Service introuvable.';
@@ -4775,16 +4966,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get rule_not_exists => 'Affectation du personnel introuvable.';
 
   @override
-  String get rule_insert_failed => 'Échec de la création de l\'affectation du personnel.';
+  String get rule_insert_failed =>
+      'Échec de la création de l\'affectation du personnel.';
 
   @override
-  String get rule_update_failed => 'Échec de la mise à jour de l\'affectation du personnel.';
+  String get rule_update_failed =>
+      'Échec de la mise à jour de l\'affectation du personnel.';
 
   @override
-  String get rule_delete_failed => 'Échec de la suppression de l\'affectation du personnel.';
+  String get rule_delete_failed =>
+      'Échec de la suppression de l\'affectation du personnel.';
 
   @override
-  String get rule_invalid_status => 'Statut d\'affectation du personnel invalide.';
+  String get rule_invalid_status =>
+      'Statut d\'affectation du personnel invalide.';
 
   @override
   String get notification_not_exists => 'Notification introuvable.';
@@ -4793,31 +4988,38 @@ class AppLocalizationsFr extends AppLocalizations {
   String get notification_already_exists => 'La notification existe déjà.';
 
   @override
-  String get notification_insert_failed => 'Échec de la création de la notification.';
+  String get notification_insert_failed =>
+      'Échec de la création de la notification.';
 
   @override
-  String get notification_update_failed => 'Échec de la mise à jour de la notification.';
+  String get notification_update_failed =>
+      'Échec de la mise à jour de la notification.';
 
   @override
-  String get notification_delete_failed => 'Échec de la suppression de la notification.';
+  String get notification_delete_failed =>
+      'Échec de la suppression de la notification.';
 
   @override
-  String get notification_bulk_insert_failed => 'Échec de la création des notifications.';
+  String get notification_bulk_insert_failed =>
+      'Échec de la création des notifications.';
 
   @override
   String get location_not_exists => 'Emplacement introuvable.';
 
   @override
-  String get location_update_failed => 'Échec de la mise à jour de l\'emplacement.';
+  String get location_update_failed =>
+      'Échec de la mise à jour de l\'emplacement.';
 
   @override
   String get location_fetch_not_found => 'Emplacement introuvable.';
 
   @override
-  String get location_insert_failed => 'Échec de la création de l\'emplacement.';
+  String get location_insert_failed =>
+      'Échec de la création de l\'emplacement.';
 
   @override
-  String get location_delete_failed => 'Échec de la suppression de l\'emplacement.';
+  String get location_delete_failed =>
+      'Échec de la suppression de l\'emplacement.';
 
   @override
   String get address_not_found => 'Adresse introuvable.';
@@ -4841,7 +5043,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get not_found => 'Introuvable.';
 
   @override
-  String get network_timeout => 'Délai réseau expiré. Vérifiez votre connexion.';
+  String get network_timeout =>
+      'Délai réseau expiré. Vérifiez votre connexion.';
 
   @override
   String get validation_error => 'Veuillez vérifier votre saisie et réessayer.';
@@ -4865,7 +5068,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get unauthorized => 'Veuillez vous connecter pour continuer.';
 
   @override
-  String get forbidden => 'Vous n\'avez pas la permission d\'accéder à cette ressource.';
+  String get forbidden =>
+      'Vous n\'avez pas la permission d\'accéder à cette ressource.';
 
   @override
   String get conflict => 'Conflit de ressources. Veuillez réessayer.';
@@ -4874,16 +5078,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get gone => 'Cette ressource n\'est plus disponible.';
 
   @override
-  String get bad_gateway => 'Service temporairement indisponible. Veuillez réessayer plus tard.';
+  String get bad_gateway =>
+      'Service temporairement indisponible. Veuillez réessayer plus tard.';
 
   @override
-  String get service_unavailable => 'Le service est temporairement indisponible.';
+  String get service_unavailable =>
+      'Le service est temporairement indisponible.';
 
   @override
-  String get gateway_timeout => 'Délai de la requête expiré. Veuillez réessayer.';
+  String get gateway_timeout =>
+      'Délai de la requête expiré. Veuillez réessayer.';
 
   @override
-  String get network_authentication_required => 'Authentification réseau requise.';
+  String get network_authentication_required =>
+      'Authentification réseau requise.';
 
   @override
   String get no_response_data => 'Aucune donnée de réponse disponible.';
@@ -4922,10 +5130,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noInvitationsOrAssignments => 'Aucune invitation ni affectation';
 
   @override
-  String get noInvitationsDescription => 'Vous n\'avez aucune invitation en attente ni affectation active.';
+  String get noInvitationsDescription =>
+      'Vous n\'avez aucune invitation en attente ni affectation active.';
 
   @override
-  String get noPendingDescription => 'Vous n\'avez aucune invitation en attente.';
+  String get noPendingDescription =>
+      'Vous n\'avez aucune invitation en attente.';
 
   @override
   String get loadingData => 'Chargement...';
@@ -4969,7 +5179,8 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get invitationAcceptedSuccessfully => 'Invitation acceptée avec succès';
+  String get invitationAcceptedSuccessfully =>
+      'Invitation acceptée avec succès';
 
   @override
   String get invitationDeclinedSuccessfully => 'Invitation refusée avec succès';
@@ -5054,13 +5265,15 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get searchByNameUsernameOrRole => 'Rechercher par nom, nom d\'utilisateur ou rôle...';
+  String get searchByNameUsernameOrRole =>
+      'Rechercher par nom, nom d\'utilisateur ou rôle...';
 
   @override
   String get searchForUsers => 'Rechercher des utilisateurs';
 
   @override
-  String get enterNameUsernameOrRole => 'Saisissez un nom, nom d\'utilisateur ou rôle pour trouver des personnes';
+  String get enterNameUsernameOrRole =>
+      'Saisissez un nom, nom d\'utilisateur ou rôle pour trouver des personnes';
 
   @override
   String get currentTeam => 'Équipe actuelle';
@@ -5069,7 +5282,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noUsersFound => 'Aucun utilisateur trouvé';
 
   @override
-  String get tryAdjustingSearchTerms => 'Essayez d\'ajuster vos termes de recherche';
+  String get tryAdjustingSearchTerms =>
+      'Essayez d\'ajuster vos termes de recherche';
 
   @override
   String get results => 'Résultats';
@@ -5112,7 +5326,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noOrganisationsAvailable => 'Aucune organisation disponible.';
 
   @override
-  String get noSuppliersInOrganisation => 'Aucun fournisseur dans cette organisation';
+  String get noSuppliersInOrganisation =>
+      'Aucun fournisseur dans cette organisation';
 
   @override
   String get pendingInvitationsTooltip => 'Invitations en attente';
@@ -5138,10 +5353,12 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get invitationCancelledSuccessfully => 'Invitation annulée avec succès';
+  String get invitationCancelledSuccessfully =>
+      'Invitation annulée avec succès';
 
   @override
-  String get failedToCancelInvitation => 'Échec de l\'annulation de l\'invitation';
+  String get failedToCancelInvitation =>
+      'Échec de l\'annulation de l\'invitation';
 
   @override
   String get activePrivileges => 'Privilèges actifs';
@@ -5164,7 +5381,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get canView => 'Peut voir';
 
   @override
-  String get failedToProcessInvitation => 'Échec du traitement de l\'invitation';
+  String get failedToProcessInvitation =>
+      'Échec du traitement de l\'invitation';
 
   @override
   String get documents => 'documents';
@@ -5234,7 +5452,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get paymentErrorInvalidNumber => 'Saisissez un nombre valide';
 
   @override
-  String get paymentErrorMustBePositive => 'Le montant doit être supérieur à zéro';
+  String get paymentErrorMustBePositive =>
+      'Le montant doit être supérieur à zéro';
 
   @override
   String paymentErrorExceedsDue(String amount) {
@@ -5268,7 +5487,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get totalCollected => 'Total encaissé';
 
   @override
-  String get chooseSupplierHint => 'Choisissez l\'entreprise que vous souhaitez gérer';
+  String get chooseSupplierHint =>
+      'Choisissez l\'entreprise que vous souhaitez gérer';
 
   @override
   String get noOrganisation => 'Aucune organisation';
@@ -5312,7 +5532,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get customPriceApplied => 'Prix personnalisé appliqué';
 
   @override
-  String get customPriceAboveCatalog => 'Le prix personnalisé est supérieur au prix par défaut — aucune remise appliquée';
+  String get customPriceAboveCatalog =>
+      'Le prix personnalisé est supérieur au prix par défaut — aucune remise appliquée';
 
   @override
   String discountPreview(String amount, String percent) {
@@ -5440,7 +5661,8 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String deliveryDetailItemSubline(String brand, String barcode, int productId) {
+  String deliveryDetailItemSubline(
+      String brand, String barcode, int productId) {
     return '$brand · $barcode · n°$productId';
   }
 
@@ -5653,7 +5875,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get deliveryDetailValidateTitle => 'Confirmer la livraison';
 
   @override
-  String get deliveryDetailValidateSubtitle => 'Vérifiez les détails ci-dessous avant de marquer comme terminée.';
+  String get deliveryDetailValidateSubtitle =>
+      'Vérifiez les détails ci-dessous avant de marquer comme terminée.';
 
   @override
   String get deliveryDetailValidateBack => 'Retour';
@@ -5667,7 +5890,8 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get deliveryDetailValidateFailure => 'Échec de la mise à jour de la livraison';
+  String get deliveryDetailValidateFailure =>
+      'Échec de la mise à jour de la livraison';
 
   @override
   String get deliveryStatusPending => 'En attente';
@@ -5763,7 +5987,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get deliveryCardNoDestination => 'Aucune destination';
 
   @override
-  String get deliveryCardLoadFailed => 'Impossible de charger les détails de la livraison';
+  String get deliveryCardLoadFailed =>
+      'Impossible de charger les détails de la livraison';
 
   @override
   String get deliveryDetailSectionCustomer => 'Client';
@@ -5823,7 +6048,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get deliveryDetailsSectionAdditional => 'Informations supplémentaires';
 
   @override
-  String get deliveryDetailsProductSearchHint => 'Rechercher par nom, marque ou code-barres';
+  String get deliveryDetailsProductSearchHint =>
+      'Rechercher par nom, marque ou code-barres';
 
   @override
   String deliveryDetailsProductFallback(int id) {
@@ -5850,7 +6076,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get deliveryDetailsStockOut => 'En rupture de stock';
 
   @override
-  String get deliveryDetailsNoProducts => 'Cette livraison n\'a aucun produit associé.';
+  String get deliveryDetailsNoProducts =>
+      'Cette livraison n\'a aucun produit associé.';
 
   @override
   String deliveryDetailsNoMatches(String query) {
@@ -5886,7 +6113,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get deliveryDetailsFeeLabel => 'Frais de livraison (DA)';
 
   @override
-  String get deliveryDetailsFeeHelper => 'Montant que le client paie au transporteur';
+  String get deliveryDetailsFeeHelper =>
+      'Montant que le client paie au transporteur';
 
   @override
   String get deliveryDetailsShippingMethodLabel => 'Mode d\'expédition';
@@ -5907,7 +6135,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get deliveryDetailsSaveButton => 'Enregistrer les modifications';
 
   @override
-  String get deliveryDetailsSaveFailed => 'Échec de l\'enregistrement des détails';
+  String get deliveryDetailsSaveFailed =>
+      'Échec de l\'enregistrement des détails';
 
   @override
   String deliveryDetailsSaveError(String message) {
@@ -5924,7 +6153,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get deliveryDetailsValidationEnterAmount => 'Saisir un montant valide';
 
   @override
-  String get deliveryDetailsValidationFeeNegative => 'Les frais ne peuvent pas être négatifs';
+  String get deliveryDetailsValidationFeeNegative =>
+      'Les frais ne peuvent pas être négatifs';
 
   @override
   String get deliveryActionAccept => 'Accepter';
@@ -6003,37 +6233,45 @@ class AppLocalizationsFr extends AppLocalizations {
   String get deliveryTransitionReqRecipient => 'Destinataire spécifié';
 
   @override
-  String get deliveryTransitionReqRecipientDesc => 'La livraison a besoin d\'un destinataire ou d\'une adresse de destination.';
+  String get deliveryTransitionReqRecipientDesc =>
+      'La livraison a besoin d\'un destinataire ou d\'une adresse de destination.';
 
   @override
   String get deliveryTransitionReqPackages => 'Au moins un colis';
 
   @override
-  String get deliveryTransitionReqPackagesDesc => 'Déclarez les colis et le poids avant de confirmer.';
+  String get deliveryTransitionReqPackagesDesc =>
+      'Déclarez les colis et le poids avant de confirmer.';
 
   @override
   String get deliveryTransitionReqProvider => 'Fournisseur assigné';
 
   @override
-  String get deliveryTransitionReqCarrierAccepted => 'Transporteur a accepté la remise';
+  String get deliveryTransitionReqCarrierAccepted =>
+      'Transporteur a accepté la remise';
 
   @override
-  String get deliveryTransitionReqCarrierAcceptedDesc => 'Cela enregistre que le transporteur a pris la garde physique.';
+  String get deliveryTransitionReqCarrierAcceptedDesc =>
+      'Cela enregistre que le transporteur a pris la garde physique.';
 
   @override
-  String get deliveryTransitionReqTracking => 'Le suivi du transporteur montre un mouvement';
+  String get deliveryTransitionReqTracking =>
+      'Le suivi du transporteur montre un mouvement';
 
   @override
-  String get deliveryTransitionReqTrackingDesc => 'Cela enregistre que le transporteur signale que les marchandises sont en mouvement.';
+  String get deliveryTransitionReqTrackingDesc =>
+      'Cela enregistre que le transporteur signale que les marchandises sont en mouvement.';
 
   @override
-  String get deliveryTransitionReqDestination => 'Adresse de destination au dossier';
+  String get deliveryTransitionReqDestination =>
+      'Adresse de destination au dossier';
 
   @override
   String get deliveryTransitionReqProof => 'Preuve de livraison capturée';
 
   @override
-  String get deliveryTransitionReqProofDesc => 'Signature, photo ou scan reçu du destinataire.';
+  String get deliveryTransitionReqProofDesc =>
+      'Signature, photo ou scan reçu du destinataire.';
 
   @override
   String get sourceDistribution => 'Répartition des sources';
@@ -6080,7 +6318,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get productNowHiddenMessage => 'Le produit est maintenant masqué';
 
   @override
-  String get productVisibilityUpdateFailedMessage => 'Échec de la mise à jour de la visibilité';
+  String get productVisibilityUpdateFailedMessage =>
+      'Échec de la mise à jour de la visibilité';
 
   @override
   String get editorModeBadge => 'Mode éditeur';
@@ -6104,7 +6343,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get marginPercentLabel => 'Marge %';
 
   @override
-  String get setBasePriceHint => 'Définissez un prix de base pour voir la marge et le ROI';
+  String get setBasePriceHint =>
+      'Définissez un prix de base pour voir la marge et le ROI';
 
   @override
   String get hideAction => 'Masquer';
@@ -6164,7 +6404,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dangerZoneTitle => 'Zone de danger';
 
   @override
-  String get dangerZoneBody => 'La suppression d\'un produit le retire du catalogue. Les commandes qui y font référence conservent leur enregistrement historique.';
+  String get dangerZoneBody =>
+      'La suppression d\'un produit le retire du catalogue. Les commandes qui y font référence conservent leur enregistrement historique.';
 
   @override
   String get productVisibilityTitle => 'Visibilité';
@@ -6262,16 +6503,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get validationCategoryRequired => 'Une catégorie valide est requise';
 
   @override
-  String get validationDurationPositive => 'La durée doit être supérieure à zéro';
+  String get validationDurationPositive =>
+      'La durée doit être supérieure à zéro';
 
   @override
-  String get validationBasePricePositive => 'Le prix de base doit être supérieur à zéro';
+  String get validationBasePricePositive =>
+      'Le prix de base doit être supérieur à zéro';
 
   @override
-  String get validationFinalPricePositive => 'Le prix final doit être supérieur à zéro';
+  String get validationFinalPricePositive =>
+      'Le prix final doit être supérieur à zéro';
 
   @override
-  String get validationFinalPriceExceedsBase => 'Le prix final ne peut pas être supérieur au prix de base';
+  String get validationFinalPriceExceedsBase =>
+      'Le prix final ne peut pas être supérieur au prix de base';
 
   @override
   String unexpectedErrorWithDetail(String detail) {
@@ -6631,13 +6876,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noStaffAdded => 'Aucun personnel ajouté';
 
   @override
-  String get appPurposeContent => 'La mission de Verdelia est de rendre la vie sans gluten simple et sûre en connectant les personnes à des produits certifiés, des commerces locaux de confiance et des informations de santé claires.';
+  String get appPurposeContent =>
+      'La mission de Verdelia est de rendre la vie sans gluten simple et sûre en connectant les personnes à des produits certifiés, des commerces locaux de confiance et des informations de santé claires.';
 
   @override
-  String get feature3 => '📚 **Contenu éducatif** - Apprenez sur la maladie cœliaque, les ingrédients sûrs et la vie sans gluten.';
+  String get feature3 =>
+      '📚 **Contenu éducatif** - Apprenez sur la maladie cœliaque, les ingrédients sûrs et la vie sans gluten.';
 
   @override
-  String get recipedeletionConfirmationMessage => 'Êtes-vous sûr de vouloir supprimer cette recette ?';
+  String get recipedeletionConfirmationMessage =>
+      'Êtes-vous sûr de vouloir supprimer cette recette ?';
 
   @override
   String get invoiceStatusPaid => 'Payée';
@@ -6678,7 +6926,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get myDocuments => 'Mes documents';
 
   @override
-  String get loadingFinancialDocuments => 'Chargement des documents financiers...';
+  String get loadingFinancialDocuments =>
+      'Chargement des documents financiers...';
 
   @override
   String get noMatchingDocuments => 'Aucun document correspondant';
@@ -6698,7 +6947,8 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get startCreatingFirstDocument => 'Commencez par créer votre premier document';
+  String get startCreatingFirstDocument =>
+      'Commencez par créer votre premier document';
 
   @override
   String get loadMore => 'Charger plus';
@@ -6770,7 +7020,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get recipe_search_not_found => 'Aucune recette trouvée.';
 
   @override
-  String get delivery_update_failed => 'Échec de la mise à jour de la livraison.';
+  String get delivery_update_failed =>
+      'Échec de la mise à jour de la livraison.';
 
   @override
   String get food => 'Alimentation';
@@ -7098,7 +7349,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get productVisibilityLabel => 'Visibilité';
 
   @override
-  String get productVisibilityVisibleHint => 'Les acheteurs peuvent voir ce produit';
+  String get productVisibilityVisibleHint =>
+      'Les acheteurs peuvent voir ce produit';
 
   @override
   String get productVisibilityHiddenHint => 'Masqué du catalogue';
@@ -7107,7 +7359,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noVisibleProductsText => 'Aucun produit visible';
 
   @override
-  String get noVisibleProductsSubtitle => 'Tous les produits de ce fournisseur sont actuellement masqués';
+  String get noVisibleProductsSubtitle =>
+      'Tous les produits de ce fournisseur sont actuellement masqués';
 
   @override
   String get resourceUnitsLabel => 'unités';
@@ -7471,100 +7724,118 @@ class AppLocalizationsFr extends AppLocalizations {
   String get deliveriesEmptyActiveTitle => 'Aucune livraison en cours';
 
   @override
-  String get deliveriesEmptyActiveMessage => 'Les livraisons en attente, en traitement ou confirmées apparaîtront ici.';
+  String get deliveriesEmptyActiveMessage =>
+      'Les livraisons en attente, en traitement ou confirmées apparaîtront ici.';
 
   @override
   String get deliveriesEmptyInFlightTitle => 'Rien n\'est en mouvement';
 
   @override
-  String get deliveriesEmptyInFlightMessage => 'Les livraisons expédiées, en transit ou en cours de livraison apparaîtront ici.';
+  String get deliveriesEmptyInFlightMessage =>
+      'Les livraisons expédiées, en transit ou en cours de livraison apparaîtront ici.';
 
   @override
   String get deliveriesEmptyClosedTitle => 'Aucune livraison clôturée';
 
   @override
-  String get deliveriesEmptyClosedMessage => 'Les livraisons livrées, échouées, annulées, retournées ou remboursées apparaîtront ici.';
+  String get deliveriesEmptyClosedMessage =>
+      'Les livraisons livrées, échouées, annulées, retournées ou remboursées apparaîtront ici.';
 
   @override
   String get deliveriesEmptyGenericTitle => 'Aucune livraison trouvée';
 
   @override
-  String get deliveriesEmptyGenericMessage => 'Les livraisons apparaîtront ici une fois créées.';
+  String get deliveriesEmptyGenericMessage =>
+      'Les livraisons apparaîtront ici une fois créées.';
 
   @override
   String get deliveriesEmptyFilteredTitle => 'Aucune livraison correspondante';
 
   @override
-  String get deliveriesEmptyFilteredMessage => 'Essayez d\'effacer le filtre pour en voir plus.';
+  String get deliveriesEmptyFilteredMessage =>
+      'Essayez d\'effacer le filtre pour en voir plus.';
 
   @override
   String get deliveriesEmptyPendingTitle => 'Aucune livraison en attente';
 
   @override
-  String get deliveriesEmptyPendingMessage => 'Les nouvelles livraisons en attente d\'acceptation apparaîtront ici.';
+  String get deliveriesEmptyPendingMessage =>
+      'Les nouvelles livraisons en attente d\'acceptation apparaîtront ici.';
 
   @override
   String get deliveriesEmptyProcessingTitle => 'Aucune livraison en traitement';
 
   @override
-  String get deliveriesEmptyProcessingMessage => 'Les livraisons en cours de préparation apparaîtront ici.';
+  String get deliveriesEmptyProcessingMessage =>
+      'Les livraisons en cours de préparation apparaîtront ici.';
 
   @override
   String get deliveriesEmptyConfirmedTitle => 'Aucune livraison confirmée';
 
   @override
-  String get deliveriesEmptyConfirmedMessage => 'Les livraisons prêtes à être prises en charge apparaîtront ici.';
+  String get deliveriesEmptyConfirmedMessage =>
+      'Les livraisons prêtes à être prises en charge apparaîtront ici.';
 
   @override
   String get deliveriesEmptyShippedTitle => 'Aucune livraison expédiée';
 
   @override
-  String get deliveriesEmptyShippedMessage => 'Les livraisons remises à un transporteur apparaîtront ici.';
+  String get deliveriesEmptyShippedMessage =>
+      'Les livraisons remises à un transporteur apparaîtront ici.';
 
   @override
   String get deliveriesEmptyInTransitTitle => 'Aucune livraison en transit';
 
   @override
-  String get deliveriesEmptyInTransitMessage => 'Les livraisons en cours de déplacement apparaîtront ici.';
+  String get deliveriesEmptyInTransitMessage =>
+      'Les livraisons en cours de déplacement apparaîtront ici.';
 
   @override
-  String get deliveriesEmptyOutForDeliveryTitle => 'Aucune livraison en cours de livraison';
+  String get deliveriesEmptyOutForDeliveryTitle =>
+      'Aucune livraison en cours de livraison';
 
   @override
-  String get deliveriesEmptyOutForDeliveryMessage => 'Les livraisons sur le dernier segment de leur tournée apparaîtront ici.';
+  String get deliveriesEmptyOutForDeliveryMessage =>
+      'Les livraisons sur le dernier segment de leur tournée apparaîtront ici.';
 
   @override
   String get deliveriesEmptyDeliveredTitle => 'Aucune livraison livrée';
 
   @override
-  String get deliveriesEmptyDeliveredMessage => 'Les livraisons terminées seront listées ici.';
+  String get deliveriesEmptyDeliveredMessage =>
+      'Les livraisons terminées seront listées ici.';
 
   @override
   String get deliveriesEmptyFailedTitle => 'Aucune livraison échouée';
 
   @override
-  String get deliveriesEmptyFailedMessage => 'Les livraisons qui n\'ont pas pu être terminées apparaîtront ici.';
+  String get deliveriesEmptyFailedMessage =>
+      'Les livraisons qui n\'ont pas pu être terminées apparaîtront ici.';
 
   @override
   String get deliveriesEmptyCancelledTitle => 'Aucune livraison annulée';
 
   @override
-  String get deliveriesEmptyCancelledMessage => 'Les livraisons annulées seront listées ici.';
+  String get deliveriesEmptyCancelledMessage =>
+      'Les livraisons annulées seront listées ici.';
 
   @override
   String get deliveriesEmptyReturnedTitle => 'Aucune livraison retournée';
 
   @override
-  String get deliveriesEmptyReturnedMessage => 'Les livraisons renvoyées à l\'origine apparaîtront ici.';
+  String get deliveriesEmptyReturnedMessage =>
+      'Les livraisons renvoyées à l\'origine apparaîtront ici.';
 
   @override
   String get deliveriesEmptyRefundedTitle => 'Aucune livraison remboursée';
 
   @override
-  String get deliveriesEmptyRefundedMessage => 'Les livraisons remboursées apparaîtront ici.';
+  String get deliveriesEmptyRefundedMessage =>
+      'Les livraisons remboursées apparaîtront ici.';
 
   @override
-  String get posScanNoSupplier => 'Sélectionnez un fournisseur avant de scanner';
+  String get posScanNoSupplier =>
+      'Sélectionnez un fournisseur avant de scanner';
 
   @override
   String posScanNotFound(String code) {
@@ -7592,7 +7863,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mapPickerRecenter => 'Ma position';
 
   @override
-  String get mapPickerLocationUnavailable => 'Impossible de déterminer votre position';
+  String get mapPickerLocationUnavailable =>
+      'Impossible de déterminer votre position';
 
   @override
   String get pickOnMapMsg => 'Choisir sur la carte';
@@ -7601,13 +7873,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get invalidCoordinatesMsg => 'Saisissez des nombres valides';
 
   @override
-  String get invalidLatitudeMsg => 'La latitude doit être comprise entre −90 et 90';
+  String get invalidLatitudeMsg =>
+      'La latitude doit être comprise entre −90 et 90';
 
   @override
-  String get invalidLongitudeMsg => 'La longitude doit être comprise entre −180 et 180';
+  String get invalidLongitudeMsg =>
+      'La longitude doit être comprise entre −180 et 180';
 
   @override
-  String get cannotNavigateInvalidSupplier => 'Navigation impossible : identifiant de fournisseur invalide';
+  String get cannotNavigateInvalidSupplier =>
+      'Navigation impossible : identifiant de fournisseur invalide';
 
   @override
   String get focusOnMapTooltip => 'Centrer sur la carte';
@@ -7630,13 +7905,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noInformationAvailable => 'Rien à afficher ici pour le moment';
 
   @override
-  String get noPendingInvitationsMessage => 'Toutes les invitations ont été acceptées ou aucune invitation n\'est en attente.';
+  String get noPendingInvitationsMessage =>
+      'Toutes les invitations ont été acceptées ou aucune invitation n\'est en attente.';
 
   @override
   String get inviteNewMember => 'Inviter un nouveau membre';
 
   @override
-  String get scheduleCompletePrompt => 'Choisissez une date et une heure, ou désactivez la planification.';
+  String get scheduleCompletePrompt =>
+      'Choisissez une date et une heure, ou désactivez la planification.';
 
   @override
   String get cartTitle => 'Votre panier';
@@ -7670,7 +7947,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clearCartTitle => 'Vider le panier';
 
   @override
-  String get clearCartConfirmation => 'Voulez-vous vraiment supprimer tous les articles du panier ?';
+  String get clearCartConfirmation =>
+      'Voulez-vous vraiment supprimer tous les articles du panier ?';
 
   @override
   String posScanAdded(String name) {
@@ -7681,7 +7959,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get choosePlanTitle => 'Choisissez votre formule';
 
   @override
-  String get choosePlanSubtitle => 'Sélectionnez une formule adaptée à votre activité. Vous pouvez en changer à tout moment.';
+  String get choosePlanSubtitle =>
+      'Sélectionnez une formule adaptée à votre activité. Vous pouvez en changer à tout moment.';
 
   @override
   String get planCurrentBadge => 'ACTUEL';
@@ -7728,7 +8007,8 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get planPurchaseFailed => 'Impossible de finaliser l\'achat. Réessayez.';
+  String get planPurchaseFailed =>
+      'Impossible de finaliser l\'achat. Réessayez.';
 
   @override
   String get choosePaymentMethod => 'Choisir le mode de paiement';
@@ -7737,7 +8017,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noPlansAvailable => 'Aucune formule disponible';
 
   @override
-  String get noPlansAvailableMessage => 'Tirez pour rafraîchir ou réessayez plus tard.';
+  String get noPlansAvailableMessage =>
+      'Tirez pour rafraîchir ou réessayez plus tard.';
 
   @override
   String get choosePlanFab => 'Choisir une formule';
@@ -7758,10 +8039,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get subscriptionStatusInactive => 'Inactif';
 
   @override
-  String get subscriptionStatusActiveHint => 'Votre formule est active et se renouvelle automatiquement.';
+  String get subscriptionStatusActiveHint =>
+      'Votre formule est active et se renouvelle automatiquement.';
 
   @override
-  String get subscriptionStatusInactiveHint => 'Votre abonnement n\'est plus actif.';
+  String get subscriptionStatusInactiveHint =>
+      'Votre abonnement n\'est plus actif.';
 
   @override
   String subscriptionRenewsOn(String date) {
@@ -7787,7 +8070,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get cancelSubscriptionTitle => 'Résilier l\'abonnement ?';
 
   @override
-  String get cancelSubscriptionConfirmation => 'Vous perdrez l\'accès aux fonctionnalités de votre formule à la fin de la période de facturation en cours. Cette action est irréversible.';
+  String get cancelSubscriptionConfirmation =>
+      'Vous perdrez l\'accès aux fonctionnalités de votre formule à la fin de la période de facturation en cours. Cette action est irréversible.';
 
   @override
   String get keepSubscription => 'Conserver l\'abonnement';
@@ -7799,13 +8083,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get subscriptionCancelled => 'Votre abonnement a été résilié.';
 
   @override
-  String get subscriptionCancelFailed => 'Impossible de résilier l\'abonnement. Réessayez.';
+  String get subscriptionCancelFailed =>
+      'Impossible de résilier l\'abonnement. Réessayez.';
 
   @override
   String get noActiveSubscriptionTitle => 'Aucun abonnement actif';
 
   @override
-  String get noActiveSubscriptionMessage => 'Abonnez-vous à une formule pour débloquer les fonctionnalités premium et des quotas plus élevés.';
+  String get noActiveSubscriptionMessage =>
+      'Abonnez-vous à une formule pour débloquer les fonctionnalités premium et des quotas plus élevés.';
 
   @override
   String get browsePlans => 'Voir les formules';
@@ -7820,10 +8106,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get plansTabAll => 'Toutes';
 
   @override
-  String get plansIndividualSubtitle => 'Formules à usage personnel — un compte, un opérateur.';
+  String get plansIndividualSubtitle =>
+      'Formules à usage personnel — un compte, un opérateur.';
 
   @override
-  String get plansOrganizationSubtitle => 'Formules pour équipes et entreprises — plusieurs utilisateurs, limites plus élevées.';
+  String get plansOrganizationSubtitle =>
+      'Formules pour équipes et entreprises — plusieurs utilisateurs, limites plus élevées.';
 
   @override
   String get plansAllSubtitle => 'Toutes les formules du catalogue.';
@@ -7832,13 +8120,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get plansIndividualEmptyTitle => 'Aucune formule individuelle';
 
   @override
-  String get plansIndividualEmptyMessage => 'Il n\'y a aucune formule individuelle dans le catalogue pour le moment.';
+  String get plansIndividualEmptyMessage =>
+      'Il n\'y a aucune formule individuelle dans le catalogue pour le moment.';
 
   @override
   String get plansOrganizationEmptyTitle => 'Aucune formule entreprise';
 
   @override
-  String get plansOrganizationEmptyMessage => 'Il n\'y a aucune formule entreprise dans le catalogue pour le moment.';
+  String get plansOrganizationEmptyMessage =>
+      'Il n\'y a aucune formule entreprise dans le catalogue pour le moment.';
 
   @override
   String get planSectionFeatures => 'Inclus';
@@ -7886,19 +8176,23 @@ class AppLocalizationsFr extends AppLocalizations {
   String get savingsMonthsLabel => 'mois offerts';
 
   @override
-  String get plansIndividualSubtitleFree => 'Vous êtes sur le plan Gratuit. Passez à un plan supérieur quand vous voulez — vos données sont conservées.';
+  String get plansIndividualSubtitleFree =>
+      'Vous êtes sur le plan Gratuit. Passez à un plan supérieur quand vous voulez — vos données sont conservées.';
 
   @override
-  String get plansOrganizationSubtitleFree => 'Vous êtes sur le plan Gratuit. Créez une équipe quand vous serez prêt.';
+  String get plansOrganizationSubtitleFree =>
+      'Vous êtes sur le plan Gratuit. Créez une équipe quand vous serez prêt.';
 
   @override
-  String get plansAllSubtitleFree => 'Vous êtes sur le plan Gratuit. Tout ce qui suit est disponible quand vous en aurez besoin.';
+  String get plansAllSubtitleFree =>
+      'Vous êtes sur le plan Gratuit. Tout ce qui suit est disponible quand vous en aurez besoin.';
 
   @override
   String get deliveryDetailsTotalWeightLabel => 'Poids total';
 
   @override
-  String get deliveryDetailsTotalWeightHelper => 'Poids total de l\'envoi en kilogrammes';
+  String get deliveryDetailsTotalWeightHelper =>
+      'Poids total de l\'envoi en kilogrammes';
 
   @override
   String get deliveryDetailsBrokerLabel => 'Transporteur';
@@ -7916,10 +8210,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get deliveryDetailsBrokerLoading => 'Chargement des transporteurs…';
 
   @override
-  String get deliveryDetailsBrokerLoadFailed => 'Échec du chargement des transporteurs';
+  String get deliveryDetailsBrokerLoadFailed =>
+      'Échec du chargement des transporteurs';
 
   @override
-  String get deliveryDetailsBrokerNoneAvailable => 'Aucun transporteur disponible';
+  String get deliveryDetailsBrokerNoneAvailable =>
+      'Aucun transporteur disponible';
 
   @override
   String deliveryDetailsBrokerHelper(int count) {
@@ -7943,7 +8239,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get deliveryDetailsWeightUnitLabel => 'Unité de poids';
 
   @override
-  String get deliveryDetailsValidationDimensionsFormat => 'Utilisez le format LxlxH, ex. 5x5x5';
+  String get deliveryDetailsValidationDimensionsFormat =>
+      'Utilisez le format LxlxH, ex. 5x5x5';
 
   @override
   String get vatRateExempt => 'Exonéré de la TVA';
@@ -7967,7 +8264,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get invoiceTotalLabel => 'Total facturé';
 
   @override
-  String get costNotAvailable => 'Détail des coûts non disponible pour cette opération';
+  String get costNotAvailable =>
+      'Détail des coûts non disponible pour cette opération';
 
   @override
   String get itemBrandLabel => 'Marque';
@@ -7989,4 +8287,307 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get itemDescriptionLabel => 'Description';
+
+  @override
+  String get loadingOrdersTxt => 'Chargement de vos commandes...';
+
+  @override
+  String get loadingOrderDetailsTxt =>
+      'Chargement des détails de la commande...';
+
+  @override
+  String get shippedTxt => 'Expédiée';
+
+  @override
+  String get refundedTxt => 'Remboursée';
+
+  @override
+  String get inProgressTxt => 'En cours';
+
+  @override
+  String get inTransitTxt => 'En transit';
+
+  @override
+  String get allItemsDeliveredTxt => 'Tous les articles livrés';
+
+  @override
+  String get fulfilmentLabel => 'Suivi de livraison';
+
+  @override
+  String get orderDetailsTitle => 'Détails de la commande';
+
+  @override
+  String get dateLabel => 'Date';
+
+  @override
+  String get customerLabel => 'Client';
+
+  @override
+  String get paymentStatusLabel => 'Statut du paiement';
+
+  @override
+  String get invoiceLabel => 'Facture';
+
+  @override
+  String get noItemsTxt => 'Aucun article';
+
+  @override
+  String get unknownItemTxt => 'Article inconnu';
+
+  @override
+  String get itemSingular => 'article';
+
+  @override
+  String get itemPlural => 'articles';
+
+  @override
+  String get moreTxt => 'de plus';
+
+  @override
+  String get invoiceStatusPaidTxt => 'Payée';
+
+  @override
+  String get invoiceStatusUnpaidTxt => 'Impayée';
+
+  @override
+  String get invoiceStatusPartiallyPaidTxt => 'Partiellement payée';
+
+  @override
+  String get invoiceStatusOverdueTxt => 'En retard';
+
+  @override
+  String get invoiceStatusRefundedTxt => 'Remboursée';
+
+  @override
+  String get invoiceStatusCanceledTxt => 'Annulée';
+
+  @override
+  String get invoiceDueLabel => 'Dû';
+
+  @override
+  String get invoiceAmountLabel => 'Montant';
+
+  @override
+  String invoiceOverdueByTxt(int days) {
+    return 'En retard de ${days}d';
+  }
+
+  @override
+  String invoiceDueInTxt(int days) {
+    return 'Dû dans ${days}d';
+  }
+
+  @override
+  String get noOrdersInTabTxt => 'Aucune commande dans cette catégorie.';
+
+  @override
+  String get invoicesToPayTitle => 'Factures à payer';
+
+  @override
+  String invoicesToPaySubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count factures en attente de paiement',
+      one: '1 facture en attente de paiement',
+      zero: 'Aucune facture en attente de paiement',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get payNowTxt => 'Payer maintenant';
+
+  @override
+  String payInvoiceAmountTxt(String amount) {
+    return 'Payer $amount';
+  }
+
+  @override
+  String outstandingSummaryTxt(int count, String amount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count factures impayées · $amount',
+      one: '1 facture impayée · $amount',
+      zero: 'Aucune facture impayée',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get standardTxt => 'Standard';
+
+  @override
+  String get deliveriesTxt => 'livraisons';
+
+  @override
+  String get shippingMethodLabel => 'Mode d\'expédition';
+
+  @override
+  String get providerLabel => 'Fournisseur';
+
+  @override
+  String get brokerLabel => 'Courtier';
+
+  @override
+  String get deliverySourceLabel => 'Source';
+
+  @override
+  String get invoiceReferenceLabel => 'Réf. facture';
+
+  @override
+  String get packageCountLabel => 'Colis';
+
+  @override
+  String get weightLabel => 'Poids';
+
+  @override
+  String get dimensionsLabel => 'Dimensions';
+
+  @override
+  String get goodsDescriptionLabel => 'Marchandises';
+
+  @override
+  String get specialInstructionsLabel => 'Instructions';
+
+  @override
+  String get hsCodeLabel => 'Code SH';
+
+  @override
+  String get deliveryAddressLabel => 'Adresse';
+
+  @override
+  String get createdLabel => 'Créé le';
+
+  @override
+  String get updatedLabel => 'Mis à jour';
+
+  @override
+  String get deliveryStatusConfirmedTxt => 'Confirmé';
+
+  @override
+  String get deliveryStatusPendingTxt => 'En attente';
+
+  @override
+  String get deliveryStatusInTransitTxt => 'En transit';
+
+  @override
+  String get deliveryStatusDeliveredTxt => 'Livré';
+
+  @override
+  String get deliveryStatusCancelledTxt => 'Annulé';
+
+  @override
+  String get paymentMethodWallet => 'Portefeuille';
+
+  @override
+  String paymentCollectButton(Object amount) {
+    return 'Encaisser $amount';
+  }
+
+  @override
+  String get paymentCashHintTitle => 'Encaisser en espèces';
+
+  @override
+  String paymentCashHintBody(Object amount) {
+    return 'Recevez $amount en espèces du client, puis appuyez sur Encaisser.';
+  }
+
+  @override
+  String get paymentQrTitle => 'Scannez pour payer';
+
+  @override
+  String get paymentQrSubtitle =>
+      'Demandez au payeur de scanner ce code avec son application portefeuille.';
+
+  @override
+  String get paymentQrEmptyHint =>
+      'Saisissez un montant pour générer un QR code.';
+
+  @override
+  String get paymentWalletAvailable => 'Solde disponible';
+
+  @override
+  String get paymentWalletEmpty => 'Portefeuille vide';
+
+  @override
+  String get paymentWalletLocked => 'Portefeuille verrouillé';
+
+  @override
+  String get paymentWalletMissingTitle => 'Aucun portefeuille';
+
+  @override
+  String get paymentWalletMissingBody =>
+      'Un portefeuille est requis pour payer depuis ce compte.';
+
+  @override
+  String get paymentErrorNoWallet => 'Aucun portefeuille associé à ce compte.';
+
+  @override
+  String get paymentErrorWalletLocked => 'Ce portefeuille est verrouillé.';
+
+  @override
+  String paymentErrorInsufficientWallet(Object balance) {
+    return 'Solde insuffisant ($balance).';
+  }
+
+  @override
+  String get paymentMarkQrPaid => 'Marquer comme payé';
+
+  @override
+  String get paymentQrMissingPayeeTitle => 'Aucun bénéficiaire configuré';
+
+  @override
+  String get paymentQrMissingPayeeBody =>
+      'Un bénéficiaire doit être défini pour générer un QR de paiement.';
+
+  @override
+  String get paymentQrToggleTitle => 'Laisser quelqu\'un d\'autre payer';
+
+  @override
+  String get paymentQrToggleSubtitle =>
+      'Afficher un QR code pour qu\'une autre personne le scanne avec son portefeuille.';
+
+  @override
+  String paymentMarkQrPaidWithAmount(Object amount) {
+    return 'Marquer $amount comme payé';
+  }
+
+  @override
+  String get paymentBankReferenceLabel => 'Référence bancaire';
+
+  @override
+  String get paymentBankReferenceHint =>
+      'Numéro de bordereau ou référence de transaction';
+
+  @override
+  String get paymentBankIssueDateLabel => 'Date d\'émission';
+
+  @override
+  String get paymentBankIssueDateHint => 'AAAA-MM-JJ';
+
+  @override
+  String get paymentBankHintTitle => 'Virement bancaire';
+
+  @override
+  String get paymentBankHintBody =>
+      'Ces informations sont enregistrées avec les notes de paiement afin que la facture puisse être rapprochée ultérieurement.';
+
+  @override
+  String get paymentErrorBankReferenceRequired =>
+      'La référence bancaire est obligatoire';
+
+  @override
+  String get paymentErrorBankIssueDateRequired =>
+      'La date d\'émission est obligatoire';
+
+  @override
+  String get scanToPayLabel => 'Scanner pour payer';
+
+  @override
+  String get paymentQrInvalidPayload => 'Payload de paiement invalide';
+
+  @override
+  String get paymentQrSelfPay => 'Payer pour vous-même';
 }

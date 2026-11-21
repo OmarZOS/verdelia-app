@@ -87,6 +87,10 @@ class AppConstants {
   static const String getAllBloodTypesEndpoint = '/blood-types/all';
   static const String getBloodTypeEndpoint = '/blood-type';
 
+  static const String createPaymentQrEndpoint = '/payments/qr';
+  static const String watchPaymentQrEndpoint = '/payments/qr/stream';
+  static const String cancelPaymentQrEndpoint = '/payments/qr';
+
   // ==================== Staff/Management Rule Endpoints ====================
   static const String addRuleEndpoint = '/staff';
   static const String getStaffEndpoint = '/staff';
@@ -101,7 +105,6 @@ class AppConstants {
 
   static const String searchServiceEndpoint = "";
   static const String deliveryEndpoint = "";
-  static const String orderEndpoint = "";
 
   static const String notificationsBaseEndpoint = '/notifications';
   static const String getNotificationsEndpoint = '/notifications/user/read-all';
@@ -191,10 +194,11 @@ class AppConstants {
 
   // ==================== Order Endpoints ====================
   static const String addOrderEndpoint = '/business/orders';
-  static const String getAllOrdersEndpoint = '/business/orders/user';
-  static const String getOrderDetailsEndpoint = '/business/orders';
-  static const String updateOrderEndpoint = '/business/orders';
+  static const String orderEndpoint = '/business/orders';
   static const String deleteOrderEndpoint = '/business/orders';
+  static const String updateOrderEndpoint = '/business/orders';
+  static const String getAllOrdersEndpoint = '/business/orders';
+  static const String getOrderDetailsEndpoint = '/business/orders';
   static const String updateOrderStatusEndpoint = '/business/orders/status';
   static const String getOrderItemsEndpoint = '/business/orders/items';
 
@@ -345,6 +349,8 @@ class OrderStates {
   static const String PENDING_ORDER_STATE = "PENDING";
   static const String CANCELLED_ORDER_STATE = "CANCELLED";
   static const String PROCESSING_ORDER_STATE = "PROCESSING";
+  static const String SHIPPED_ORDER_STATE = "SHIPPED_ORDER_STATE";
+  static const String REFUNDED_ORDER_STATE = "REFUNDED_ORDER_STATE";
 }
 
 class RuleStates {

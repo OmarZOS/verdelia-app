@@ -1,3 +1,4 @@
+import 'package:event/components/qr_source.dart';
 import 'package:event/views/business_ops_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
@@ -40,6 +41,7 @@ import 'package:business/verdelia_impl_cart.dart';
 import 'package:business/verdelia_impl_service.dart';
 import 'package:business/verdelia_impl_supplier.dart';
 import 'package:event/product_change_notifier.dart';
+import 'package:event/qr_notifier.dart';
 import 'package:event/supplier_change_notifier.dart';
 import 'package:impl_mediation/impl_mediation.dart';
 import 'package:event/preferenceChangeNotifier.dart';
@@ -144,6 +146,8 @@ class VerdeliaApp extends StatelessWidget {
             create: (_) => BusinessOperationNotifier(
                 service: AppLocator.get<BusinessOperationService>())),
         ChangeNotifierProvider<PricingState>(create: (_) => PricingState()),
+        ChangeNotifierProvider<QRNotifier>(
+            create: (_) => QRNotifier(AppLocator.get<QRSource>())),
         ChangeNotifierProvider<LocaleProvider>(create: (_) => localeProvider),
       ],
       child: Consumer<LocaleProvider>(

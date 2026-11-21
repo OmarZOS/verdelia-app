@@ -1,5 +1,5 @@
+// ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -57,7 +57,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get pleaseInputPasswordMsg => 'يرجى إدخال كلمة المرور الخاصة بك';
 
   @override
-  String get passwordLengthConstraintMsg => 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل';
+  String get passwordLengthConstraintMsg =>
+      'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل';
 
   @override
   String get suggestRegistrationMsg => 'ليس لديك حساب؟ سجّل';
@@ -156,7 +157,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get mapNotAvailableText => 'الخريطة غير متاحة على هذا الجهاز';
 
   @override
-  String get pdfNotSupportedOnWeb => 'ملفات PDF غير مدعومة على الويب. يرجى استخدام جهاز محمول.';
+  String get pdfNotSupportedOnWeb =>
+      'ملفات PDF غير مدعومة على الويب. يرجى استخدام جهاز محمول.';
 
   @override
   String get registrationConditionsText => 'شروط التسجيل';
@@ -186,7 +188,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get missingText => 'مفقود';
 
   @override
-  String get productdeletionConfirmationMessage => 'هل أنت متأكد من أنك تريد حذف هذا المنتج؟';
+  String get productdeletionConfirmationMessage =>
+      'هل أنت متأكد من أنك تريد حذف هذا المنتج؟';
 
   @override
   String get cartAddConfirmationMessage => 'تأكيد الإضافة إلى السلة';
@@ -497,13 +500,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get featuresTitle => 'الميزات الرئيسية';
 
   @override
-  String get feature1 => '🛒 **متجر إلكتروني خالٍ من الغلوتين** - تسوّق بثقة منتجات معتمدة خالية من الغلوتين مع توصيل مباشر.';
+  String get feature1 =>
+      '🛒 **متجر إلكتروني خالٍ من الغلوتين** - تسوّق بثقة منتجات معتمدة خالية من الغلوتين مع توصيل مباشر.';
 
   @override
-  String get feature2 => '🎮 **ألعاب مصغرة تعليمية** - تعلّم تحديد الأطعمة الآمنة بطريقة ممتعة مع ألعابنا التفاعلية.';
+  String get feature2 =>
+      '🎮 **ألعاب مصغرة تعليمية** - تعلّم تحديد الأطعمة الآمنة بطريقة ممتعة مع ألعابنا التفاعلية.';
 
   @override
-  String get feature4 => '📍 **دليل الأعمال المحلية** - اعثر على متاجر البقالة والمطاعم المعتمدة الخالية من الغلوتين بالقرب منك.';
+  String get feature4 =>
+      '📍 **دليل الأعمال المحلية** - اعثر على متاجر البقالة والمطاعم المعتمدة الخالية من الغلوتين بالقرب منك.';
 
   @override
   String get contactUsTitle => 'اتصل بنا';
@@ -515,34 +521,43 @@ class AppLocalizationsAr extends AppLocalizations {
   String get contactPhone => '+213-XXX-XXX-XXX';
 
   @override
-  String get illnessOverviewContent => 'الداء البطني هو اضطراب مناعي ذاتي حيث يؤدي تناول الغلوتين إلى تلف الأمعاء الدقيقة. يمكن أن يسبب مشاكل هضمية ونقصًا في التغذية ومضاعفات أخرى. الامتناع الصارم عن الغلوتين مدى الحياة هو العلاج الفعال الوحيد.';
+  String get illnessOverviewContent =>
+      'الداء البطني هو اضطراب مناعي ذاتي حيث يؤدي تناول الغلوتين إلى تلف الأمعاء الدقيقة. يمكن أن يسبب مشاكل هضمية ونقصًا في التغذية ومضاعفات أخرى. الامتناع الصارم عن الغلوتين مدى الحياة هو العلاج الفعال الوحيد.';
 
   @override
-  String get symptom1 => '💨 **مشاكل هضمية** - انتفاخ، إسهال، إمساك، غثيان وقيء.';
+  String get symptom1 =>
+      '💨 **مشاكل هضمية** - انتفاخ، إسهال، إمساك، غثيان وقيء.';
 
   @override
-  String get symptom2 => '⚡ **إرهاق مزمن** - ناتج عن سوء امتصاص العناصر الغذائية الأساسية.';
+  String get symptom2 =>
+      '⚡ **إرهاق مزمن** - ناتج عن سوء امتصاص العناصر الغذائية الأساسية.';
 
   @override
-  String get symptom3 => '🦴 **مضاعفات العظام** - زيادة خطر هشاشة العظام بسبب سوء امتصاص الكالسيوم وفيتامين د.';
+  String get symptom3 =>
+      '🦴 **مضاعفات العظام** - زيادة خطر هشاشة العظام بسبب سوء امتصاص الكالسيوم وفيتامين د.';
 
   @override
-  String get treatmentContent => 'يتطلب العلاج نظامًا غذائيًا صارمًا خاليًا من الغلوتين مدى الحياة. يجب على المرضى تجنب القمح والشعير والجاودار ومشتقاتها. يساعد الدعم الغذائي وأدوات مثل فيرديليا في منع التعرض العرضي.';
+  String get treatmentContent =>
+      'يتطلب العلاج نظامًا غذائيًا صارمًا خاليًا من الغلوتين مدى الحياة. يجب على المرضى تجنب القمح والشعير والجاودار ومشتقاتها. يساعد الدعم الغذائي وأدوات مثل فيرديليا في منع التعرض العرضي.';
 
   @override
-  String get resource1 => '📖 **مؤسسة الداء البطني** - [www.celiac.org](https://www.celiac.org)';
+  String get resource1 =>
+      '📖 **مؤسسة الداء البطني** - [www.celiac.org](https://www.celiac.org)';
 
   @override
-  String get resource2 => '📱 **دليل التسوق التفاعلي** - ميزة مدمجة في التطبيق لمسح قوائم المكونات المشبوهة.';
+  String get resource2 =>
+      '📱 **دليل التسوق التفاعلي** - ميزة مدمجة في التطبيق لمسح قوائم المكونات المشبوهة.';
 
   @override
-  String get resource3 => '👩‍⚕️ **دليل المتخصصين** - اعثر على أطباء الجهاز الهضمي وأخصائيي التغذية المتخصصين في الداء البطني بالقرب منك.';
+  String get resource3 =>
+      '👩‍⚕️ **دليل المتخصصين** - اعثر على أطباء الجهاز الهضمي وأخصائيي التغذية المتخصصين في الداء البطني بالقرب منك.';
 
   @override
   String get resourcesTitle => 'موارد مفيدة';
 
   @override
-  String get userCredentialsText => 'تشمل بيانات تسجيل الدخول الخاصة بك اسم المستخدم وكلمة المرور. تأكد من الحفاظ عليها آمنة وعدم مشاركتها مع أي شخص.';
+  String get userCredentialsText =>
+      'تشمل بيانات تسجيل الدخول الخاصة بك اسم المستخدم وكلمة المرور. تأكد من الحفاظ عليها آمنة وعدم مشاركتها مع أي شخص.';
 
   @override
   String get processingRequest => 'جارٍ معالجة طلبك...';
@@ -581,7 +596,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get treatmentTitle => 'العلاج والإدارة';
 
   @override
-  String get internal_server_error => 'خطأ داخلي في الخادم. يرجى المحاولة مرة أخرى لاحقًا.';
+  String get internal_server_error =>
+      'خطأ داخلي في الخادم. يرجى المحاولة مرة أخرى لاحقًا.';
 
   @override
   String get http_exception => 'فشل طلب HTTP. تحقق من اتصالك.';
@@ -593,13 +609,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get data_error => 'تنسيق بيانات غير صالح. يرجى التحقق من إدخالك.';
 
   @override
-  String get operational_error => 'حدث خطأ تشغيلي. اتصل بالدعم إذا استمرت المشكلة.';
+  String get operational_error =>
+      'حدث خطأ تشغيلي. اتصل بالدعم إذا استمرت المشكلة.';
 
   @override
   String get programming_error => 'حدث خطأ برمجي. تم إخطار المطورين.';
 
   @override
-  String get database_error => 'فشلت عملية قاعدة البيانات. حاول مرة أخرى أو اتصل بالدعم.';
+  String get database_error =>
+      'فشلت عملية قاعدة البيانات. حاول مرة أخرى أو اتصل بالدعم.';
 
   @override
   String get internal_error => 'حدث خطأ داخلي في النظام.';
@@ -608,13 +626,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get interface_error => 'فشل الاتصال بالواجهة. تحقق من الإعدادات.';
 
   @override
-  String get statement_error => 'عبارة SQL غير صالحة. تم اكتشاف خطأ في الصياغة أو المنطق.';
+  String get statement_error =>
+      'عبارة SQL غير صالحة. تم اكتشاف خطأ في الصياغة أو المنطق.';
 
   @override
   String get incorrect_credentials => 'اسم المستخدم أو كلمة المرور غير صحيحة';
 
   @override
-  String get sqlalchemy_error => 'خطأ في قاعدة بيانات SQLAlchemy. تحقق من الاستعلام أو الاتصال.';
+  String get sqlalchemy_error =>
+      'خطأ في قاعدة بيانات SQLAlchemy. تحقق من الاستعلام أو الاتصال.';
 
   @override
   String get changePassword => 'تغيير كلمة المرور';
@@ -623,7 +643,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get passwordChangeTitle => 'إنشاء كلمة مرور جديدة';
 
   @override
-  String get passwordChangeSubtitle => 'يجب أن تكون كلمة المرور الجديدة مختلفة عن كلمات المرور السابقة';
+  String get passwordChangeSubtitle =>
+      'يجب أن تكون كلمة المرور الجديدة مختلفة عن كلمات المرور السابقة';
 
   @override
   String get currentPassword => 'كلمة المرور الحالية';
@@ -683,13 +704,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get newPasswordRequired => 'كلمة المرور الجديدة مطلوبة';
 
   @override
-  String get passwordUppercaseError => 'يجب أن تحتوي على حرف كبير واحد على الأقل';
+  String get passwordUppercaseError =>
+      'يجب أن تحتوي على حرف كبير واحد على الأقل';
 
   @override
   String get passwordNumberError => 'يجب أن تحتوي على رقم واحد على الأقل';
 
   @override
-  String get passwordSameAsCurrent => 'يجب أن تكون كلمة المرور الجديدة مختلفة عن كلمة المرور الحالية';
+  String get passwordSameAsCurrent =>
+      'يجب أن تكون كلمة المرور الجديدة مختلفة عن كلمة المرور الحالية';
 
   @override
   String get confirmPasswordRequired => 'يرجى تأكيد كلمة المرور الجديدة';
@@ -794,10 +817,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get close => 'إغلاق';
 
   @override
-  String get termsAgreementText => 'أوافق على شروط الاستخدام التي تحكم استخدامي لفيرديليا';
+  String get termsAgreementText =>
+      'أوافق على شروط الاستخدام التي تحكم استخدامي لفيرديليا';
 
   @override
-  String get privacyAgreementText => 'أوافق على كيفية جمع فيرديليا لبياناتي ومعالجتها';
+  String get privacyAgreementText =>
+      'أوافق على كيفية جمع فيرديليا لبياناتي ومعالجتها';
 
   @override
   String get readFullDocument => 'قراءة المستند كاملاً';
@@ -814,7 +839,8 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get ingredientUnits => 'غرام,كيلوغرام,ميليغرام,رطل,أونصة,مليلتر,لتر,كوب,ملعقة كبيرة,ملعقة صغيرة,رشة';
+  String get ingredientUnits =>
+      'غرام,كيلوغرام,ميليغرام,رطل,أونصة,مليلتر,لتر,كوب,ملعقة كبيرة,ملعقة صغيرة,رشة';
 
   @override
   String get unitText => 'الوحدة';
@@ -897,7 +923,8 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get no_location_information_available => 'لا توجد معلومات متاحة حول الموقع';
+  String get no_location_information_available =>
+      'لا توجد معلومات متاحة حول الموقع';
 
   @override
   String get orderFor => 'اطلب لـ';
@@ -955,7 +982,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dateTimeNotAvailable => 'التاريخ غير متاح';
 
   @override
-  String dateTimeFormat(Object day, Object hour, Object min, Object month, Object year) {
+  String dateTimeFormat(
+      Object day, Object hour, Object min, Object month, Object year) {
     return '$day/$month/$year $hour:$min';
   }
 
@@ -1021,7 +1049,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get failedAuthAfterSignIn => 'فشلت المصادقة بعد تسجيل الدخول.';
 
   @override
-  String get loginTimeoutMsg => 'انتهت مهلة تسجيل الدخول. يرجى المحاولة مرة أخرى.';
+  String get loginTimeoutMsg =>
+      'انتهت مهلة تسجيل الدخول. يرجى المحاولة مرة أخرى.';
 
   @override
   String get failedLogin => 'فشل تسجيل الدخول. تحقق من بيانات اعتمادك.';
@@ -1045,7 +1074,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get alignBarcode => 'قم بمحاذاة الرمز الشريطي داخل الإطار';
 
   @override
-  String get positionBarcode => 'ضع الرمز الشريطي داخل منطقة المسح للكشف التلقائي';
+  String get positionBarcode =>
+      'ضع الرمز الشريطي داخل منطقة المسح للكشف التلقائي';
 
   @override
   String get barcodeScanSuccess => 'تم مسح الرمز الشريطي بنجاح!';
@@ -1126,7 +1156,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get aiWillAnalyseImage => 'سيحلل الذكاء الاصطناعي صورة المنتج';
 
   @override
-  String get automaticallyFillDetailsFromBarcode => 'ملء التفاصيل تلقائيًا من الرمز الشريطي';
+  String get automaticallyFillDetailsFromBarcode =>
+      'ملء التفاصيل تلقائيًا من الرمز الشريطي';
 
   @override
   String get aiGenerated => 'تم إنشاؤه بالذكاء الاصطناعي';
@@ -1156,7 +1187,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notificationProductUpdatedSubtitle => 'تغييرات جديدة متاحة';
 
   @override
-  String get notificationOrderReceivedMessage => 'تم استلام طلبك بنجاح وهو قيد المعالجة. يمكنك تتبع حالته في طلباتك.';
+  String get notificationOrderReceivedMessage =>
+      'تم استلام طلبك بنجاح وهو قيد المعالجة. يمكنك تتبع حالته في طلباتك.';
 
   @override
   String notificationRoleInvitationMessage(String ruleName, String ruleType) {
@@ -1164,10 +1196,12 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get notificationRoleInvitationDefaultMessage => 'لقد تمت دعوتك للانضمام إلى فريق.';
+  String get notificationRoleInvitationDefaultMessage =>
+      'لقد تمت دعوتك للانضمام إلى فريق.';
 
   @override
-  String get notificationProductUpdatedMessage => 'تم تحديث منتج تتابعه بميزات وتحسينات جديدة. اطّلع عليه!';
+  String get notificationProductUpdatedMessage =>
+      'تم تحديث منتج تتابعه بميزات وتحسينات جديدة. اطّلع عليه!';
 
   @override
   String get notificationDefaultMessage => 'لديك إشعار جديد';
@@ -1272,7 +1306,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inventory_manage_title => 'إدارة المخزون';
 
   @override
-  String get inventory_manage_description => 'يمكن تحديث مستويات المخزون وإدارة المنتجات';
+  String get inventory_manage_description =>
+      'يمكن تحديث مستويات المخزون وإدارة المنتجات';
 
   @override
   String get orders_view_title => 'عرض الطلبات';
@@ -1284,7 +1319,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get orders_manage_title => 'إدارة الطلبات';
 
   @override
-  String get orders_manage_description => 'يمكن إنشاء الطلبات وتعديلها ومعالجتها';
+  String get orders_manage_description =>
+      'يمكن إنشاء الطلبات وتعديلها ومعالجتها';
 
   @override
   String get personnel_view_title => 'عرض الفريق';
@@ -1296,7 +1332,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get personnel_manage_title => 'إدارة الفريق';
 
   @override
-  String get personnel_manage_description => 'يمكن إضافة/إزالة أعضاء الفريق وتحديد الأذونات';
+  String get personnel_manage_description =>
+      'يمكن إضافة/إزالة أعضاء الفريق وتحديد الأذونات';
 
   @override
   String get manage_permissions => 'إدارة الأذونات';
@@ -1407,7 +1444,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get searchAndInviteText => 'البحث والدعوة';
 
   @override
-  String get searchAndInviteExistingUsersText => 'البحث عن المستخدمين الحاليين ودعوتهم';
+  String get searchAndInviteExistingUsersText =>
+      'البحث عن المستخدمين الحاليين ودعوتهم';
 
   @override
   String get cancelText => 'إلغاء';
@@ -1416,7 +1454,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get cancelInvitationTitle => 'إلغاء الدعوة';
 
   @override
-  String get cancelInvitationMessage => 'إلغاء الدعوة؟ لا يمكن التراجع عن هذا الإجراء.';
+  String get cancelInvitationMessage =>
+      'إلغاء الدعوة؟ لا يمكن التراجع عن هذا الإجراء.';
 
   @override
   String get cancelInvitationAction => 'إلغاء الدعوة';
@@ -1477,10 +1516,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noProductDataTitle => 'المنتج غير موجود';
 
   @override
-  String get noProductDataDescription => 'لم يتم العثور على معلومات المنتج لهذا الرمز الشريطي. قد يكون المنتج جديدًا أو غير موجود في قاعدة بياناتنا بعد.';
+  String get noProductDataDescription =>
+      'لم يتم العثور على معلومات المنتج لهذا الرمز الشريطي. قد يكون المنتج جديدًا أو غير موجود في قاعدة بياناتنا بعد.';
 
   @override
-  String get noProductDataHelp => 'يمكنك محاولة المسح مرة أخرى أو إضافة تفاصيل المنتج يدويًا.';
+  String get noProductDataHelp =>
+      'يمكنك محاولة المسح مرة أخرى أو إضافة تفاصيل المنتج يدويًا.';
 
   @override
   String get scanAgainText => 'امسح مرة أخرى';
@@ -1606,7 +1647,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noProductsFoundText => 'لم يتم العثور على منتجات';
 
   @override
-  String get tryDifferentSearchText => 'جرّب مصطلح بحث مختلفًا أو تصفح موردين آخرين';
+  String get tryDifferentSearchText =>
+      'جرّب مصطلح بحث مختلفًا أو تصفح موردين آخرين';
 
   @override
   String get addFirstProductText => 'أضف منتجك الأول لبدء البيع';
@@ -1663,13 +1705,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get accessRequired => 'الوصول مطلوب';
 
   @override
-  String get pleaseLoginToAccessDashboard => 'يرجى تسجيل الدخول للوصول إلى لوحة التحكم.';
+  String get pleaseLoginToAccessDashboard =>
+      'يرجى تسجيل الدخول للوصول إلى لوحة التحكم.';
 
   @override
-  String get needBusinessAssignment => 'يجب تعيينك إلى نشاط تجاري للوصول إلى ميزات الإدارة.';
+  String get needBusinessAssignment =>
+      'يجب تعيينك إلى نشاط تجاري للوصول إلى ميزات الإدارة.';
 
   @override
-  String get contactAdminOrJoinTeam => 'اتصل بالمسؤول الخاص بك أو انضم إلى فريق عمل.';
+  String get contactAdminOrJoinTeam =>
+      'اتصل بالمسؤول الخاص بك أو انضم إلى فريق عمل.';
 
   @override
   String get checkAccessStatus => 'تحقق من حالة الوصول';
@@ -1708,7 +1753,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noAnalyticsData => 'لا توجد بيانات تحليلية';
 
   @override
-  String get generateInvoicesToSeeAnalytics => 'أنشئ فواتير لعرض البيانات التحليلية';
+  String get generateInvoicesToSeeAnalytics =>
+      'أنشئ فواتير لعرض البيانات التحليلية';
 
   @override
   String get financialOverview => 'نظرة مالية عامة';
@@ -1854,13 +1900,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noServicesFound => 'لم يتم العثور على خدمات';
 
   @override
-  String get noServicesDescription => 'أضف خدمتك الأولى لبدء تقديم خدمات الرعاية الصحية للمرضى.';
+  String get noServicesDescription =>
+      'أضف خدمتك الأولى لبدء تقديم خدمات الرعاية الصحية للمرضى.';
 
   @override
   String get proTip => 'نصيحة';
 
   @override
-  String get addServicesToManage => 'أضف خدمات لإدارة المواعيد والتسعير وتخصيص الموارد بكفاءة.';
+  String get addServicesToManage =>
+      'أضف خدمات لإدارة المواعيد والتسعير وتخصيص الموارد بكفاءة.';
 
   @override
   String get edit => 'تعديل';
@@ -1947,13 +1995,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noBusinessOperations => 'لا توجد عمليات تجارية';
 
   @override
-  String get generateOperationsToSeeData => 'أنشئ عمليات تجارية لعرض التحليلات التفصيلية وبيانات المعاملات';
+  String get generateOperationsToSeeData =>
+      'أنشئ عمليات تجارية لعرض التحليلات التفصيلية وبيانات المعاملات';
 
   @override
   String get exportOperations => 'تصدير العمليات';
 
   @override
-  String get viewAllBusinessTransactions => 'عرض جميع المعاملات والعمليات التجارية';
+  String get viewAllBusinessTransactions =>
+      'عرض جميع المعاملات والعمليات التجارية';
 
   @override
   String get topSuppliers => 'أفضل الموردين';
@@ -2415,7 +2465,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get confirmDelete => 'تأكيد الحذف';
 
   @override
-  String get deleteDocumentConfirmation => 'هل أنت متأكد من أنك تريد حذف هذا المستند؟';
+  String get deleteDocumentConfirmation =>
+      'هل أنت متأكد من أنك تريد حذف هذا المستند؟';
 
   @override
   String get documentDeleted => 'تم حذف المستند';
@@ -2505,7 +2556,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get connectionError => 'خطأ في الاتصال. يرجى التحقق من الإنترنت.';
 
   @override
-  String get serverErrorGeneric => 'خطأ في الخادم. يرجى المحاولة مرة أخرى لاحقًا.';
+  String get serverErrorGeneric =>
+      'خطأ في الخادم. يرجى المحاولة مرة أخرى لاحقًا.';
 
   @override
   String get loadingMore => 'جارٍ تحميل المزيد...';
@@ -2785,7 +2837,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get pos_manage_title => 'إدارة نقطة البيع';
 
   @override
-  String get pos_manage_description => 'معالجة المبيعات وإدارة عمليات نقطة البيع';
+  String get pos_manage_description =>
+      'معالجة المبيعات وإدارة عمليات نقطة البيع';
 
   @override
   String get operations_view_title => 'عرض العمليات';
@@ -2836,7 +2889,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get privilegesUpdated => 'تم تحديث الصلاحيات بنجاح';
 
   @override
-  String get confirmPrivilegeChange => 'هل أنت متأكد من أنك تريد تغيير الصلاحيات؟';
+  String get confirmPrivilegeChange =>
+      'هل أنت متأكد من أنك تريد تغيير الصلاحيات؟';
 
   @override
   String get noPrivilegesSelected => 'لم يتم اختيار أي صلاحيات';
@@ -3289,7 +3343,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get checkDetails => 'تفاصيل الشيك';
 
   @override
-  String get checkPaymentNote => 'ستتم معالجة الدفع بالشيك بمجرد استلامه وتصفيته.';
+  String get checkPaymentNote =>
+      'ستتم معالجة الدفع بالشيك بمجرد استلامه وتصفيته.';
 
   @override
   String get printDocument => 'طباعة';
@@ -3304,10 +3359,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get searchForCustomer => 'ابحث عن عميل';
 
   @override
-  String get searchCustomersHint => 'ابحث بالاسم أو البريد الإلكتروني أو الهاتف...';
+  String get searchCustomersHint =>
+      'ابحث بالاسم أو البريد الإلكتروني أو الهاتف...';
 
   @override
-  String get searchCustomerInstructions => 'أدخل اسم العميل أو البريد الإلكتروني أو رقم الهاتف للبحث';
+  String get searchCustomerInstructions =>
+      'أدخل اسم العميل أو البريد الإلكتروني أو رقم الهاتف للبحث';
 
   @override
   String get addNewCustomer => 'إضافة عميل جديد';
@@ -3328,7 +3385,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get searchResults => 'نتائج البحث';
 
   @override
-  String get addNewCustomerInstruction => 'أنشئ ملف تعريف عميل جديد لإضافته إلى النظام';
+  String get addNewCustomerInstruction =>
+      'أنشئ ملف تعريف عميل جديد لإضافته إلى النظام';
 
   @override
   String get create => 'إنشاء';
@@ -3376,7 +3434,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get paymentMethodHelpDescription => 'اختر طريقة الدفع المفضلة لديك';
 
   @override
-  String get notesParametersHelpDescription => 'أضف ملاحظات ومعلمات مخصصة لهذا الطلب';
+  String get notesParametersHelpDescription =>
+      'أضف ملاحظات ومعلمات مخصصة لهذا الطلب';
 
   @override
   String get gotIt => 'فهمت!';
@@ -3454,7 +3513,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get pleaseEnterBankDetails => 'يرجى إدخال التفاصيل البنكية';
 
   @override
-  String get pleaseEnterMobilePaymentDetails => 'يرجى اختيار مزود الدفع عبر الهاتف المحمول';
+  String get pleaseEnterMobilePaymentDetails =>
+      'يرجى اختيار مزود الدفع عبر الهاتف المحمول';
 
   @override
   String get visa => 'فيزا';
@@ -3502,7 +3562,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get searchForCustomers => 'ابحث عن عملاء';
 
   @override
-  String get enterNameOrEmailToFindCustomers => 'أدخل الاسم أو اسم المستخدم أو البريد الإلكتروني للعثور على العملاء';
+  String get enterNameOrEmailToFindCustomers =>
+      'أدخل الاسم أو اسم المستخدم أو البريد الإلكتروني للعثور على العملاء';
 
   @override
   String get allCustomers => 'جميع العملاء';
@@ -3628,10 +3689,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get checkoutError => 'خطأ في الدفع';
 
   @override
-  String get itemsHelpDescription => 'راجع العناصر في سلتك قبل الدفع. يمكنك تعديل الكميات إذا لزم الأمر.';
+  String get itemsHelpDescription =>
+      'راجع العناصر في سلتك قبل الدفع. يمكنك تعديل الكميات إذا لزم الأمر.';
 
   @override
-  String get deliveryHelpDescription => 'اختر ما إذا كان العميل سيستلم الطلب أم يجب توصيله.';
+  String get deliveryHelpDescription =>
+      'اختر ما إذا كان العميل سيستلم الطلب أم يجب توصيله.';
 
   @override
   String get deliveryDetails => 'تفاصيل التوصيل';
@@ -4048,7 +4111,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get locationPermission => 'إذن الموقع';
 
   @override
-  String get locationPermissionMessage => 'يرجى تمكين خدمات الموقع لاستخدام موقعك الحالي';
+  String get locationPermissionMessage =>
+      'يرجى تمكين خدمات الموقع لاستخدام موقعك الحالي';
 
   @override
   String get enableLocation => 'تمكين الموقع';
@@ -4574,7 +4638,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get auth_unauthorized => 'ليس لديك إذن لتنفيذ هذا الإجراء.';
 
   @override
-  String get user_auth_creation_failed => 'فشل إنشاء الحساب. يرجى المحاولة مرة أخرى.';
+  String get user_auth_creation_failed =>
+      'فشل إنشاء الحساب. يرجى المحاولة مرة أخرى.';
 
   @override
   String get user_net_failed => 'خطأ في الشبكة. يرجى التحقق من اتصالك.';
@@ -4751,7 +4816,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get delivery_update_failed_label => 'فشل تحديث التوصيل.';
 
   @override
-  String get delivery_cannot_be_updated => 'لا يمكن تحديث التوصيل في حالته الحالية.';
+  String get delivery_cannot_be_updated =>
+      'لا يمكن تحديث التوصيل في حالته الحالية.';
 
   @override
   String get delivery_bulk_update_failed => 'فشل تحديث التوصيلات.';
@@ -4883,7 +4949,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get gone => 'هذا المورد لم يعد متاحًا.';
 
   @override
-  String get bad_gateway => 'الخدمة غير متاحة مؤقتًا. يرجى المحاولة مرة أخرى لاحقًا.';
+  String get bad_gateway =>
+      'الخدمة غير متاحة مؤقتًا. يرجى المحاولة مرة أخرى لاحقًا.';
 
   @override
   String get service_unavailable => 'الخدمة غير متاحة مؤقتًا.';
@@ -4931,7 +4998,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noInvitationsOrAssignments => 'لا توجد دعوات أو تعيينات';
 
   @override
-  String get noInvitationsDescription => 'ليس لديك أي دعوات معلقة أو تعيينات نشطة.';
+  String get noInvitationsDescription =>
+      'ليس لديك أي دعوات معلقة أو تعيينات نشطة.';
 
   @override
   String get noPendingDescription => 'ليس لديك أي دعوات معلقة.';
@@ -5063,13 +5131,15 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get searchByNameUsernameOrRole => 'ابحث بالاسم أو اسم المستخدم أو الدور...';
+  String get searchByNameUsernameOrRole =>
+      'ابحث بالاسم أو اسم المستخدم أو الدور...';
 
   @override
   String get searchForUsers => 'ابحث عن مستخدمين';
 
   @override
-  String get enterNameUsernameOrRole => 'أدخل اسمًا أو اسم مستخدم أو دورًا للعثور على أشخاص';
+  String get enterNameUsernameOrRole =>
+      'أدخل اسمًا أو اسم مستخدم أو دورًا للعثور على أشخاص';
 
   @override
   String get currentTeam => 'الفريق الحالي';
@@ -5321,7 +5391,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get customPriceApplied => 'تم تطبيق السعر المخصص';
 
   @override
-  String get customPriceAboveCatalog => 'السعر المخصص أعلى من السعر الافتراضي — لم يتم تطبيق أي خصم';
+  String get customPriceAboveCatalog =>
+      'السعر المخصص أعلى من السعر الافتراضي — لم يتم تطبيق أي خصم';
 
   @override
   String discountPreview(String amount, String percent) {
@@ -5449,7 +5520,8 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String deliveryDetailItemSubline(String brand, String barcode, int productId) {
+  String deliveryDetailItemSubline(
+      String brand, String barcode, int productId) {
     return '$brand · $barcode · رقم $productId';
   }
 
@@ -5662,7 +5734,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deliveryDetailValidateTitle => 'تأكيد التوصيل';
 
   @override
-  String get deliveryDetailValidateSubtitle => 'تحقق من التفاصيل أدناه قبل وضع علامة مكتمل.';
+  String get deliveryDetailValidateSubtitle =>
+      'تحقق من التفاصيل أدناه قبل وضع علامة مكتمل.';
 
   @override
   String get deliveryDetailValidateBack => 'رجوع';
@@ -5832,7 +5905,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deliveryDetailsSectionAdditional => 'معلومات إضافية';
 
   @override
-  String get deliveryDetailsProductSearchHint => 'ابحث بالاسم أو العلامة التجارية أو الرمز الشريطي';
+  String get deliveryDetailsProductSearchHint =>
+      'ابحث بالاسم أو العلامة التجارية أو الرمز الشريطي';
 
   @override
   String deliveryDetailsProductFallback(int id) {
@@ -5933,7 +6007,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deliveryDetailsValidationEnterAmount => 'أدخل مبلغًا صالحًا';
 
   @override
-  String get deliveryDetailsValidationFeeNegative => 'لا يمكن أن تكون الرسوم سالبة';
+  String get deliveryDetailsValidationFeeNegative =>
+      'لا يمكن أن تكون الرسوم سالبة';
 
   @override
   String get deliveryActionAccept => 'قبول';
@@ -6012,13 +6087,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deliveryTransitionReqRecipient => 'تم تحديد المستلم';
 
   @override
-  String get deliveryTransitionReqRecipientDesc => 'يحتاج التوصيل إلى مستلم أو عنوان وجهة.';
+  String get deliveryTransitionReqRecipientDesc =>
+      'يحتاج التوصيل إلى مستلم أو عنوان وجهة.';
 
   @override
   String get deliveryTransitionReqPackages => 'طرد واحد على الأقل';
 
   @override
-  String get deliveryTransitionReqPackagesDesc => 'أعلن عن الطرود والوزن قبل التأكيد.';
+  String get deliveryTransitionReqPackagesDesc =>
+      'أعلن عن الطرود والوزن قبل التأكيد.';
 
   @override
   String get deliveryTransitionReqProvider => 'تم تعيين مزود';
@@ -6027,13 +6104,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deliveryTransitionReqCarrierAccepted => 'قبل الناقل التسليم';
 
   @override
-  String get deliveryTransitionReqCarrierAcceptedDesc => 'هذا يسجل أن الناقل قد تولى الحيازة المادية.';
+  String get deliveryTransitionReqCarrierAcceptedDesc =>
+      'هذا يسجل أن الناقل قد تولى الحيازة المادية.';
 
   @override
   String get deliveryTransitionReqTracking => 'تتبع الناقل يظهر حركة';
 
   @override
-  String get deliveryTransitionReqTrackingDesc => 'هذا يسجل أن الناقل يفيد بأن البضائع في الحركة.';
+  String get deliveryTransitionReqTrackingDesc =>
+      'هذا يسجل أن الناقل يفيد بأن البضائع في الحركة.';
 
   @override
   String get deliveryTransitionReqDestination => 'عنوان الوجهة في الملف';
@@ -6042,7 +6121,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deliveryTransitionReqProof => 'تم التقاط إثبات التوصيل';
 
   @override
-  String get deliveryTransitionReqProofDesc => 'تم استلام توقيع أو صورة أو مسح ضوئي من المستلم.';
+  String get deliveryTransitionReqProofDesc =>
+      'تم استلام توقيع أو صورة أو مسح ضوئي من المستلم.';
 
   @override
   String get sourceDistribution => 'توزيع المصادر';
@@ -6113,7 +6193,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get marginPercentLabel => 'الهامش %';
 
   @override
-  String get setBasePriceHint => 'حدد سعرًا أساسيًا لعرض الهامش والعائد على الاستثمار';
+  String get setBasePriceHint =>
+      'حدد سعرًا أساسيًا لعرض الهامش والعائد على الاستثمار';
 
   @override
   String get hideAction => 'إخفاء';
@@ -6173,7 +6254,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dangerZoneTitle => 'منطقة الخطر';
 
   @override
-  String get dangerZoneBody => 'حذف منتج يزيله من الكتالوج. تحتفظ الطلبات التي تشير إليه بسجلها التاريخي.';
+  String get dangerZoneBody =>
+      'حذف منتج يزيله من الكتالوج. تحتفظ الطلبات التي تشير إليه بسجلها التاريخي.';
 
   @override
   String get productVisibilityTitle => 'الرؤية';
@@ -6274,13 +6356,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get validationDurationPositive => 'يجب أن تكون المدة أكبر من صفر';
 
   @override
-  String get validationBasePricePositive => 'يجب أن يكون السعر الأساسي أكبر من صفر';
+  String get validationBasePricePositive =>
+      'يجب أن يكون السعر الأساسي أكبر من صفر';
 
   @override
-  String get validationFinalPricePositive => 'يجب أن يكون السعر النهائي أكبر من صفر';
+  String get validationFinalPricePositive =>
+      'يجب أن يكون السعر النهائي أكبر من صفر';
 
   @override
-  String get validationFinalPriceExceedsBase => 'لا يمكن أن يكون السعر النهائي أكبر من السعر الأساسي';
+  String get validationFinalPriceExceedsBase =>
+      'لا يمكن أن يكون السعر النهائي أكبر من السعر الأساسي';
 
   @override
   String unexpectedErrorWithDetail(String detail) {
@@ -6640,13 +6725,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noStaffAdded => 'لم تتم إضافة موظفين بعد';
 
   @override
-  String get appPurposeContent => 'مهمة فيرديليا هي جعل الحياة الخالية من الغلوتين بسيطة وآمنة من خلال ربط الناس بمنتجات معتمدة وأعمال محلية موثوقة ومعلومات صحية واضحة.';
+  String get appPurposeContent =>
+      'مهمة فيرديليا هي جعل الحياة الخالية من الغلوتين بسيطة وآمنة من خلال ربط الناس بمنتجات معتمدة وأعمال محلية موثوقة ومعلومات صحية واضحة.';
 
   @override
-  String get feature3 => '📚 **محتوى تعليمي** - تعرّف على الداء البطني والمكونات الآمنة والحياة الخالية من الغلوتين.';
+  String get feature3 =>
+      '📚 **محتوى تعليمي** - تعرّف على الداء البطني والمكونات الآمنة والحياة الخالية من الغلوتين.';
 
   @override
-  String get recipedeletionConfirmationMessage => 'هل أنت متأكد من أنك تريد حذف هذه الوصفة؟';
+  String get recipedeletionConfirmationMessage =>
+      'هل أنت متأكد من أنك تريد حذف هذه الوصفة؟';
 
   @override
   String get invoiceStatusPaid => 'مدفوعة';
@@ -7116,7 +7204,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noVisibleProductsText => 'لا توجد منتجات ظاهرة';
 
   @override
-  String get noVisibleProductsSubtitle => 'جميع منتجات هذا المورّد مخفية حاليًا';
+  String get noVisibleProductsSubtitle =>
+      'جميع منتجات هذا المورّد مخفية حاليًا';
 
   @override
   String get resourceUnitsLabel => 'وحدات';
@@ -7480,25 +7569,29 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deliveriesEmptyActiveTitle => 'لا توجد توصيلات نشطة';
 
   @override
-  String get deliveriesEmptyActiveMessage => 'ستظهر هنا التوصيلات قيد الانتظار أو المعالجة أو المؤكدة.';
+  String get deliveriesEmptyActiveMessage =>
+      'ستظهر هنا التوصيلات قيد الانتظار أو المعالجة أو المؤكدة.';
 
   @override
   String get deliveriesEmptyInFlightTitle => 'لا شيء قيد النقل حالياً';
 
   @override
-  String get deliveriesEmptyInFlightMessage => 'ستظهر هنا التوصيلات المشحونة أو قيد النقل أو الخارجة للتوصيل.';
+  String get deliveriesEmptyInFlightMessage =>
+      'ستظهر هنا التوصيلات المشحونة أو قيد النقل أو الخارجة للتوصيل.';
 
   @override
   String get deliveriesEmptyClosedTitle => 'لا توجد توصيلات مكتملة';
 
   @override
-  String get deliveriesEmptyClosedMessage => 'ستظهر هنا التوصيلات التي تم توصيلها أو فشلت أو أُلغيت أو أُرجعت أو استُردت.';
+  String get deliveriesEmptyClosedMessage =>
+      'ستظهر هنا التوصيلات التي تم توصيلها أو فشلت أو أُلغيت أو أُرجعت أو استُردت.';
 
   @override
   String get deliveriesEmptyGenericTitle => 'لم يتم العثور على توصيلات';
 
   @override
-  String get deliveriesEmptyGenericMessage => 'ستظهر التوصيلات هنا بمجرد إنشائها.';
+  String get deliveriesEmptyGenericMessage =>
+      'ستظهر التوصيلات هنا بمجرد إنشائها.';
 
   @override
   String get deliveriesEmptyFilteredTitle => 'لا توجد توصيلات مطابقة';
@@ -7510,61 +7603,71 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deliveriesEmptyPendingTitle => 'لا توجد توصيلات قيد الانتظار';
 
   @override
-  String get deliveriesEmptyPendingMessage => 'ستظهر هنا التوصيلات الجديدة التي تنتظر القبول.';
+  String get deliveriesEmptyPendingMessage =>
+      'ستظهر هنا التوصيلات الجديدة التي تنتظر القبول.';
 
   @override
   String get deliveriesEmptyProcessingTitle => 'لا توجد توصيلات قيد المعالجة';
 
   @override
-  String get deliveriesEmptyProcessingMessage => 'ستظهر هنا التوصيلات التي يتم تجهيزها حالياً.';
+  String get deliveriesEmptyProcessingMessage =>
+      'ستظهر هنا التوصيلات التي يتم تجهيزها حالياً.';
 
   @override
   String get deliveriesEmptyConfirmedTitle => 'لا توجد توصيلات مؤكدة';
 
   @override
-  String get deliveriesEmptyConfirmedMessage => 'ستظهر هنا التوصيلات الجاهزة للاستلام من قبل الناقل.';
+  String get deliveriesEmptyConfirmedMessage =>
+      'ستظهر هنا التوصيلات الجاهزة للاستلام من قبل الناقل.';
 
   @override
   String get deliveriesEmptyShippedTitle => 'لم يتم شحن أي شيء بعد';
 
   @override
-  String get deliveriesEmptyShippedMessage => 'ستظهر هنا التوصيلات المسلَّمة إلى الناقل.';
+  String get deliveriesEmptyShippedMessage =>
+      'ستظهر هنا التوصيلات المسلَّمة إلى الناقل.';
 
   @override
   String get deliveriesEmptyInTransitTitle => 'لا شيء قيد النقل';
 
   @override
-  String get deliveriesEmptyInTransitMessage => 'ستظهر هنا التوصيلات المتحركة حالياً.';
+  String get deliveriesEmptyInTransitMessage =>
+      'ستظهر هنا التوصيلات المتحركة حالياً.';
 
   @override
   String get deliveriesEmptyOutForDeliveryTitle => 'لا شيء خارج للتوصيل';
 
   @override
-  String get deliveriesEmptyOutForDeliveryMessage => 'ستظهر هنا التوصيلات في المرحلة الأخيرة من مسارها.';
+  String get deliveriesEmptyOutForDeliveryMessage =>
+      'ستظهر هنا التوصيلات في المرحلة الأخيرة من مسارها.';
 
   @override
   String get deliveriesEmptyDeliveredTitle => 'لا توجد توصيلات تم توصيلها';
 
   @override
-  String get deliveriesEmptyDeliveredMessage => 'سيتم إدراج التوصيلات المكتملة هنا.';
+  String get deliveriesEmptyDeliveredMessage =>
+      'سيتم إدراج التوصيلات المكتملة هنا.';
 
   @override
   String get deliveriesEmptyFailedTitle => 'لا توجد توصيلات فاشلة';
 
   @override
-  String get deliveriesEmptyFailedMessage => 'ستظهر هنا التوصيلات التي لم تكتمل.';
+  String get deliveriesEmptyFailedMessage =>
+      'ستظهر هنا التوصيلات التي لم تكتمل.';
 
   @override
   String get deliveriesEmptyCancelledTitle => 'لا توجد توصيلات ملغاة';
 
   @override
-  String get deliveriesEmptyCancelledMessage => 'سيتم إدراج التوصيلات الملغاة هنا.';
+  String get deliveriesEmptyCancelledMessage =>
+      'سيتم إدراج التوصيلات الملغاة هنا.';
 
   @override
   String get deliveriesEmptyReturnedTitle => 'لا توجد توصيلات مرتجعة';
 
   @override
-  String get deliveriesEmptyReturnedMessage => 'ستظهر هنا التوصيلات المُعادة إلى المصدر.';
+  String get deliveriesEmptyReturnedMessage =>
+      'ستظهر هنا التوصيلات المُعادة إلى المصدر.';
 
   @override
   String get deliveriesEmptyRefundedTitle => 'لا توجد توصيلات مستردة';
@@ -7616,7 +7719,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get invalidLongitudeMsg => 'يجب أن يكون خط الطول بين −180 و180';
 
   @override
-  String get cannotNavigateInvalidSupplier => 'تعذّر التنقل: معرّف المورّد غير صالح';
+  String get cannotNavigateInvalidSupplier =>
+      'تعذّر التنقل: معرّف المورّد غير صالح';
 
   @override
   String get focusOnMapTooltip => 'التركيز على الخريطة';
@@ -7639,7 +7743,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noInformationAvailable => 'لا يوجد شيء لعرضه هنا بعد';
 
   @override
-  String get noPendingInvitationsMessage => 'تم قبول جميع الدعوات أو لا توجد دعوات معلّقة.';
+  String get noPendingInvitationsMessage =>
+      'تم قبول جميع الدعوات أو لا توجد دعوات معلّقة.';
 
   @override
   String get inviteNewMember => 'دعوة عضو جديد';
@@ -7679,7 +7784,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get clearCartTitle => 'إفراغ السلة';
 
   @override
-  String get clearCartConfirmation => 'هل تريد بالتأكيد حذف جميع العناصر من السلة؟';
+  String get clearCartConfirmation =>
+      'هل تريد بالتأكيد حذف جميع العناصر من السلة؟';
 
   @override
   String posScanAdded(String name) {
@@ -7690,7 +7796,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get choosePlanTitle => 'اختر خطتك';
 
   @override
-  String get choosePlanSubtitle => 'اختر خطة تناسب نشاطك التجاري. يمكنك تغييرها في أي وقت.';
+  String get choosePlanSubtitle =>
+      'اختر خطة تناسب نشاطك التجاري. يمكنك تغييرها في أي وقت.';
 
   @override
   String get planCurrentBadge => 'الحالية';
@@ -7796,7 +7903,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get cancelSubscriptionTitle => 'إلغاء الاشتراك؟';
 
   @override
-  String get cancelSubscriptionConfirmation => 'ستفقد الوصول إلى ميزات خطتك في نهاية فترة الفوترة الحالية. لا يمكن التراجع عن هذا الإجراء.';
+  String get cancelSubscriptionConfirmation =>
+      'ستفقد الوصول إلى ميزات خطتك في نهاية فترة الفوترة الحالية. لا يمكن التراجع عن هذا الإجراء.';
 
   @override
   String get keepSubscription => 'الاحتفاظ بالاشتراك';
@@ -7814,7 +7922,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noActiveSubscriptionTitle => 'لا يوجد اشتراك نشط';
 
   @override
-  String get noActiveSubscriptionMessage => 'اشترك في خطة لفتح الميزات المميزة وحدود أعلى.';
+  String get noActiveSubscriptionMessage =>
+      'اشترك في خطة لفتح الميزات المميزة وحدود أعلى.';
 
   @override
   String get browsePlans => 'تصفّح الخطط';
@@ -7829,10 +7938,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get plansTabAll => 'الكل';
 
   @override
-  String get plansIndividualSubtitle => 'خطط للاستخدام الشخصي — حساب واحد ومستخدم واحد.';
+  String get plansIndividualSubtitle =>
+      'خطط للاستخدام الشخصي — حساب واحد ومستخدم واحد.';
 
   @override
-  String get plansOrganizationSubtitle => 'خطط للفرق والشركات — عدة مستخدمين وحدود أعلى.';
+  String get plansOrganizationSubtitle =>
+      'خطط للفرق والشركات — عدة مستخدمين وحدود أعلى.';
 
   @override
   String get plansAllSubtitle => 'جميع الخطط في الكتالوج.';
@@ -7841,13 +7952,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get plansIndividualEmptyTitle => 'لا توجد خطط فردية';
 
   @override
-  String get plansIndividualEmptyMessage => 'لا توجد خطط فردية في الكتالوج حالياً.';
+  String get plansIndividualEmptyMessage =>
+      'لا توجد خطط فردية في الكتالوج حالياً.';
 
   @override
   String get plansOrganizationEmptyTitle => 'لا توجد خطط للشركات';
 
   @override
-  String get plansOrganizationEmptyMessage => 'لا توجد خطط للشركات في الكتالوج حالياً.';
+  String get plansOrganizationEmptyMessage =>
+      'لا توجد خطط للشركات في الكتالوج حالياً.';
 
   @override
   String get planSectionFeatures => 'يشمل';
@@ -7895,19 +8008,23 @@ class AppLocalizationsAr extends AppLocalizations {
   String get savingsMonthsLabel => 'شهران مجاناً';
 
   @override
-  String get plansIndividualSubtitleFree => 'أنت على الخطة المجانية. يمكنك الترقية في أي وقت — بياناتك محفوظة.';
+  String get plansIndividualSubtitleFree =>
+      'أنت على الخطة المجانية. يمكنك الترقية في أي وقت — بياناتك محفوظة.';
 
   @override
-  String get plansOrganizationSubtitleFree => 'أنت على الخطة المجانية. أنشئ فريقاً عندما تكون جاهزاً.';
+  String get plansOrganizationSubtitleFree =>
+      'أنت على الخطة المجانية. أنشئ فريقاً عندما تكون جاهزاً.';
 
   @override
-  String get plansAllSubtitleFree => 'أنت على الخطة المجانية. كل ما يلي متاح عندما تحتاجه.';
+  String get plansAllSubtitleFree =>
+      'أنت على الخطة المجانية. كل ما يلي متاح عندما تحتاجه.';
 
   @override
   String get deliveryDetailsTotalWeightLabel => 'الوزن الإجمالي';
 
   @override
-  String get deliveryDetailsTotalWeightHelper => 'وزن الشحنة الكاملة بالكيلوغرام';
+  String get deliveryDetailsTotalWeightHelper =>
+      'وزن الشحنة الكاملة بالكيلوغرام';
 
   @override
   String get deliveryDetailsBrokerLabel => 'شركة الشحن';
@@ -7955,7 +8072,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deliveryDetailsWeightUnitLabel => 'وحدة الوزن';
 
   @override
-  String get deliveryDetailsValidationDimensionsFormat => 'استخدم الصيغة الطول×العرض×الارتفاع، مثال: 5×5×5';
+  String get deliveryDetailsValidationDimensionsFormat =>
+      'استخدم الصيغة الطول×العرض×الارتفاع، مثال: 5×5×5';
 
   @override
   String get vatRateExempt => 'معفى من ضريبة القيمة المضافة';
@@ -8001,4 +8119,307 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get itemDescriptionLabel => 'الوصف';
+
+  @override
+  String get loadingOrdersTxt => 'جارٍ تحميل طلباتك...';
+
+  @override
+  String get loadingOrderDetailsTxt => 'جارٍ تحميل تفاصيل الطلب...';
+
+  @override
+  String get shippedTxt => 'تم الشحن';
+
+  @override
+  String get refundedTxt => 'تم الاسترداد';
+
+  @override
+  String get inProgressTxt => 'قيد التنفيذ';
+
+  @override
+  String get inTransitTxt => 'قيد الشحن';
+
+  @override
+  String get allItemsDeliveredTxt => 'تم تسليم جميع العناصر';
+
+  @override
+  String get fulfilmentLabel => 'حالة التسليم';
+
+  @override
+  String get orderDetailsTitle => 'تفاصيل الطلب';
+
+  @override
+  String get dateLabel => 'التاريخ';
+
+  @override
+  String get customerLabel => 'العميل';
+
+  @override
+  String get paymentStatusLabel => 'حالة الدفع';
+
+  @override
+  String get invoiceLabel => 'الفاتورة';
+
+  @override
+  String get noItemsTxt => 'لا توجد عناصر';
+
+  @override
+  String get unknownItemTxt => 'عنصر غير معروف';
+
+  @override
+  String get itemSingular => 'عنصر';
+
+  @override
+  String get itemPlural => 'عناصر';
+
+  @override
+  String get moreTxt => 'إضافية';
+
+  @override
+  String get invoiceStatusPaidTxt => 'مدفوع';
+
+  @override
+  String get invoiceStatusUnpaidTxt => 'غير مدفوع';
+
+  @override
+  String get invoiceStatusPartiallyPaidTxt => 'مدفوع جزئيا';
+
+  @override
+  String get invoiceStatusOverdueTxt => 'متأخر';
+
+  @override
+  String get invoiceStatusRefundedTxt => 'مرتجع';
+
+  @override
+  String get invoiceStatusCanceledTxt => 'ملغى';
+
+  @override
+  String get invoiceDueLabel => 'مستحق';
+
+  @override
+  String get invoiceAmountLabel => 'المبلغ';
+
+  @override
+  String invoiceOverdueByTxt(int days) {
+    return ' $days يوم متأخر';
+  }
+
+  @override
+  String invoiceDueInTxt(int days) {
+    return ' $days يوم مستحق';
+  }
+
+  @override
+  String get noOrdersInTabTxt => 'لا توجد طلبات في هذه الفئة.';
+
+  @override
+  String get invoicesToPayTitle => 'فواتير للدفع';
+
+  @override
+  String invoicesToPaySubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count فاتورة بانتظار الدفع',
+      many: '$count فاتورة بانتظار الدفع',
+      few: '$count فواتير بانتظار الدفع',
+      two: 'فواتيران بانتظار الدفع',
+      one: 'فاتورة واحدة بانتظار الدفع',
+      zero: 'لا توجد فواتير بانتظار الدفع',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get payNowTxt => 'ادفع الآن';
+
+  @override
+  String payInvoiceAmountTxt(String amount) {
+    return 'ادفع $amount';
+  }
+
+  @override
+  String outstandingSummaryTxt(int count, String amount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count فاتورة مستحقة · $amount',
+      many: '$count فاتورة مستحقة · $amount',
+      few: '$count فواتير مستحقة · $amount',
+      two: 'فواتيران مستحقتان · $amount',
+      one: 'فاتورة واحدة مستحقة · $amount',
+      zero: 'لا توجد فواتير مستحقة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get standardTxt => 'قياسي';
+
+  @override
+  String get deliveriesTxt => 'عمليات توصيل';
+
+  @override
+  String get shippingMethodLabel => 'طريقة الشحن';
+
+  @override
+  String get providerLabel => 'مزوّد الخدمة';
+
+  @override
+  String get brokerLabel => 'الوسيط';
+
+  @override
+  String get deliverySourceLabel => 'المصدر';
+
+  @override
+  String get invoiceReferenceLabel => 'مرجع الفاتورة';
+
+  @override
+  String get packageCountLabel => 'عدد الطرود';
+
+  @override
+  String get weightLabel => 'الوزن';
+
+  @override
+  String get dimensionsLabel => 'الأبعاد';
+
+  @override
+  String get goodsDescriptionLabel => 'البضائع';
+
+  @override
+  String get specialInstructionsLabel => 'تعليمات';
+
+  @override
+  String get hsCodeLabel => 'رمز HS';
+
+  @override
+  String get deliveryAddressLabel => 'العنوان';
+
+  @override
+  String get createdLabel => 'أُنشئ في';
+
+  @override
+  String get updatedLabel => 'آخر تحديث';
+
+  @override
+  String get deliveryStatusConfirmedTxt => 'مؤكد';
+
+  @override
+  String get deliveryStatusPendingTxt => 'قيد الانتظار';
+
+  @override
+  String get deliveryStatusInTransitTxt => 'قيد النقل';
+
+  @override
+  String get deliveryStatusDeliveredTxt => 'تم التوصيل';
+
+  @override
+  String get deliveryStatusCancelledTxt => 'ملغى';
+
+  @override
+  String get paymentMethodWallet => 'المحفظة';
+
+  @override
+  String paymentCollectButton(Object amount) {
+    return 'تحصيل $amount';
+  }
+
+  @override
+  String get paymentCashHintTitle => 'تحصيل نقدي';
+
+  @override
+  String paymentCashHintBody(Object amount) {
+    return 'استلم $amount نقداً من العميل ثم اضغط تحصيل.';
+  }
+
+  @override
+  String get paymentQrTitle => 'امسح للدفع';
+
+  @override
+  String get paymentQrSubtitle =>
+      'اطلب من الدافع مسح هذا الرمز باستخدام تطبيق محفظته.';
+
+  @override
+  String get paymentQrEmptyHint => 'أدخل مبلغاً لإنشاء رمز QR.';
+
+  @override
+  String get paymentWalletAvailable => 'الرصيد المتاح';
+
+  @override
+  String get paymentWalletEmpty => 'المحفظة فارغة';
+
+  @override
+  String get paymentWalletLocked => 'المحفظة مقفلة';
+
+  @override
+  String get paymentWalletMissingTitle => 'لا توجد محفظة';
+
+  @override
+  String get paymentWalletMissingBody => 'يلزم وجود محفظة للدفع من هذا الحساب.';
+
+  @override
+  String get paymentErrorNoWallet => 'لا توجد محفظة مرتبطة بهذا الحساب.';
+
+  @override
+  String get paymentErrorWalletLocked => 'هذه المحفظة مقفلة.';
+
+  @override
+  String paymentErrorInsufficientWallet(Object balance) {
+    return 'الرصيد غير كافٍ ($balance).';
+  }
+
+  @override
+  String get paymentMarkQrPaid => 'تحديد كمدفوع';
+
+  @override
+  String get paymentQrMissingPayeeTitle => 'لا يوجد مستفيد مُعدّ';
+
+  @override
+  String get paymentQrMissingPayeeBody =>
+      'يجب تعيين مستفيد لإنشاء رمز QR للدفع.';
+
+  @override
+  String get paymentQrToggleTitle => 'اترك شخصاً آخر يدفع';
+
+  @override
+  String get paymentQrToggleSubtitle =>
+      'اعرض رمز QR ليقوم شخص آخر بمسحه باستخدام محفظته.';
+
+  @override
+  String paymentMarkQrPaidWithAmount(Object amount) {
+    return 'تحديد $amount كمدفوع';
+  }
+
+  @override
+  String get paymentBankReferenceLabel => 'المرجع البنكي';
+
+  @override
+  String get paymentBankReferenceHint => 'رقم الإيصال أو مرجع العملية';
+
+  @override
+  String get paymentBankIssueDateLabel => 'تاريخ الإصدار';
+
+  @override
+  String get paymentBankIssueDateHint => 'YYYY-MM-DD';
+
+  @override
+  String get paymentBankHintTitle => 'تحويل بنكي';
+
+  @override
+  String get paymentBankHintBody =>
+      'تُحفظ هذه البيانات مع ملاحظات الدفع حتى يمكن مطابقة الفاتورة لاحقًا.';
+
+  @override
+  String get paymentErrorBankReferenceRequired => 'المرجع البنكي مطلوب';
+
+  @override
+  String get paymentErrorBankIssueDateRequired => 'تاريخ الإصدار مطلوب';
+
+  @override
+  String get scanToPayLabel => 'امسح للدفع';
+
+  @override
+  String get paymentQrInvalidPayload => 'الدفع غير صالح';
+
+  @override
+  String get paymentQrSelfPay => 'ادفع لنفسك';
 }

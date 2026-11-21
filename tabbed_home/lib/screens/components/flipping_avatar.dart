@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:ui/components/image/image_url.dart';
+import 'package:ui/components/qr/qr_display.dart';
 
 /// A circular avatar that flips to reveal a QR code.
 ///
@@ -132,30 +132,19 @@ class _FlippingAvatarState extends State<FlippingAvatar>
       size: widget.size,
       borderColor: widget.borderColor ?? scheme.primary,
       backgroundColor: widget.backgroundColor ?? scheme.surface,
-      child: Padding(
-        padding: EdgeInsets.all(widget.size * 0.15),
-        child: QrImageView(
-          data: widget.qrData,
-          version: QrVersions.auto,
-          backgroundColor: Colors.transparent,
-          eyeStyle: QrEyeStyle(
-            eyeShape: QrEyeShape.square,
-            color: scheme.onSurface,
-          ),
-          dataModuleStyle: QrDataModuleStyle(
-            dataModuleShape: QrDataModuleShape.square,
-            color: scheme.onSurface,
-          ),
-        ),
+      // QrDisplay owns its own quiet-zone padding, so we size it to
+      // the face's inner diameter and let it fill the circle.
+      child: QrDisplay(
+        data: widget.qrData,
+        size: widget.size * 1.6,
+        paddingRatio: 0,
+        moduleColor: scheme.onSurface,
+        backgroundColor: Colors.transparent,
       ),
     );
   }
 
   Widget _buildAvatarContent(BuildContext context, ColorScheme scheme) {
-    // Route the raw URL through the shared resolver so relative paths
-    // coming from the API (`/uploads/avatar.png`) get joined with the
-    // FS base, and placeholders / empty strings fall through to the
-    // icon instead of trying to load a broken image.
     final resolved = resolveImageUrl(widget.imageUrl);
 
     if (resolved == null) {
@@ -200,8 +189,6 @@ class _FlippingAvatarState extends State<FlippingAvatar>
 
 // ==================== SHARED CIRCULAR FRAME ====================
 
-/// The circular border + shadow + background shared by both faces.
-/// Eliminates duplication between front and back.
 class _Face extends StatelessWidget {
   final double size;
   final Color borderColor;
@@ -240,7 +227,6 @@ class _Face extends StatelessWidget {
 
 // ==================== FLIP BUTTON ====================
 
-/// Small floating action button that sits on the avatar's corner.
 class _FlipButton extends StatelessWidget {
   final bool isFrontVisible;
   final VoidCallback onTap;

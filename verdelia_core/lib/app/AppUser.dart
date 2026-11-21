@@ -814,6 +814,127 @@ class AppUser {
         'quota: $userQuota, subscription: $appUserSubscriptionRef, '
         'wallet: $appUserWalletId)';
   }
+
+  // ==================== Balance manipulation ====================
+
+  /// Number of decimal places to keep on wallet balances.
+  static const int _balanceScale = 2;
+
+  /// The current balance, or 0 when no wallet is inlined.
+  double get _balance => wallet?.walletBalance ?? 0.0;
+
+  /// Round to [_balanceScale] decimal places.
+  static double _roundMoney(double v) {
+    if (!v.isFinite) return 0.0;
+    return double.parse(v.toStringAsFixed(_balanceScale));
+  }
+
+  /// Build a copy of [wallet] with [newBalance], clamped to >= 0.
+  ///
+  /// Returns the current wallet unchanged when [wallet] is null — a
+  /// balance op on a missing wallet is a no-op, not a crash.
+  Wallet? _walletWithBalance(double newBalance) {
+    final w = wallet;
+    if (w == null) return null;
+    final clamped = newBalance < 0 ? 0.0 : _roundMoney(newBalance);
+    return Wallet(
+      idWallet: w.idWallet,
+      walletType: w.walletType,
+      walletCurrency: w.walletCurrency,
+      walletBalance: clamped,
+      walletStatus: w.walletStatus,
+      // The server bumps `wallet_version` on every real write; a local
+      // change leaves it alone so a stale client can't pretend to be
+      // newer than the server row.
+      walletVersion: w.walletVersion,
+    );
+  }
+
+  /// Return a new [AppUser] with the wallet's `wallet_balance` replaced
+  /// by [newBalance]. Negative input is clamped to 0.
+  ///
+  /// No-op when there is no inlined wallet.
+  AppUser withWalletBalance(double newBalance) {
+    final updated = _walletWithBalance(newBalance);
+    if (updated == null) return this;
+    return copyWith(wallet: updated);
+  }
+
+  /// Add [amount] to the balance (credit). Negative [amount] is treated
+  /// as a debit — use [debitWallet] for clarity if that's the intent.
+  AppUser creditWallet(double amount) {
+    if (!amount.isFinite || amount == 0) return this;
+    return withWalletBalance(_balance + amount);
+  }
+
+  /// Subtract [amount] from the balance (debit). The result is clamped
+  /// at 0; call [canDebitWallet] first if you want to reject an
+  /// overdraw instead of flooring it.
+  AppUser debitWallet(double amount) {
+    if (!amount.isFinite || amount <= 0) return this;
+    return withWalletBalance(_balance - amount);
+  }
+
+  /// True when the wallet exists, is active, and holds at least
+  /// [amount]. Use this before [debitWallet] when the caller needs a
+  /// real rejection rather than a floored balance.
+  bool canDebitWallet(double amount) {
+    final w = wallet;
+    if (w == null || !w.canTransact) return false;
+    if (!amount.isFinite || amount <= 0) return false;
+    return w.walletBalance + 1e-9 >= amount;
+  }
+
+  /// Apply a signed delta: positive credits, negative debits.
+  /// Clamped at 0 on the downside.
+  AppUser adjustWalletBalance(double delta) {
+    if (!delta.isFinite || delta == 0) return this;
+    return withWalletBalance(_balance + delta);
+  }
+
+  /// Recompute the balance from an authoritative server value.
+  ///
+  /// Same as [withWalletBalance] but named for the "I just refreshed
+  /// from the API" call site, so the intent is explicit. Also keeps
+  /// the wallet FK (`appUserWalletId`) in sync when the server echoes
+  /// it.
+  AppUser syncWalletFromServer({
+    required double balance,
+    int? walletId,
+    String? currency,
+    String? status,
+    int? version,
+  }) {
+    final w = wallet;
+    if (w == null) {
+      // No local wallet yet but the server says there is one: build a
+      // minimal snapshot so the UI can render immediately. Callers
+      // should still refresh the full user to fill in type/metadata.
+      if (walletId == null) return this;
+      return copyWith(
+        appUserWalletId: walletId,
+        wallet: Wallet(
+          idWallet: walletId,
+          walletCurrency: currency ?? 'DZD',
+          walletBalance: _roundMoney(balance < 0 ? 0.0 : balance),
+          walletStatus: status ?? 'pending_verification',
+          walletVersion: version ?? 0,
+        ),
+      );
+    }
+
+    return copyWith(
+      appUserWalletId: walletId ?? appUserWalletId,
+      wallet: Wallet(
+        idWallet: walletId ?? w.idWallet,
+        walletType: w.walletType,
+        walletCurrency: currency ?? w.walletCurrency,
+        walletBalance: _roundMoney(balance < 0 ? 0.0 : balance),
+        walletStatus: status ?? w.walletStatus,
+        walletVersion: version ?? w.walletVersion,
+      ),
+    );
+  }
 }
 
 class AppUserCategory {

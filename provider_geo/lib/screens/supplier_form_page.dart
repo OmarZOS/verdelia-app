@@ -718,7 +718,7 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
                                       child: Padding(
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 8),
-                                        child: Icon(getContactIcon(type),
+                                        child: FaIcon(getContactIcon(type),
                                             size: 24),
                                       ),
                                     ),
@@ -727,8 +727,8 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
                                 selectedItemBuilder: (context) {
                                   return _contactTypes.map((type) {
                                     return Center(
-                                      child:
-                                          Icon(getContactIcon(type), size: 24),
+                                      child: FaIcon(getContactIcon(type),
+                                          size: 24),
                                     );
                                   }).toList();
                                 },
@@ -878,7 +878,7 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
     return contactTypes.isEmpty ? _contactTypes.last : contactTypes.first;
   }
 
-  IconData getContactIcon(String type) {
+  FaIconData getContactIcon(String type) {
     final lowercaseType = type.toLowerCase();
 
     if (lowercaseType.contains('facebook')) return FontAwesomeIcons.facebook;

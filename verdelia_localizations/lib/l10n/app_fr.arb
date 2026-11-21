@@ -2353,7 +2353,6 @@
   "noMoreDocuments": "Plus de documents",
 
   "customerWithId": "Client {id}",
-  "@customerWithId": { "placeholders": { "id": { "type": "String" } } },
 
   "guestWithId": "Invité n°{id}",
   "@guestWithId": { "placeholders": { "id": { "type": "String" } } },
@@ -2365,7 +2364,6 @@
   "partialOverdue": "Partiel / en retard",
 
   "overdueDays": "{days}j de retard",
-  "@overdueDays": { "placeholders": { "days": { "type": "String" } } },
 
   "payRemaining": "Payer le restant",
   "payNow": "Payer maintenant",
@@ -2845,7 +2843,123 @@
   "itemAvailableLabel": "Disponible",
   "itemCategoryLabel": "Catégorie",
   "itemProviderLabel": "Fournisseur",
-  "itemDescriptionLabel": "Description"
+  "itemDescriptionLabel": "Description",
+
+  "loadingOrdersTxt": "Chargement de vos commandes...",
+  "loadingOrderDetailsTxt": "Chargement des détails de la commande...",
+  "shippedTxt": "Expédiée",
+  "refundedTxt": "Remboursée",
+
+  "inProgressTxt": "En cours",
+  "inTransitTxt": "En transit",
+  "allItemsDeliveredTxt": "Tous les articles livrés",
+  "fulfilmentLabel": "Suivi de livraison",
+  "orderDetailsTitle": "Détails de la commande",
+  "dateLabel": "Date",
+  "customerLabel": "Client",
+  "paymentStatusLabel": "Statut du paiement",
+  "invoiceLabel": "Facture",
+  "noItemsTxt": "Aucun article",
+  "unknownItemTxt": "Article inconnu",
+  "itemSingular": "article",
+  "itemPlural": "articles",
+  "moreTxt": "de plus",
+
+  "invoiceStatusPaidTxt": "Payée",
+  "invoiceStatusUnpaidTxt": "Impayée",
+  "invoiceStatusPartiallyPaidTxt": "Partiellement payée",
+  "invoiceStatusOverdueTxt": "En retard",
+  "invoiceStatusRefundedTxt": "Remboursée",
+  "invoiceStatusCanceledTxt": "Annulée",
+  "invoiceDueLabel": "Dû",
+  "invoiceAmountLabel": "Montant",
+  "invoiceOverdueByTxt": "En retard de {days}d",
+  "@invoiceOverdueByTxt": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "invoiceDueInTxt": "Dû dans {days}d",
+  "@invoiceDueInTxt": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+
+  "noOrdersInTabTxt": "Aucune commande dans cette catégorie.",
+  "invoicesToPayTitle": "Factures à payer",
+  "invoicesToPaySubtitle": "{count, plural, =0{Aucune facture en attente de paiement} =1{1 facture en attente de paiement} other{{count} factures en attente de paiement}}",
+  "@invoicesToPaySubtitle": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "payNowTxt": "Payer maintenant",
+  "payInvoiceAmountTxt": "Payer {amount}",
+  "@payInvoiceAmountTxt": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "outstandingSummaryTxt": "{count, plural, =0{Aucune facture impayée} =1{1 facture impayée · {amount}} other{{count} factures impayées · {amount}}}",
+  "@outstandingSummaryTxt": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "amount": { "type": "String" }
+    }
+  },
+
+  "standardTxt": "Standard",
+  "deliveriesTxt": "livraisons",
+  "shippingMethodLabel": "Mode d'expédition",
+  "providerLabel": "Fournisseur",
+  "brokerLabel": "Courtier",
+  "deliverySourceLabel": "Source",
+  "invoiceReferenceLabel": "Réf. facture",
+  "packageCountLabel": "Colis",
+  "weightLabel": "Poids",
+  "dimensionsLabel": "Dimensions",
+  "goodsDescriptionLabel": "Marchandises",
+  "specialInstructionsLabel": "Instructions",
+  "hsCodeLabel": "Code SH",
+  "deliveryAddressLabel": "Adresse",
+  "createdLabel": "Créé le",
+  "updatedLabel": "Mis à jour",
+  "deliveryStatusConfirmedTxt": "Confirmé",
+  "deliveryStatusPendingTxt": "En attente",
+  "deliveryStatusInTransitTxt": "En transit",
+  "deliveryStatusDeliveredTxt": "Livré",
+  "deliveryStatusCancelledTxt": "Annulé",
+
+  "paymentMethodWallet": "Portefeuille",
+  "paymentCollectButton": "Encaisser {amount}",
+  "paymentCashHintTitle": "Encaisser en espèces",
+  "paymentCashHintBody": "Recevez {amount} en espèces du client, puis appuyez sur Encaisser.",
+  "paymentQrTitle": "Scannez pour payer",
+  "paymentQrSubtitle": "Demandez au payeur de scanner ce code avec son application portefeuille.",
+  "paymentQrEmptyHint": "Saisissez un montant pour générer un QR code.",
+  "paymentWalletAvailable": "Solde disponible",
+  "paymentWalletEmpty": "Portefeuille vide",
+  "paymentWalletLocked": "Portefeuille verrouillé",
+  "paymentWalletMissingTitle": "Aucun portefeuille",
+  "paymentWalletMissingBody": "Un portefeuille est requis pour payer depuis ce compte.",
+  "paymentErrorNoWallet": "Aucun portefeuille associé à ce compte.",
+  "paymentErrorWalletLocked": "Ce portefeuille est verrouillé.",
+  "paymentErrorInsufficientWallet": "Solde insuffisant ({balance}).",
+
+  "paymentMarkQrPaid": "Marquer comme payé",
+  "paymentQrMissingPayeeTitle": "Aucun bénéficiaire configuré",
+  "paymentQrMissingPayeeBody": "Un bénéficiaire doit être défini pour générer un QR de paiement.",
+
+  "paymentQrToggleTitle": "Laisser quelqu'un d'autre payer",
+  "paymentQrToggleSubtitle": "Afficher un QR code pour qu'une autre personne le scanne avec son portefeuille.",
+  "paymentMarkQrPaidWithAmount": "Marquer {amount} comme payé",
+
+  "paymentBankReferenceLabel": "Référence bancaire",
+  "paymentBankReferenceHint": "Numéro de bordereau ou référence de transaction",
+  "paymentBankIssueDateLabel": "Date d'émission",
+  "paymentBankIssueDateHint": "AAAA-MM-JJ",
+  "paymentBankHintTitle": "Virement bancaire",
+  "paymentBankHintBody": "Ces informations sont enregistrées avec les notes de paiement afin que la facture puisse être rapprochée ultérieurement.",
+  "paymentErrorBankReferenceRequired": "La référence bancaire est obligatoire",
+  "paymentErrorBankIssueDateRequired": "La date d'émission est obligatoire",
+
+  "scanToPayLabel": "Scanner pour payer",
+
+  "paymentQrInvalidPayload": "Payload de paiement invalide",
+  "paymentQrSelfPay": "Payer pour vous-même"
 
     
 }

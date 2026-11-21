@@ -63,7 +63,8 @@ import 'app_localizations_fr.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale)
+      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -71,7 +72,8 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -83,7 +85,8 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
     delegate,
     GlobalMaterialLocalizations.delegate,
     GlobalCupertinoLocalizations.delegate,
@@ -1937,7 +1940,8 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{day}/{month}/{year} {hour}:{min}'**
-  String dateTimeFormat(Object day, Object hour, Object min, Object month, Object year);
+  String dateTimeFormat(
+      Object day, Object hour, Object min, Object month, Object year);
 
   /// No description provided for @dateFormat.
   ///
@@ -15252,9 +15256,532 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Description'**
   String get itemDescriptionLabel;
+
+  /// No description provided for @loadingOrdersTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading your orders...'**
+  String get loadingOrdersTxt;
+
+  /// No description provided for @loadingOrderDetailsTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading order details...'**
+  String get loadingOrderDetailsTxt;
+
+  /// No description provided for @shippedTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipped'**
+  String get shippedTxt;
+
+  /// No description provided for @refundedTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Refunded'**
+  String get refundedTxt;
+
+  /// No description provided for @inProgressTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get inProgressTxt;
+
+  /// No description provided for @inTransitTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'In transit'**
+  String get inTransitTxt;
+
+  /// No description provided for @allItemsDeliveredTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'All items delivered'**
+  String get allItemsDeliveredTxt;
+
+  /// No description provided for @fulfilmentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Fulfilment'**
+  String get fulfilmentLabel;
+
+  /// No description provided for @orderDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Order details'**
+  String get orderDetailsTitle;
+
+  /// No description provided for @dateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get dateLabel;
+
+  /// No description provided for @customerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get customerLabel;
+
+  /// No description provided for @paymentStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment status'**
+  String get paymentStatusLabel;
+
+  /// No description provided for @invoiceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice'**
+  String get invoiceLabel;
+
+  /// No description provided for @noItemsTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'No items'**
+  String get noItemsTxt;
+
+  /// No description provided for @unknownItemTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown item'**
+  String get unknownItemTxt;
+
+  /// No description provided for @itemSingular.
+  ///
+  /// In en, this message translates to:
+  /// **'item'**
+  String get itemSingular;
+
+  /// No description provided for @itemPlural.
+  ///
+  /// In en, this message translates to:
+  /// **'items'**
+  String get itemPlural;
+
+  /// No description provided for @moreTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'more'**
+  String get moreTxt;
+
+  /// No description provided for @invoiceStatusPaidTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get invoiceStatusPaidTxt;
+
+  /// No description provided for @invoiceStatusUnpaidTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpaid'**
+  String get invoiceStatusUnpaidTxt;
+
+  /// No description provided for @invoiceStatusPartiallyPaidTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Partially paid'**
+  String get invoiceStatusPartiallyPaidTxt;
+
+  /// No description provided for @invoiceStatusOverdueTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get invoiceStatusOverdueTxt;
+
+  /// No description provided for @invoiceStatusRefundedTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Refunded'**
+  String get invoiceStatusRefundedTxt;
+
+  /// No description provided for @invoiceStatusCanceledTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Canceled'**
+  String get invoiceStatusCanceledTxt;
+
+  /// No description provided for @invoiceDueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Due'**
+  String get invoiceDueLabel;
+
+  /// No description provided for @invoiceAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get invoiceAmountLabel;
+
+  /// No description provided for @invoiceOverdueByTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue by {days}d'**
+  String invoiceOverdueByTxt(int days);
+
+  /// No description provided for @invoiceDueInTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Due in {days}d'**
+  String invoiceDueInTxt(int days);
+
+  /// No description provided for @noOrdersInTabTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'No orders in this category.'**
+  String get noOrdersInTabTxt;
+
+  /// No description provided for @invoicesToPayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoices to pay'**
+  String get invoicesToPayTitle;
+
+  /// No description provided for @invoicesToPaySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 invoice awaiting payment} other{{count} invoices awaiting payment}}'**
+  String invoicesToPaySubtitle(int count);
+
+  /// No description provided for @payNowTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay now'**
+  String get payNowTxt;
+
+  /// No description provided for @payInvoiceAmountTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay {amount}'**
+  String payInvoiceAmountTxt(String amount);
+
+  /// No description provided for @outstandingSummaryTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 invoice outstanding · {amount}} other{{count} invoices outstanding · {amount}}}'**
+  String outstandingSummaryTxt(int count, String amount);
+
+  /// No description provided for @standardTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard'**
+  String get standardTxt;
+
+  /// No description provided for @deliveriesTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'deliveries'**
+  String get deliveriesTxt;
+
+  /// No description provided for @shippingMethodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get shippingMethodLabel;
+
+  /// No description provided for @providerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get providerLabel;
+
+  /// No description provided for @brokerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Broker'**
+  String get brokerLabel;
+
+  /// No description provided for @deliverySourceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get deliverySourceLabel;
+
+  /// No description provided for @invoiceReferenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice ref'**
+  String get invoiceReferenceLabel;
+
+  /// No description provided for @packageCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Packages'**
+  String get packageCountLabel;
+
+  /// No description provided for @weightLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get weightLabel;
+
+  /// No description provided for @dimensionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dimensions'**
+  String get dimensionsLabel;
+
+  /// No description provided for @goodsDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Goods'**
+  String get goodsDescriptionLabel;
+
+  /// No description provided for @specialInstructionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions'**
+  String get specialInstructionsLabel;
+
+  /// No description provided for @hsCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'HS code'**
+  String get hsCodeLabel;
+
+  /// No description provided for @deliveryAddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get deliveryAddressLabel;
+
+  /// No description provided for @createdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get createdLabel;
+
+  /// No description provided for @updatedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get updatedLabel;
+
+  /// No description provided for @deliveryStatusConfirmedTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get deliveryStatusConfirmedTxt;
+
+  /// No description provided for @deliveryStatusPendingTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get deliveryStatusPendingTxt;
+
+  /// No description provided for @deliveryStatusInTransitTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'In transit'**
+  String get deliveryStatusInTransitTxt;
+
+  /// No description provided for @deliveryStatusDeliveredTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get deliveryStatusDeliveredTxt;
+
+  /// No description provided for @deliveryStatusCancelledTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get deliveryStatusCancelledTxt;
+
+  /// No description provided for @paymentMethodWallet.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet'**
+  String get paymentMethodWallet;
+
+  /// No description provided for @paymentCollectButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Collect {amount}'**
+  String paymentCollectButton(Object amount);
+
+  /// No description provided for @paymentCashHintTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Collect cash'**
+  String get paymentCashHintTitle;
+
+  /// No description provided for @paymentCashHintBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Take {amount} in cash from the customer, then tap Collect.'**
+  String paymentCashHintBody(Object amount);
+
+  /// No description provided for @paymentQrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan to pay'**
+  String get paymentQrTitle;
+
+  /// No description provided for @paymentQrSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask the payer to scan this code with their wallet app.'**
+  String get paymentQrSubtitle;
+
+  /// No description provided for @paymentQrEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an amount to generate a QR code.'**
+  String get paymentQrEmptyHint;
+
+  /// No description provided for @paymentWalletAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available balance'**
+  String get paymentWalletAvailable;
+
+  /// No description provided for @paymentWalletEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet is empty'**
+  String get paymentWalletEmpty;
+
+  /// No description provided for @paymentWalletLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet is locked'**
+  String get paymentWalletLocked;
+
+  /// No description provided for @paymentWalletMissingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No wallet'**
+  String get paymentWalletMissingTitle;
+
+  /// No description provided for @paymentWalletMissingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A wallet is required to pay from this account.'**
+  String get paymentWalletMissingBody;
+
+  /// No description provided for @paymentErrorNoWallet.
+  ///
+  /// In en, this message translates to:
+  /// **'No wallet is linked to this account.'**
+  String get paymentErrorNoWallet;
+
+  /// No description provided for @paymentErrorWalletLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'This wallet is locked.'**
+  String get paymentErrorWalletLocked;
+
+  /// No description provided for @paymentErrorInsufficientWallet.
+  ///
+  /// In en, this message translates to:
+  /// **'Insufficient balance ({balance}).'**
+  String paymentErrorInsufficientWallet(Object balance);
+
+  /// No description provided for @paymentMarkQrPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as paid'**
+  String get paymentMarkQrPaid;
+
+  /// No description provided for @paymentQrMissingPayeeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No payee configured'**
+  String get paymentQrMissingPayeeTitle;
+
+  /// No description provided for @paymentQrMissingPayeeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A payee must be set to generate a payment QR.'**
+  String get paymentQrMissingPayeeBody;
+
+  /// No description provided for @paymentQrToggleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Let someone else pay'**
+  String get paymentQrToggleTitle;
+
+  /// No description provided for @paymentQrToggleSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show a QR code for another person to scan with their wallet.'**
+  String get paymentQrToggleSubtitle;
+
+  /// No description provided for @paymentMarkQrPaidWithAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark {amount} as paid'**
+  String paymentMarkQrPaidWithAmount(Object amount);
+
+  /// No description provided for @paymentBankReferenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank reference'**
+  String get paymentBankReferenceLabel;
+
+  /// No description provided for @paymentBankReferenceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Slip number or transaction reference'**
+  String get paymentBankReferenceHint;
+
+  /// No description provided for @paymentBankIssueDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue date'**
+  String get paymentBankIssueDateLabel;
+
+  /// No description provided for @paymentBankIssueDateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'YYYY-MM-DD'**
+  String get paymentBankIssueDateHint;
+
+  /// No description provided for @paymentBankHintTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank transfer'**
+  String get paymentBankHintTitle;
+
+  /// No description provided for @paymentBankHintBody.
+  ///
+  /// In en, this message translates to:
+  /// **'These fields are stored with the payment notes so the invoice can be reconciled later.'**
+  String get paymentBankHintBody;
+
+  /// No description provided for @paymentErrorBankReferenceRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank reference is required'**
+  String get paymentErrorBankReferenceRequired;
+
+  /// No description provided for @paymentErrorBankIssueDateRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue date is required'**
+  String get paymentErrorBankIssueDateRequired;
+
+  /// No description provided for @scanToPayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan to pay'**
+  String get scanToPayLabel;
+
+  /// No description provided for @paymentQrInvalidPayload.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid payment payload'**
+  String get paymentQrInvalidPayload;
+
+  /// No description provided for @paymentQrSelfPay.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay for yourself'**
+  String get paymentQrSelfPay;
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -15263,26 +15790,27 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['ar', 'en', 'fr'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['ar', 'en', 'fr'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
-
-
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'ar': return AppLocalizationsAr();
-    case 'en': return AppLocalizationsEn();
-    case 'fr': return AppLocalizationsFr();
+    case 'ar':
+      return AppLocalizationsAr();
+    case 'en':
+      return AppLocalizationsEn();
+    case 'fr':
+      return AppLocalizationsFr();
   }
 
   throw FlutterError(
-    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-    'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
-  );
+      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
 }

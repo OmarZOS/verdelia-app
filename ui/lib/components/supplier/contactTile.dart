@@ -60,7 +60,7 @@ Widget buildContactTile(BuildContext context, String type, String value) {
         ),
         child: Center(
           child:
-              Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
+              FaIcon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
         ),
       ),
       const SizedBox(width: 12),
@@ -85,7 +85,7 @@ Widget buildContactTile(BuildContext context, String type, String value) {
   );
 }
 
-IconData getContactIcon(String type) {
+FaIconData getContactIcon(String type) {
   final lowercaseType = type.toLowerCase();
 
   if (lowercaseType.contains('facebook')) return FontAwesomeIcons.facebook;
@@ -119,7 +119,7 @@ List<Map<String, String>> parseContactInfo(String contactInfo) {
 
 Widget buildDetailRow(
   BuildContext context, {
-  required IconData icon,
+  required FaIconData icon,
   required String label,
   required String value,
   Widget? trailing,
@@ -128,7 +128,7 @@ Widget buildDetailRow(
   final theme = Theme.of(context);
 
   // Map of contact types to icons
-  final Map<String, IconData> contactIcons = {
+  final Map<String, FaIconData> contactIcons = {
     'instagram': FontAwesomeIcons.instagram,
     'facebook': FontAwesomeIcons.facebook,
     'email': FontAwesomeIcons.envelope,
@@ -168,7 +168,7 @@ Widget buildDetailRow(
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
-              child: Icon(
+              child: FaIcon(
                 matchedIcon,
                 size: 20,
                 color: theme.colorScheme.onSurfaceVariant,

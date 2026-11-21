@@ -1,6 +1,7 @@
 // lib/business/finance/OrderedItem.dart
 
 import 'package:decimal/decimal.dart';
+import 'package:verdelia_core/business/Delivery.dart';
 
 class OrderedItem {
   final int idOrderedItem;
@@ -35,6 +36,13 @@ class OrderedItem {
 
   final OrderedProduct? orderedProduct;
 
+  /// Nested delivery record attached to this line. Null when the line
+  /// has no delivery (`ordered_item.delivery` was `null` in the
+  /// payload). See [OrderItemDelivery].
+  final OrderItemDelivery? delivery;
+
+  Decimal get lineTotal => unitPrice * Decimal.fromInt(orderedQuantity);
+
   OrderedItem({
     required this.idOrderedItem,
     this.orderedProductId,
@@ -49,6 +57,7 @@ class OrderedItem {
     this.reservedQuantity = 0,
     this.serverSubtotal,
     this.orderedProduct,
+    this.delivery,
   });
 
   factory OrderedItem.fromJson(Map<String, dynamic> json) {
@@ -61,6 +70,20 @@ class OrderedItem {
         );
       } catch (_) {
         attachedProduct = null;
+      }
+    }
+
+    OrderItemDelivery? attachedDelivery;
+    final rawDelivery = json['delivery'];
+    if (rawDelivery is Map) {
+      try {
+        attachedDelivery = OrderItemDelivery.fromJson(
+          Map<String, dynamic>.from(rawDelivery),
+        );
+      } catch (e, st) {
+        // ignore: avoid_print
+        print('OrderedItem.fromJson: failed to parse delivery: $e\n$st');
+        attachedDelivery = null;
       }
     }
 
@@ -108,6 +131,7 @@ class OrderedItem {
       reservedQuantity: (json['reserved_quantity'] as num?)?.toInt() ?? 0,
       serverSubtotal: _readDecimal(json['subtotal']),
       orderedProduct: attachedProduct,
+      delivery: attachedDelivery,
     );
   }
 
@@ -126,6 +150,7 @@ class OrderedItem {
       'reserved_quantity': reservedQuantity,
       if (serverSubtotal != null) 'subtotal': _decimalToWire(serverSubtotal!),
       if (orderedProduct != null) 'ordered_product': orderedProduct!.toJson(),
+      if (delivery != null) 'delivery': delivery!.toJson(),
     };
   }
 
@@ -142,8 +167,9 @@ class OrderedItem {
   ///   * `vat_rate`
   ///
   /// `cart_id`, `delivery_status`, `delivery_fee`, `reserved_quantity`,
-  /// and the nested `product` are **not** on the write model — they're
-  /// server-owned or derived, and the server silently drops them.
+  /// the nested `product`, and the nested `delivery` are **not** on the
+  /// write model — they're server-owned or derived, and the server
+  /// silently drops them.
   Map<String, dynamic> toOrderedItemApiJson() {
     return {
       'id_ordered_item': idOrderedItem,
@@ -168,6 +194,7 @@ class OrderedItem {
       'delivery_status': orderedItemDeliveryStatus,
       'delivery_fee': _decimalToWireOrNull(orderedItemDeliveryFee),
       if (orderedProduct != null) 'product': orderedProduct!.toJsonForService(),
+      if (delivery != null) 'delivery': delivery!.toJsonForService(),
     };
   }
 
@@ -211,6 +238,13 @@ class OrderedItem {
   bool get hasDeliveryFee =>
       (orderedItemDeliveryFee ?? Decimal.zero) > Decimal.zero;
 
+  /// True when the payload carried a nested `delivery` record for this
+  /// line. Prefer checking this over [isDelivered] when you need to
+  /// render delivery metadata (provider, address, weight, …): the line
+  /// can be `delivered` with a `null` delivery record (see order 32 in
+  /// the sample payload), and vice versa.
+  bool get hasDelivery => delivery != null;
+
   OrderedItem copyWith({
     int? idOrderedItem,
     int? orderedProductId,
@@ -225,6 +259,7 @@ class OrderedItem {
     int? reservedQuantity,
     Decimal? serverSubtotal,
     OrderedProduct? orderedProduct,
+    OrderItemDelivery? delivery,
   }) {
     return OrderedItem(
       idOrderedItem: idOrderedItem ?? this.idOrderedItem,
@@ -242,12 +277,13 @@ class OrderedItem {
       reservedQuantity: reservedQuantity ?? this.reservedQuantity,
       serverSubtotal: serverSubtotal ?? this.serverSubtotal,
       orderedProduct: orderedProduct ?? this.orderedProduct,
+      delivery: delivery ?? this.delivery,
     );
   }
 
   @override
   String toString() {
-    return 'OrderedItem(id: $idOrderedItem, product: ${orderedProduct?.productName}, quantity: $orderedQuantity, total: DZD$totalPrice)';
+    return 'OrderedItem(id: $idOrderedItem, product: ${orderedProduct?.productName}, quantity: $orderedQuantity, total: DZD$totalPrice, delivery: ${delivery?.idDelivery})';
   }
 
   @override
@@ -259,6 +295,207 @@ class OrderedItem {
   @override
   int get hashCode => idOrderedItem.hashCode;
 }
+
+// ============================================================================
+// ORDER ITEM DELIVERY
+// ============================================================================
+
+/// Nested delivery record attached to a single [OrderedItem].
+///
+/// In the payload this is `ordered_item.delivery`. It can be `null`
+/// (see order 32 / 30 in the sample), in which case
+/// [OrderedItem.delivery] is `null` too.
+///
+/// ## Money
+///
+/// [deliveryFee] is [Decimal]. The `double` conversion happens only
+/// inside [toJson], at the JSON boundary. All other fields are
+/// identifiers / strings / nullable `num`s (weight, package count),
+/// kept as-is.
+class OrderItemDelivery {
+  final int idDelivery;
+
+  final int? deliverySourceId;
+  final String? deliverySourceType;
+
+  final int? deliveryBrokerId;
+  final int? deliveryProviderId;
+  final int? recipientPersonId;
+  final int? recipientProviderId;
+  final int? carryingUserId;
+
+  final String? deliveryShippingMethod;
+
+  /// Delivery fee, in [Decimal]. Zero when the payload carried `0`.
+  final Decimal deliveryFee;
+
+  /// Optional package count. Null when the server didn't send one.
+  final int? deliveryPackageCount;
+
+  /// Optional total weight. Kept as `double` — it's a measurement,
+  /// not money, and the model has no arithmetic on it.
+  final double? deliveryTotalWeight;
+
+  final String? deliveryCargoDimensions;
+  final String? deliveryGoodsDescription;
+  final String? specialInstructions;
+
+  /// Optional `hs_code` (customs harmonised-system code). String on the
+  /// wire; kept verbatim.
+  final String? hsCode;
+
+  final String? deliveryStatus;
+
+  final int? deliveryInvoiceRef;
+
+  /// Address identifiers. Either can be null — the payload uses both
+  /// `address_id` and `current_address_id`, and they can disagree.
+  final int? addressId;
+  final int? currentAddressId;
+
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  /// Full nested address record when the payload includes it. Null
+  /// otherwise. See `DeliveryAddress`.
+  final DeliveryAddress? address;
+
+  OrderItemDelivery({
+    required this.idDelivery,
+    this.deliverySourceId,
+    this.deliverySourceType,
+    this.deliveryBrokerId,
+    this.deliveryProviderId,
+    this.recipientPersonId,
+    this.recipientProviderId,
+    this.carryingUserId,
+    this.deliveryShippingMethod,
+    Decimal? deliveryFee,
+    this.deliveryPackageCount,
+    this.deliveryTotalWeight,
+    this.deliveryCargoDimensions,
+    this.deliveryGoodsDescription,
+    this.specialInstructions,
+    this.hsCode,
+    this.deliveryStatus,
+    this.deliveryInvoiceRef,
+    this.addressId,
+    this.currentAddressId,
+    this.createdAt,
+    this.updatedAt,
+    this.address,
+  }) : deliveryFee = deliveryFee ?? Decimal.zero;
+
+  factory OrderItemDelivery.fromJson(Map<String, dynamic> json) {
+    DeliveryAddress? parsedAddress;
+    final rawAddress = json['address'];
+    if (rawAddress is Map) {
+      try {
+        parsedAddress = DeliveryAddress.fromJson(
+          Map<String, dynamic>.from(rawAddress),
+        );
+      } catch (_) {
+        parsedAddress = null;
+      }
+    }
+
+    return OrderItemDelivery(
+      idDelivery: (json['id_delivery'] as num?)?.toInt() ?? 0,
+      deliverySourceId: (json['delivery_source_id'] as num?)?.toInt(),
+      deliverySourceType: json['delivery_source_type'] as String?,
+      deliveryBrokerId: (json['delivery_broker_id'] as num?)?.toInt(),
+      deliveryProviderId: (json['delivery_provider_id'] as num?)?.toInt(),
+      recipientPersonId: (json['recipient_person_id'] as num?)?.toInt(),
+      recipientProviderId: (json['recipient_provider_id'] as num?)?.toInt(),
+      carryingUserId: (json['carrying_user_id'] as num?)?.toInt(),
+      deliveryShippingMethod: json['delivery_shipping_method'] as String?,
+      deliveryFee: _readDecimalOrZero(json['delivery_fee']),
+      deliveryPackageCount: (json['delivery_package_count'] as num?)?.toInt(),
+      deliveryTotalWeight: (json['delivery_total_weight'] as num?)?.toDouble(),
+      deliveryCargoDimensions: json['delivery_cargo_dimensions'] as String?,
+      deliveryGoodsDescription: json['delivery_goods_description'] as String?,
+      specialInstructions: json['special_instructions'] as String?,
+      hsCode: json['hs_code'] as String?,
+      deliveryStatus: json['delivery_status'] as String?,
+      deliveryInvoiceRef: (json['delivery_invoice_ref'] as num?)?.toInt(),
+      addressId: (json['address_id'] as num?)?.toInt(),
+      currentAddressId: (json['current_address_id'] as num?)?.toInt(),
+      createdAt: _parseNullableDateTime(json['created_at']),
+      updatedAt: _parseNullableDateTime(json['updated_at']),
+      address: parsedAddress,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id_delivery': idDelivery,
+      'delivery_source_id': deliverySourceId,
+      'delivery_source_type': deliverySourceType,
+      'delivery_broker_id': deliveryBrokerId,
+      'delivery_provider_id': deliveryProviderId,
+      'recipient_person_id': recipientPersonId,
+      'recipient_provider_id': recipientProviderId,
+      'carrying_user_id': carryingUserId,
+      'delivery_shipping_method': deliveryShippingMethod,
+      'delivery_fee': _decimalToWire(deliveryFee),
+      'delivery_package_count': deliveryPackageCount,
+      'delivery_total_weight': deliveryTotalWeight,
+      'delivery_cargo_dimensions': deliveryCargoDimensions,
+      'delivery_goods_description': deliveryGoodsDescription,
+      'special_instructions': specialInstructions,
+      'hs_code': hsCode,
+      'delivery_status': deliveryStatus,
+      'delivery_invoice_ref': deliveryInvoiceRef,
+      'address_id': addressId,
+      'current_address_id': currentAddressId,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+      if (address != null) 'address': address!.toJson(),
+    };
+  }
+
+  Map<String, dynamic> toJsonForService() {
+    return {
+      'id': idDelivery,
+      'source_id': deliverySourceId,
+      'source_type': deliverySourceType,
+      'broker_id': deliveryBrokerId,
+      'provider_id': deliveryProviderId,
+      'shipping_method': deliveryShippingMethod,
+      'fee': _decimalToWire(deliveryFee),
+      'package_count': deliveryPackageCount,
+      'total_weight': deliveryTotalWeight,
+      'cargo_dimensions': deliveryCargoDimensions,
+      'goods_description': deliveryGoodsDescription,
+      'special_instructions': specialInstructions,
+      'hs_code': hsCode,
+      'status': deliveryStatus,
+      'invoice_ref': deliveryInvoiceRef,
+      'address_id': addressId,
+      'current_address_id': currentAddressId,
+      if (address != null) 'address': address!.toJson(),
+    };
+  }
+
+  bool get isConfirmed => deliveryStatus?.toLowerCase() == 'confirmed';
+  bool get isPending => deliveryStatus?.toLowerCase() == 'pending';
+  bool get isInTransit => deliveryStatus?.toLowerCase() == 'in_transit';
+  bool get isDelivered => deliveryStatus?.toLowerCase() == 'delivered';
+
+  bool get hasFee => deliveryFee > Decimal.zero;
+  bool get hasWeight => deliveryTotalWeight != null && deliveryTotalWeight! > 0;
+  bool get hasAddress => address != null || addressId != null;
+
+  @override
+  String toString() =>
+      'OrderItemDelivery(id: $idDelivery, source: $deliverySourceType#$deliverySourceId, '
+      'provider: $deliveryProviderId, status: $deliveryStatus, '
+      'fee: $deliveryFee)';
+}
+
+// ============================================================================
+// ORDERED PRODUCT
+// ============================================================================
 
 class OrderedProduct {
   final String productName;
@@ -460,3 +697,18 @@ num _decimalToWire(Decimal v) => _decimalToDouble(v);
 
 /// [decimalToWire] with a `null` passthrough, for optional money fields.
 num? _decimalToWireOrNull(Decimal? v) => v == null ? null : _decimalToWire(v);
+
+/// Parses a nullable ISO-8601 string into a local [DateTime].
+/// Returns `null` for null / empty / unparseable input — unlike
+/// [OrderedProduct._parseDateTime], which falls back to `DateTime.now()`.
+DateTime? _parseNullableDateTime(dynamic raw) {
+  if (raw == null) return null;
+  if (raw is DateTime) return raw;
+  final str = raw.toString();
+  if (str.isEmpty) return null;
+  try {
+    return DateTime.parse(str).toLocal();
+  } catch (_) {
+    return null;
+  }
+}

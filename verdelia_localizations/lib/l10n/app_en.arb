@@ -3173,8 +3173,123 @@
   "itemAvailableLabel": "Available",
   "itemCategoryLabel": "Category",
   "itemProviderLabel": "Provider",
-  "itemDescriptionLabel": "Description"
+  "itemDescriptionLabel": "Description",
 
+  "loadingOrdersTxt": "Loading your orders...",
+  "loadingOrderDetailsTxt": "Loading order details...",
+  "shippedTxt": "Shipped",
+  "refundedTxt": "Refunded",
+
+  "inProgressTxt": "In progress",
+  "inTransitTxt": "In transit",
+  "allItemsDeliveredTxt": "All items delivered",
+  "fulfilmentLabel": "Fulfilment",
+  "orderDetailsTitle": "Order details",
+  "dateLabel": "Date",
+  "customerLabel": "Customer",
+  "paymentStatusLabel": "Payment status",
+  "invoiceLabel": "Invoice",
+  "noItemsTxt": "No items",
+  "unknownItemTxt": "Unknown item",
+  "itemSingular": "item",
+  "itemPlural": "items",
+  "moreTxt": "more",
+
+  "invoiceStatusPaidTxt": "Paid",
+  "invoiceStatusUnpaidTxt": "Unpaid",
+  "invoiceStatusPartiallyPaidTxt": "Partially paid",
+  "invoiceStatusOverdueTxt": "Overdue",
+  "invoiceStatusRefundedTxt": "Refunded",
+  "invoiceStatusCanceledTxt": "Canceled",
+  "invoiceDueLabel": "Due",
+  "invoiceAmountLabel": "Amount",
+  "invoiceOverdueByTxt": "Overdue by {days}d",
+  "@invoiceOverdueByTxt": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "invoiceDueInTxt": "Due in {days}d",
+  "@invoiceDueInTxt": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+
+  "noOrdersInTabTxt": "No orders in this category.",
+  "invoicesToPayTitle": "Invoices to pay",
+  "invoicesToPaySubtitle": "{count, plural, =1{1 invoice awaiting payment} other{{count} invoices awaiting payment}}",
+  "@invoicesToPaySubtitle": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "payNowTxt": "Pay now",
+  "payInvoiceAmountTxt": "Pay {amount}",
+  "@payInvoiceAmountTxt": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "outstandingSummaryTxt": "{count, plural, =1{1 invoice outstanding · {amount}} other{{count} invoices outstanding · {amount}}}",
+  "@outstandingSummaryTxt": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "amount": { "type": "String" }
+    }
+  },
+
+  "standardTxt": "Standard",
+  "deliveriesTxt": "deliveries",
+  "shippingMethodLabel": "Method",
+  "providerLabel": "Provider",
+  "brokerLabel": "Broker",
+  "deliverySourceLabel": "Source",
+  "invoiceReferenceLabel": "Invoice ref",
+  "packageCountLabel": "Packages",
+  "weightLabel": "Weight",
+  "dimensionsLabel": "Dimensions",
+  "goodsDescriptionLabel": "Goods",
+  "specialInstructionsLabel": "Instructions",
+  "hsCodeLabel": "HS code",
+  "deliveryAddressLabel": "Address",
+  "createdLabel": "Created",
+  "updatedLabel": "Updated",
+  "deliveryStatusConfirmedTxt": "Confirmed",
+  "deliveryStatusPendingTxt": "Pending",
+  "deliveryStatusInTransitTxt": "In transit",
+  "deliveryStatusDeliveredTxt": "Delivered",
+  "deliveryStatusCancelledTxt": "Cancelled",
+
+   "paymentMethodWallet": "Wallet",
+  "paymentCollectButton": "Collect {amount}",
+  "paymentCashHintTitle": "Collect cash",
+  "paymentCashHintBody": "Take {amount} in cash from the customer, then tap Collect.",
+  "paymentQrTitle": "Scan to pay",
+  "paymentQrSubtitle": "Ask the payer to scan this code with their wallet app.",
+  "paymentQrEmptyHint": "Enter an amount to generate a QR code.",
+  "paymentWalletAvailable": "Available balance",
+  "paymentWalletEmpty": "Wallet is empty",
+  "paymentWalletLocked": "Wallet is locked",
+  "paymentWalletMissingTitle": "No wallet",
+  "paymentWalletMissingBody": "A wallet is required to pay from this account.",
+  "paymentErrorNoWallet": "No wallet is linked to this account.",
+  "paymentErrorWalletLocked": "This wallet is locked.",
+  "paymentErrorInsufficientWallet": "Insufficient balance ({balance}).",
+
+  "paymentMarkQrPaid": "Mark as paid",
+  "paymentQrMissingPayeeTitle": "No payee configured",
+  "paymentQrMissingPayeeBody": "A payee must be set to generate a payment QR.",
+
+  "paymentQrToggleTitle": "Let someone else pay",
+  "paymentQrToggleSubtitle": "Show a QR code for another person to scan with their wallet.",
+  "paymentMarkQrPaidWithAmount": "Mark {amount} as paid",
+
+  "paymentBankReferenceLabel": "Bank reference",
+  "paymentBankReferenceHint": "Slip number or transaction reference",
+  "paymentBankIssueDateLabel": "Issue date",
+  "paymentBankIssueDateHint": "YYYY-MM-DD",
+  "paymentBankHintTitle": "Bank transfer",
+  "paymentBankHintBody": "These fields are stored with the payment notes so the invoice can be reconciled later.",
+  "paymentErrorBankReferenceRequired": "Bank reference is required",
+  "paymentErrorBankIssueDateRequired": "Issue date is required",
+
+  "scanToPayLabel": "Scan to pay",
+
+  "paymentQrInvalidPayload": "Invalid payment payload",
+  "paymentQrSelfPay": "Pay for yourself"
 
 
   

@@ -14,8 +14,13 @@ class Order {
   final int idPlacedOrder;
 
   /// Order-level discount, in [Decimal]. Null when the payload carried
-  /// no discount.
+  /// no discount. (`discount_amount` on the `placed_order` row.)
   final Decimal? orderDiscount;
+
+  /// FK to the `discount` row applied to this order. Null when no
+  /// discount was applied. The applied *amount* lives in
+  /// [orderDiscount]; this is the discount entity's id.
+  final int? discountId;
 
   /// Order subtotal (before [orderDiscount]), in [Decimal].
   final Decimal totalPrice;
@@ -30,6 +35,12 @@ class Order {
   final DateTime placedOrderCreation;
   List<OrderedItem>? items;
   AppUser? orderingUser;
+
+  /// Nested invoice payload, when the order response expands it.
+  /// Null when the endpoint only carries `invoice_id` (list views
+  /// without `?expand=invoice`, for example).
+  InvoiceSummary? invoice;
+
   String? paymentStatus;
   String? paymentMethod;
   String? paymentRef;
@@ -38,6 +49,7 @@ class Order {
   Order({
     required this.idPlacedOrder,
     this.orderDiscount,
+    this.discountId,
     required this.totalPrice,
     this.orderingUserId,
     this.placedOrderLocationRef,
@@ -49,6 +61,7 @@ class Order {
     required this.placedOrderCreation,
     this.items,
     this.orderingUser,
+    this.invoice,
     this.paymentStatus,
     this.paymentMethod,
     this.paymentRef,
@@ -78,18 +91,27 @@ class Order {
       }
     }
 
+    InvoiceSummary? invoice;
+    final rawInvoice = json['invoice'];
+    if (rawInvoice is Map) {
+      try {
+        invoice = InvoiceSummary.fromJson(
+          Map<String, dynamic>.from(rawInvoice),
+        );
+      } catch (e) {
+        log('Order.fromJson: failed to parse invoice: $e');
+      }
+    }
+
     final explicitName = json['customer_name'] as String?;
     final derivedName = orderingUser?.displayName;
 
-    // Parenthesise the whole `??` before `as`, not just one operand.
-    // `a ?? b as num?` parses as `a ?? (b as num?)` and the fallback
-    // silently loses its type. The `?.toX()` then relies on whatever
-    // happened to survive at runtime.
     return Order(
       idPlacedOrder: (json['id_placed_order'] as num?)?.toInt() ?? 0,
       orderDiscount: _readDecimal(
         json['discount_amount'] ?? json['order_discount'],
       ),
+      discountId: (json['discount_id'] as num?)?.toInt(),
       totalPrice: _readDecimalOrZero(
         json['subtotal'] ?? json['total_price'],
       ),
@@ -112,6 +134,11 @@ class Order {
       ),
       items: items,
       orderingUser: orderingUser,
+      invoice: invoice,
+      // `payment_status` etc. are not present on the placed_order row
+      // in the current schema; they live on the invoice. Kept here so
+      // callers that receive a flat order payload (e.g. from a search
+      // index) can populate them.
       paymentStatus: json['payment_status'] as String?,
       paymentMethod: json['payment_method'] as String?,
       paymentRef: json['payment_ref'] as String?,
@@ -171,6 +198,7 @@ class Order {
       case 'delivered':
         return 4;
       case 'cancelled':
+      case 'canceled':
         return 5;
       case 'refunded':
         return 6;
@@ -203,10 +231,47 @@ class Order {
   bool get hasOrderingUser =>
       orderingUser != null || (customerName?.isNotEmpty ?? false);
 
+  /// Non-null view of [items] for call sites that just want to iterate.
+  List<OrderedItem> get orderedItems => items ?? const [];
+
+  // ── Invoice shortcuts ──────────────────────────────────────────────
+
+  /// True when the order carries an invoice reference (FK) or an
+  /// expanded invoice object. Use [hasExpandedInvoice] to distinguish.
+  bool get hasInvoice => placedOrderInvoiceRef != null || invoice != null;
+
+  /// True when the invoice payload is expanded (not just the FK).
+  bool get hasExpandedInvoice => invoice != null;
+
+  /// Invoice status as a lowercase string: paid, unpaid,
+  /// partially_paid, overdue, refunded, canceled. Falls back to the
+  /// order-level [paymentStatus] when the invoice isn't expanded.
+  String? get invoiceStatus {
+    final fromInvoice = invoice?.status;
+    if (fromInvoice != null && fromInvoice.isNotEmpty) return fromInvoice;
+    return paymentStatus?.toLowerCase();
+  }
+
+  bool get isInvoicePaid => invoiceStatus == 'paid';
+  bool get isInvoiceUnpaid => invoiceStatus == 'unpaid';
+  bool get isInvoiceOverdue => invoiceStatus == 'overdue';
+  bool get isInvoicePartiallyPaid => invoiceStatus == 'partially_paid';
+  bool get isInvoiceRefunded => invoiceStatus == 'refunded';
+  bool get isInvoiceCanceled => invoiceStatus == 'canceled';
+
+  /// True when the invoice has an outstanding balance the customer
+  /// still owes. Only meaningful when [hasExpandedInvoice].
+  bool get isInvoiceOutstanding => invoice?.isOutstanding ?? false;
+
+  /// The invoice's grand total when expanded, otherwise the order's
+  /// own [totalPrice]. Both are [Decimal].
+  Decimal get effectiveTotal => invoice?.grandTotal ?? totalPrice;
+
   Map<String, dynamic> toSummaryJson() {
     return {
       'id_placed_order': idPlacedOrder,
       'order_discount': _decimalToWireOrNull(orderDiscount),
+      'discount_id': discountId,
       'total_price': _decimalToWire(totalPrice),
       'ordering_user_id': orderingUserId,
       'placed_order_location_ref': placedOrderLocationRef,
@@ -222,6 +287,7 @@ class Order {
       'payment_ref': paymentRef,
       'customer_name': customerName,
       if (orderingUser != null) 'ordering_user': orderingUser!.toJson(),
+      if (invoice != null) 'invoice': invoice!.toJson(),
     };
   }
 
@@ -244,6 +310,7 @@ class Order {
         'id_placed_order': idPlacedOrder,
         'ordered_timestamp': placedOrderCreation.toIso8601String(),
         'order_discount': _decimalToWire(orderDiscount ?? Decimal.zero),
+        'discount_id': discountId,
         'placed_order_last_mod': placedOrderLastMod.toIso8601String(),
         'payment_status': paymentStatus?.toLowerCase() ?? 'pending',
         'payment_ref': paymentRef ?? '',
@@ -260,6 +327,7 @@ class Order {
       'id_order': idPlacedOrder,
       'total_amount': _decimalToWire(totalPrice),
       'order_discount': _decimalToWireOrNull(orderDiscount),
+      'discount_id': discountId,
       'order_date': placedOrderCreation.toIso8601String(),
       'last_modified': placedOrderLastMod.toIso8601String(),
       'status': statusRaw,
@@ -274,12 +342,14 @@ class Order {
       if (items != null)
         'items': items!.map((item) => item.toJsonForService()).toList(),
       if (orderingUser != null) 'user': orderingUser!.toApiJson(),
+      if (invoice != null) 'invoice': invoice!.toJson(),
     };
   }
 
   Order copyWith({
     int? idPlacedOrder,
     Decimal? orderDiscount,
+    int? discountId,
     Decimal? totalPrice,
     int? orderingUserId,
     int? placedOrderLocationRef,
@@ -291,6 +361,7 @@ class Order {
     DateTime? placedOrderCreation,
     List<OrderedItem>? items,
     AppUser? orderingUser,
+    InvoiceSummary? invoice,
     String? paymentStatus,
     String? paymentMethod,
     String? paymentRef,
@@ -299,6 +370,7 @@ class Order {
     return Order(
       idPlacedOrder: idPlacedOrder ?? this.idPlacedOrder,
       orderDiscount: orderDiscount ?? this.orderDiscount,
+      discountId: discountId ?? this.discountId,
       totalPrice: totalPrice ?? this.totalPrice,
       orderingUserId: orderingUserId ?? this.orderingUserId,
       placedOrderLocationRef:
@@ -313,6 +385,7 @@ class Order {
       placedOrderCreation: placedOrderCreation ?? this.placedOrderCreation,
       items: items ?? this.items,
       orderingUser: orderingUser ?? this.orderingUser,
+      invoice: invoice ?? this.invoice,
       paymentStatus: paymentStatus ?? this.paymentStatus,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       paymentRef: paymentRef ?? this.paymentRef,
@@ -327,7 +400,6 @@ class Order {
   bool get isCancelled => status == 'cancelled';
   bool get isRefunded => status == 'refunded';
 
-  bool get hasInvoice => placedOrderInvoiceRef != null;
   bool get hasReceipt => placedOrderReceiptRef != null;
   bool get hasLocation => placedOrderLocationRef != null;
 
@@ -336,13 +408,13 @@ class Order {
   /// [totalPrice] minus [orderDiscount], in [Decimal].
   Decimal get netPrice => totalPrice - (orderDiscount ?? Decimal.zero);
 
-  bool hasItems() => items != null && items!.isNotEmpty;
+  bool hasItems() => orderedItems.isNotEmpty;
 
   int get itemCount =>
-      items?.fold(0, (sum, item) => (sum ?? 0) + item.orderedQuantity) ?? 0;
+      orderedItems.fold(0, (sum, item) => sum + item.orderedQuantity);
 
   int get totalQuantity =>
-      items?.fold(0, (total, item) => (total ?? 0) + item.orderedQuantity) ?? 0;
+      orderedItems.fold(0, (total, item) => total + item.orderedQuantity);
 
   /// Same as [netPrice], kept as a separate getter for API compatibility.
   Decimal get finalTotal => totalPrice - (orderDiscount ?? Decimal.zero);
@@ -429,6 +501,10 @@ class Order {
         throw ArgumentError('Product ID cannot be null for order item');
       }
 
+      // NOTE: `unit_price` on the wire is the *catalog* price. Any
+      // override (discount) is carried separately via
+      // `product_discount`. `totalPrice` uses the effective price
+      // (override applied), so the two can differ.
       final catalogPrice = item.catalogUnitPrice ?? Decimal.zero;
       final effectivePrice = item.unitPrice ?? catalogPrice;
       totalPrice += effectivePrice * Decimal.fromInt(item.quantity);
@@ -472,6 +548,7 @@ class Order {
         "id_placed_order": order.idPlacedOrder,
         "ordered_timestamp": order.placedOrderCreation.toIso8601String(),
         "order_discount": _decimalToWire(order.orderDiscount ?? Decimal.zero),
+        "discount_id": order.discountId,
         "placed_order_last_mod": order.placedOrderLastMod.toIso8601String(),
         "payment_status": order.paymentStatus?.toLowerCase() ?? 'pending',
         "payment_ref": order.paymentRef ?? '',
@@ -486,6 +563,7 @@ class Order {
     required int orderId,
     String? orderState,
     Decimal? orderDiscount,
+    int? discountId,
     String? paymentStatus,
     String? paymentMethod,
     String? paymentRef,
@@ -497,6 +575,7 @@ class Order {
         "id_placed_order": orderId,
         "placed_order_state": orderState,
         "order_discount": _decimalToWireOrNull(orderDiscount),
+        "discount_id": discountId,
         "payment_status": paymentStatus,
         "payment_method": paymentMethod,
         "payment_ref": paymentRef,
@@ -509,7 +588,8 @@ class Order {
   String toString() {
     return 'Order(id: $idPlacedOrder, total: DZD$totalPrice, '
         'status: $status, items: ${items?.length ?? 0}, '
-        'user: $orderingUserName)';
+        'user: $orderingUserName, '
+        'invoice: ${invoice?.reference ?? "-"})';
   }
 
   @override
@@ -520,6 +600,145 @@ class Order {
 
   @override
   int get hashCode => idPlacedOrder.hashCode;
+}
+
+/// ------------------------------------------------------------------
+/// InvoiceSummary — the nested `invoice` object on an order payload
+/// ------------------------------------------------------------------
+///
+/// Mirrors the invoice shape the orders endpoint returns:
+///
+/// ```json
+/// "invoice": {
+///   "invoice_status": "unpaid",
+///   "grand_total": 558.38,
+///   "invoice_issue_date": "2026-11-16",
+///   "discount_amount": null,
+///   "invoice_reference": "INV-44-20261116",
+///   "invoice_due_date": "2026-12-16",
+///   "additional_amount": null,
+///   "invoice_id": 74,
+///   "invoice_notes": "Order #44",
+///   "subtotal_amount": null,
+///   "created_at": "2026-11-16T18:44:39",
+///   "updated_at": "2026-11-16T18:44:39",
+///   "invoice_type": "invoice",
+///   "tax_amount": 0
+/// }
+/// ```
+///
+/// Only the fields the UI uses are modelled. Extra fields on the wire
+/// are ignored.
+class InvoiceSummary {
+  final int invoiceId;
+
+  /// Lowercase status: paid | unpaid | partially_paid | overdue |
+  /// refunded | canceled.
+  final String status;
+
+  /// Human reference (e.g. `INV-44-20261116`). Null when the server
+  /// didn't set one.
+  final String? reference;
+
+  /// Lowercase type: invoice | receipt | proforma.
+  final String type;
+
+  final DateTime? issueDate;
+  final DateTime? dueDate;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final String? notes;
+
+  final Decimal grandTotal;
+  final Decimal? subtotalAmount;
+  final Decimal taxAmount;
+  final Decimal? discountAmount;
+  final Decimal? additionalAmount;
+
+  InvoiceSummary({
+    required this.invoiceId,
+    required this.status,
+    this.reference,
+    required this.type,
+    this.issueDate,
+    this.dueDate,
+    this.createdAt,
+    this.updatedAt,
+    this.notes,
+    required this.grandTotal,
+    this.subtotalAmount,
+    required this.taxAmount,
+    this.discountAmount,
+    this.additionalAmount,
+  });
+
+  factory InvoiceSummary.fromJson(Map<String, dynamic> json) {
+    return InvoiceSummary(
+      invoiceId: (json['invoice_id'] as num?)?.toInt() ?? 0,
+      status: ((json['invoice_status'] as String?) ?? 'unpaid').toLowerCase(),
+      reference: json['invoice_reference'] as String?,
+      type: ((json['invoice_type'] as String?) ?? 'invoice').toLowerCase(),
+      issueDate: _parseDateOnly(json['invoice_issue_date']),
+      dueDate: _parseDateOnly(json['invoice_due_date']),
+      createdAt: _parseDateTime(json['created_at']),
+      updatedAt: _parseDateTime(json['updated_at']),
+      notes: json['invoice_notes'] as String?,
+      grandTotal: _readDecimalOrZero(json['grand_total']),
+      subtotalAmount: _readDecimal(json['subtotal_amount']),
+      taxAmount: _readDecimalOrZero(json['tax_amount']),
+      discountAmount: _readDecimal(json['discount_amount']),
+      additionalAmount: _readDecimal(json['additional_amount']),
+    );
+  }
+
+  bool get isPaid => status == 'paid';
+  bool get isUnpaid => status == 'unpaid';
+  bool get isOverdue => status == 'overdue';
+  bool get isPartiallyPaid => status == 'partially_paid';
+  bool get isRefunded => status == 'refunded';
+  bool get isCanceled => status == 'canceled';
+
+  /// True when there's still money owed on this invoice.
+  bool get isOutstanding => isUnpaid || isPartiallyPaid || isOverdue;
+
+  /// Days until [dueDate]. Negative when the invoice is already overdue.
+  /// Null when [dueDate] is unknown.
+  ///
+  /// Compares calendar days (Y/M/D), not instants, so a due date of
+  /// "today" yields `0` regardless of the time of day.
+  int? get daysUntilDue {
+    if (dueDate == null) return null;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final due = DateTime(dueDate!.year, dueDate!.month, dueDate!.day);
+    return due.difference(today).inDays;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'invoice_id': invoiceId,
+      'invoice_status': status,
+      'invoice_reference': reference,
+      'invoice_type': type,
+      'invoice_issue_date': issueDate?.toIso8601String().split('T').first,
+      'invoice_due_date': dueDate?.toIso8601String().split('T').first,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+      'invoice_notes': notes,
+      'grand_total': _decimalToWire(grandTotal),
+      'subtotal_amount': _decimalToWireOrNull(subtotalAmount),
+      'tax_amount': _decimalToWire(taxAmount),
+      'discount_amount': _decimalToWireOrNull(discountAmount),
+      'additional_amount': _decimalToWireOrNull(additionalAmount),
+    };
+  }
+
+  @override
+  String toString() {
+    return 'InvoiceSummary(id: $invoiceId, status: $status, '
+        'total: DZD$grandTotal, '
+        'due: ${dueDate?.toIso8601String().split("T").first ?? "-"})';
+  }
 }
 
 List<OrderedItem> parseOrderedItems(List<dynamic> jsonList) {
@@ -537,6 +756,7 @@ Order createOrderFromCart({
   required int userId,
   required List<CartItem> cartItems,
   Decimal? orderDiscount,
+  int? discountId,
   int? locationId,
   int? invoiceRef,
   int? receiptRef,
@@ -584,6 +804,7 @@ Order createOrderFromCart({
   return Order(
     idPlacedOrder: 0,
     orderDiscount: orderDiscount,
+    discountId: discountId,
     totalPrice: totalPrice,
     orderingUserId: userId,
     placedOrderLocationRef: locationId,
@@ -636,3 +857,30 @@ num _decimalToWire(Decimal v) => _decimalToDouble(v);
 
 /// [decimalToWire] with a `null` passthrough, for optional money fields.
 num? _decimalToWireOrNull(Decimal? v) => v == null ? null : _decimalToWire(v);
+
+/// Parses a date-only string (`YYYY-MM-DD`) without timezone shifting.
+///
+/// Date-only strings represent a calendar date, not a moment in time.
+/// Calling `.toLocal()` on them shifts by the local timezone offset and
+/// can roll the date back a day for users east of UTC. Kept as-parsed
+/// so `"2026-12-16"` stays December 16 everywhere.
+DateTime? _parseDateOnly(dynamic v) {
+  if (v == null) return null;
+  if (v is DateTime) return v;
+  try {
+    return DateTime.parse(v.toString());
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Parses a full ISO-8601 timestamp into local time. Null on failure.
+DateTime? _parseDateTime(dynamic v) {
+  if (v == null) return null;
+  if (v is DateTime) return v;
+  try {
+    return DateTime.parse(v.toString()).toLocal();
+  } catch (_) {
+    return null;
+  }
+}

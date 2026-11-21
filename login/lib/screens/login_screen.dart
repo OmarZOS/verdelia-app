@@ -641,7 +641,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildSocialLoginTile({
-    required IconData icon,
+    required FaIconData icon,
     required String title,
     required VoidCallback onPressed,
   }) {

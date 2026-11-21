@@ -1,6 +1,7 @@
 // lib/screens/finance/document_details_sheet.dart
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
+import 'package:ui/components/payment_dtos.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
 import 'package:verdelia_core/app/AppUser.dart';
 import 'package:verdelia_core/business/finance/Customer.dart';
@@ -1573,23 +1574,26 @@ class DocumentDetailsSheet extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => PaymentFormScreen(
-                        // `PaymentFormScreen.amountDue` and the
-                        // `onSubmit` amount parameter are `Decimal`
-                        // after the payment flow's migration.
+                        actor: PaymentActor.provider,
                         amountDue: document.outstandingBalance,
+                        payeeId: Provider.of<SupplierChangeNotifier>(context)
+                            .selectedSupplierId
+                            .toString(),
+                        currency: "DZD",
+                        title: document.documentNumber.isNotEmpty
+                            ? document.documentNumber
+                            : '#${document.documentId}',
                         onSubmit: (amount, method, notes) async {
-                          final notifier =
-                              context.read<FinanceChangeNotifier>();
-                          final result = await notifier.submitPayment(
+                          final r =
+                              await Provider.of<FinanceChangeNotifier>(context)
+                                  .submitPayment(
                             invoiceId: document.documentId,
                             amount: amount,
                             method: method,
                             notes: notes,
                           );
-                          return result.isSuccess ? null : result.message;
+                          return r.isSuccess ? null : r.message;
                         },
-
-                        // sourceDocument: document,
                       ),
                     ),
                   );

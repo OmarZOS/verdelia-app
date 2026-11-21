@@ -1,11 +1,14 @@
 import 'dart:convert';
 
 import 'package:app_constants/app_routes.dart';
+import 'package:decimal/decimal.dart';
 import 'package:event/preferenceChangeNotifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:tabbed_home/screens/components/profile_wallet_card.dart';
+import 'package:ui/components/payment_dtos.dart';
 import 'package:verdelia_core/app/finance/Plan.dart';
 import 'package:verdelia_core/app/finance/Subscription.dart';
 import 'package:verdelia_localizations/gen_l10n/app_localizations.dart';
@@ -237,12 +240,20 @@ class _ProfileScreenState extends State<ProfileScreen>
           title: l10n.subscriptionInfoText,
           entries: _subscriptionEntries(subscription, plan, l10n),
         ),
-      if (_isOwner && user.hasInlinedWallet)
-        _Section(
+      if (_isOwner && user.hasInlinedWallet) ...[
+        _SectionHeader(
           icon: Icons.account_balance_wallet_outlined,
           title: l10n.walletSectionText,
-          entries: _walletEntries(user.wallet!, l10n),
         ),
+        const SizedBox(height: 10),
+        ProfileWalletCard(
+          wallet: _toWalletAccount(user.wallet!),
+          selfPayeeId:
+              user.wallet!.idWallet.toString(), // or whatever your id field is
+          onSubmit: _submitPayment,
+        ),
+        const SizedBox(height: _Rhythm.sectionGap),
+      ],
     ];
 
     // ── Account tab: status + timestamps ──
@@ -269,6 +280,16 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _hasContact(AppUser user) {
     return (user.personPhone ?? '').isNotEmpty ||
         (user.personEmail ?? '').isNotEmpty;
+  }
+
+  Future<String?> _submitPayment(
+    Decimal amount,
+    String method,
+    String notes,
+  ) async {
+    // your server call, e.g.:
+    // return paymentsApi.submit(amount: amount, method: method, notes: notes);
+    return null;
   }
 
   bool _hasLocation(AppUser user) {
@@ -985,12 +1006,6 @@ class _NarrowIdentityRow extends StatelessWidget {
       const SnackBar(content: Text('Edit profile (not implemented)')),
     );
   }
-
-  void _onSharePressed(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Share profile (not implemented)')),
-    );
-  }
 }
 
 // ── Avatar with ring and verified dot ──
@@ -1471,23 +1486,7 @@ class _StatusStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final cards = <Widget>[];
 
-    if (subscription != null) {
-      cards.add(
-        _StatusCard(
-          icon: subscription!.isActive
-              ? Icons.workspace_premium_rounded
-              : Icons.workspace_premium_outlined,
-          label: l10n.subscriptionInfoText,
-          value: subscription!.isActive
-              ? l10n.subscriptionActiveLabel
-              : l10n.subscriptionInactiveLabel,
-          tone:
-              subscription!.isActive ? _BadgeTone.positive : _BadgeTone.warning,
-        ),
-      );
-    }
-
-    if (user.hasInlinedWallet) {
+    if (subscription != null && user.wallet != null) {
       cards.add(
         _StatusCard(
           icon: Icons.account_balance_wallet_rounded,
@@ -1512,12 +1511,18 @@ class _StatusStrip extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final available = constraints.maxWidth;
-        final perCard = available >= 360 ? (available - 20) / 3 : available;
+        final perCard = available >= 360 ? (available - 10) / 2 : available;
+
         return Wrap(
           spacing: 10,
           runSpacing: 10,
           children: cards
-              .map((c) => SizedBox(width: perCard, child: c))
+              .map(
+                (card) => SizedBox(
+                  width: perCard,
+                  child: card,
+                ),
+              )
               .toList(growable: false),
         );
       },
@@ -1530,12 +1535,14 @@ class _StatusCard extends StatelessWidget {
   final String label;
   final String value;
   final _BadgeTone tone;
+  final Widget? trailing; // ← new
 
   const _StatusCard({
     required this.icon,
     required this.label,
     required this.value,
     required this.tone,
+    this.trailing, // ← new
   });
 
   @override
@@ -1591,6 +1598,10 @@ class _StatusCard extends StatelessWidget {
               ],
             ),
           ),
+          if (trailing != null) ...[
+            const SizedBox(width: 8),
+            trailing!,
+          ],
         ],
       ),
     );
@@ -2254,3 +2265,50 @@ class _UpgradePlanFab extends StatelessWidget {
     }
   }
 }
+
+class _StatusActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool enabled;
+  final VoidCallback? onPressed;
+
+  const _StatusActionButton({
+    required this.icon,
+    required this.label,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: label,
+      child: Material(
+        color: cs.primary,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: enabled ? onPressed : null,
+          customBorder: const CircleBorder(),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Icon(
+              icon,
+              size: 18,
+              color: enabled ? cs.onPrimary : cs.onPrimary.withOpacity(0.5),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+WalletAccount _toWalletAccount(Wallet w) => WalletAccount(
+      id: w.idWallet.toString(),
+      label: w.walletType,
+      balance: Decimal.parse(w.walletBalance.toStringAsFixed(2)),
+      currency: w.walletCurrency,
+      isLocked: !w.isActive,
+    );
