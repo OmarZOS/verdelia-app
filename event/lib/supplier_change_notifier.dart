@@ -370,7 +370,20 @@ class SupplierChangeNotifier extends ChangeNotifier {
     }
   }
 
+  final Map<int, List<Supplier>> _ownedByUser = {};
+
+  /// Owner user id of the last successful [fetchOwnedSuppliers] call.
+  /// Used by the manager to know whether `_ownedByUser` is warm.
+  int? _ownedCacheUserId;
+  int? get ownedCacheUserId => _ownedCacheUserId;
+
   List<Supplier> getSuppliersOwnedByUser(int userId) {
+    // Prefer the authoritative cache. Fall back to the state list
+    // only when nothing has been fetched for this user yet, so
+    // callers that run before the first fetch still get something.
+    final cached = _ownedByUser[userId];
+    if (cached != null) return List.unmodifiable(cached);
+
     return _state.suppliers
         .where((s) => s.productProviderOwnerId == userId)
         .toList();

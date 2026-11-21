@@ -95,7 +95,7 @@ class AppConstants {
   static const String addRuleEndpoint = '/staff';
   static const String getStaffEndpoint = '/staff';
   static const String updateStaffEndpoint = '/staff';
-  static const String deleteStaffEndpoint = '/staff/delete';
+  static const String deleteStaffEndpoint = '/staff/delete/';
   static const String answerStaffInvitationEndpoint = '/staff/answer';
   static const String getUserStaffEndpoint = '/staff/user';
   static const String getProviderStaffEndpoint = '/staff/provider';

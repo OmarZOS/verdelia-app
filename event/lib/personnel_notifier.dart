@@ -188,6 +188,34 @@ class PersonnelNotifier extends TraceableNotifier {
   }
 
   // ============ ACCESSIBLE SUPPLIERS ============
+  Future<void> fetchForUser(int userId, {bool forceRefresh = false}) async {
+    assert(userId > 0, 'fetchForUser must not be called with userId 0');
+    if (userId <= 0) {
+      _logWarning('fetchForUser called with invalid userId=$userId — ignoring');
+      return;
+    }
+
+    // Delegate to the existing loading path, but scoped to `userId`.
+    await loadPersonnel(
+      userId: userId,
+      reset: forceRefresh,
+      supplierId: 0,
+      includePending: true,
+    );
+  }
+
+  /// Rule id for the staff record linking [userId] to [supplierId],
+  /// or null when there is none.
+  int? getRuleIdFor(int userId, int supplierId) {
+    final rules = _rules.getRulesForUser(userId, supplierId: supplierId);
+    if (rules.isEmpty) return null;
+    // Prefer the active rule over a pending one when both exist.
+    final active = rules.firstWhere(
+      (r) => !r.isPending,
+      orElse: () => rules.first,
+    );
+    return active.idManagementRule;
+  }
 
   /// Get accessible supplier IDs for a user
   List<int> getAccessibleSupplierIds(int userId) {
